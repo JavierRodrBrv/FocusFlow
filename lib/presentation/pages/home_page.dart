@@ -88,9 +88,12 @@ class HomePage extends StatelessWidget {
               ),
               // Conditional Ad Banner
               if (!state.isPremium)
-                const SafeArea(
-                  top: false,
-                  child: AdBannerWidget(),
+                Container(
+                  color: Colors.red.withOpacity(0.2), // Debug container
+                  child: const SafeArea(
+                    top: false,
+                    child: AdBannerWidget(),
+                  ),
                 )
               else
                 const SizedBox.shrink(),
