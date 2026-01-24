@@ -1,5 +1,8 @@
 
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:injectable/injectable.dart';
 import 'package:focus_flow/domain/repositories/premium_repository.dart';
 import 'package:focus_flow/data/services/sound_mixer_service.dart';
@@ -30,7 +33,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   @override
   void onChange(Change<FocusState> change) {
     super.onChange(change);
-    print('[FocusBloc] State Change: ${change.nextState.status}, isPremium: ${change.nextState.isPremium}');
+    print('[FocusBloc] State Change: ${change.nextState.status}, isPremium: ${change.nextState.isPremium}, canRequestAds: ${change.nextState.canRequestAds}');
   }
 
   @override
@@ -43,8 +46,64 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     print('[FocusBloc] Handling InitializeApp');
     emit(state.copyWith(status: AppStatus.loading));
     try {
+      // 1. Flujo de consentimiento UMP con la API actualizada
+      print('[FocusBloc] Starting UMP Consent Flow...');
+      final params = ConsentRequestParameters();
+      
+      // El Completer nos permite esperar a que los callbacks asíncronos terminen.
+      final consentCompleter = Completer<void>();
+
+      ConsentInformation.instance.requestConsentInfoUpdate(
+        params,
+        () async {
+          print('[FocusBloc] Consent info updated. Is form available: ${await ConsentInformation.instance.isConsentFormAvailable()}');
+          // Si el formulario está disponible, cargarlo y mostrarlo.
+          if (await ConsentInformation.instance.isConsentFormAvailable()) {
+            ConsentForm.loadConsentForm(
+              (ConsentForm consentForm) {
+                consentForm.show(
+                  (FormError? formError) {
+                    print('[FocusBloc] Consent form dismissed.');
+                    // Cuando el formulario se cierra, completamos el future.
+                    consentCompleter.complete();
+                  },
+                );
+              },
+              (FormError? formError) {
+                print('[FocusBloc] ERROR loading consent form: ${formError?.message}');
+                consentCompleter.complete(); // Completar igualmente para no bloquear la app
+              },
+            );
+          } else {
+            // Si no hay formulario que mostrar, completamos inmediatamente.
+            consentCompleter.complete();
+          }
+        },
+        (FormError error) {
+          print('[FocusBloc] ERROR requesting consent info: ${error.message}');
+          consentCompleter.complete(); // Completar igualmente para no bloquear la app
+        },
+      );
+
+      // Esperar a que el flujo de consentimiento (incluido el formulario) termine.
+      await consentCompleter.future;
+
+      // 2. Comprobar si se pueden solicitar anuncios
+      final canRequest = await ConsentInformation.instance.canRequestAds();
+      print('[FocusBloc] Can request ads: $canRequest');
+      emit(state.copyWith(canRequestAds: canRequest));
+
+      // 3. Inicializar Mobile Ads (solo si hay consentimiento)
+      if (canRequest) {
+        print('[FocusBloc] Initializing Mobile Ads SDK...');
+        await MobileAds.instance.initialize();
+        print('[FocusBloc] Mobile Ads SDK Initialized.');
+      }
+      
+      // 4. Continuar con el resto de la inicialización
       final isPremium = await _premiumRepository.isPremium();
       await _soundMixerService.init();
+      
       emit(state.copyWith(status: AppStatus.loaded, isPremium: isPremium));
       print('[FocusBloc] App Initialized successfully');
     } catch (e) {

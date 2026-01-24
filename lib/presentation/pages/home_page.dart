@@ -63,7 +63,7 @@ class HomePage extends StatelessWidget {
               ),
             );
           }
-          print('[HomePage] Building Loaded UI. isPremium: ${state.isPremium}');
+          print('[HomePage] Building Loaded UI. isPremium: ${state.isPremium}, canRequestAds: ${state.canRequestAds}');
           return Column(
             children: [
               Expanded(
@@ -86,8 +86,8 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-              // Conditional Ad Banner
-              if (!state.isPremium)
+              // Conditional Ad Banner based on premium and consent status
+              if (!state.isPremium && state.canRequestAds)
                 Container(
                   color: Colors.red.withOpacity(0.2), // Debug container
                   child: const SafeArea(
