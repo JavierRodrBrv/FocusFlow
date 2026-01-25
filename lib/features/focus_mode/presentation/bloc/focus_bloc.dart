@@ -45,6 +45,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     on<PauseTimer>((e, emit) => _sessionManager.pauseTimer());
     on<ResetTimer>((e, emit) => _sessionManager.resetTimer());
     on<UpdatePomodoroDuration>((e, emit) => _sessionManager.setDuration(e.newDuration));
+    on<UpdateConsentStatus>((e, emit) => emit(state.copyWith(canRequestAds: e.canRequestAds)));
     
     // Internal State Update
     on<_SessionStateChanged>(_onSessionStateChanged);
@@ -56,7 +57,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     try {
       _sessionManager.init();
       final isPremium = await _premiumRepository.isPremium();
-      emit(state.copyWith(status: AppStatus.loaded, isPremium: isPremium, canRequestAds: true));
+      // Default canRequestAds to FALSE until UI confirms consent
+      emit(state.copyWith(status: AppStatus.loaded, isPremium: isPremium, canRequestAds: false));
     } catch (e) {
       print('[FocusBloc] Initialization Error: $e');
       emit(state.copyWith(status: AppStatus.error));

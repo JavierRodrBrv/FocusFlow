@@ -1,14 +1,14 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:focus_flow/features/premium/presentation/widgets/ad_banner_widget.dart';
-
-// Widgets desacoplados
-import 'package:focus_flow/features/focus_mode/presentation/widgets/timer_display.dart';
-import 'package:focus_flow/features/focus_mode/presentation/widgets/timer_controls.dart';
-import 'package:focus_flow/features/focus_mode/presentation/widgets/sound_mixer.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/hardcore_mode_card.dart';
+import 'package:focus_flow/features/premium/presentation/utils/ad_consent_manager.dart';
 
+import '../../../premium/presentation/widgets/ad_banner_widget.dart';
 import '../bloc/focus_bloc.dart';
+import '../widgets/sound_mixer.dart';
+import '../widgets/timer_controls.dart';
+import '../widgets/timer_display.dart';
 
 class FocusPage extends StatefulWidget {
   const FocusPage({super.key});
@@ -24,6 +24,21 @@ class _FocusPageState extends State<FocusPage> {
     // HANDSHAKE: Pedir estado activamente al iniciar
     print('[FocusPage] Requesting initial state...');
     FlutterBackgroundService().invoke('sendEvent', {'event': 'requestState'});
+    
+    // CONSENT: Iniciar flujo de consentimiento en UI
+    _checkConsent();
+  }
+
+  Future<void> _checkConsent() async {
+    // Pequeño delay para no bloquear la UI en el frame 0
+    await Future.delayed(const Duration(milliseconds: 500));
+    final canRequest = await AdConsentManager().requestConsent();
+    print('[FocusPage] Consent result: $canRequest. Updating Background Service...');
+    
+    FlutterBackgroundService().invoke('sendEvent', {
+      'event': 'updateConsentStatus', 
+      'canRequest': canRequest
+    });
   }
 
   @override

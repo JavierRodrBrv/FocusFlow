@@ -36,6 +36,11 @@ class UpdatePomodoroDuration extends FocusEvent {
   UpdatePomodoroDuration(this.newDuration);
 }
 
+class UpdateConsentStatus extends FocusEvent {
+  final bool canRequestAds;
+  UpdateConsentStatus(this.canRequestAds);
+}
+
 class _SessionStateChanged extends FocusEvent {
   final SessionState sessionState;
   _SessionStateChanged(this.sessionState);
