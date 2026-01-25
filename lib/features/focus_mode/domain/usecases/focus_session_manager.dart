@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:injectable/injectable.dart';
-import 'package:focus_flow/domain/entities/phone_orientation.dart';
-import 'package:focus_flow/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/repositories/i_audio_manager.dart';
-import 'package:focus_flow/data/services/sensor_service.dart';
-import 'package:focus_flow/data/services/timer_service.dart';
-import 'package:focus_flow/data/services/haptic_feedback_service.dart';
+import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
+import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
+import 'package:focus_flow/core/services/haptic/haptic_feedback_service.dart';
+import 'package:focus_flow/core/services/sensors/sensor_service.dart';
+import 'package:focus_flow/features/focus_mode/data/datasources/timer_service.dart';
 
 // Definimos un estado interno simple para el manager
 class SessionState {

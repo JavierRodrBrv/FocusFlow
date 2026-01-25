@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:focus_flow/domain/entities/phone_orientation.dart';
-import 'package:focus_flow/domain/entities/pomodoro_status.dart';
+import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
+import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/usecases/focus_session_manager.dart';
 import 'package:injectable/injectable.dart';
-import 'package:focus_flow/domain/repositories/premium_repository.dart';
+import 'package:focus_flow/features/premium/domain/repositories/premium_repository.dart';
 
 part 'focus_event.dart';
 part 'focus_state.dart';
@@ -20,7 +20,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   FocusBloc(
     this._premiumRepository,
     this._sessionManager,
-  ) : super(const FocusState()) {
+  ) : super(FocusState.initial()) {
     print('[FocusBloc] Created (Refactored)');
     _registerEventHandlers();
     
@@ -77,8 +77,6 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
       isInPenaltyBox: s.isInPenalty,
       phoneOrientation: s.orientation,
       isHardcoreMode: s.isHardcore,
-      // Nota: volumes se manejan en el servicio, no necesitamos reflejarlos en el estado del BLoC
-      // a menos que la UI necesite leerlos inicialmente.
     ));
   }
 

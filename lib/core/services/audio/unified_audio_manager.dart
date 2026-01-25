@@ -1,7 +1,7 @@
+import 'package:focus_flow/core/services/audio/sound_effect_service.dart';
+import 'package:focus_flow/core/services/audio/sound_mixer_service.dart';
 import 'package:injectable/injectable.dart';
 import 'package:focus_flow/features/focus_mode/domain/repositories/i_audio_manager.dart';
-import 'package:focus_flow/data/services/sound_mixer_service.dart';
-import 'package:focus_flow/data/services/sound_effect_service.dart';
 
 @LazySingleton(as: IAudioManager)
 class UnifiedAudioManager implements IAudioManager {

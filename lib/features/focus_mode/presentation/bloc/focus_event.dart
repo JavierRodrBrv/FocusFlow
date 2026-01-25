@@ -1,4 +1,3 @@
-
 part of 'focus_bloc.dart';
 
 sealed class FocusEvent {}
@@ -7,7 +6,7 @@ class InitializeApp extends FocusEvent {}
 
 class TogglePremiumStatus extends FocusEvent {}
 
-// Sound Mixer Events
+// Audio Events
 class UpdateRainVolume extends FocusEvent {
   final double volume;
   UpdateRainVolume(this.volume);
@@ -23,25 +22,14 @@ class UpdateBrownNoiseVolume extends FocusEvent {
   UpdateBrownNoiseVolume(this.volume);
 }
 
-// Hardcore Mode Events
+// Timer & Focus Events
 class ToggleHardcoreMode extends FocusEvent {}
 
-class _PhoneOrientationChanged extends FocusEvent {
-  final PhoneOrientation orientation;
-  _PhoneOrientationChanged(this.orientation);
-}
-
-// Pomodoro Timer Events
 class StartTimer extends FocusEvent {}
 
 class PauseTimer extends FocusEvent {}
 
 class ResetTimer extends FocusEvent {}
-
-class _TimerTicked extends FocusEvent {
-  final Duration remainingTime;
-  _TimerTicked(this.remainingTime);
-}
 
 class UpdatePomodoroDuration extends FocusEvent {
   final Duration newDuration;

@@ -1,8 +1,9 @@
 
 import 'package:hive/hive.dart';
 import 'package:injectable/injectable.dart';
-import 'package:focus_flow/data/models/premium_status.dart';
-import 'package:focus_flow/domain/repositories/premium_repository.dart';
+
+import '../../domain/repositories/premium_repository.dart';
+import '../models/premium_status.dart';
 
 const String _premiumBox = 'premiumBox';
 const String _premiumStatusKey = 'premiumStatus';

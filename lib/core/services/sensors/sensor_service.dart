@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:sensors_plus/sensors_plus.dart';
-import 'package:focus_flow/domain/entities/phone_orientation.dart';
+import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 
 @lazySingleton
 class SensorService {

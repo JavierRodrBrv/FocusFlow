@@ -4,10 +4,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:focus_flow/app/injection.dart';
-import 'package:focus_flow/presentation/bloc/focus_bloc.dart';
+import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:focus_flow/data/models/premium_status.dart';
+import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();

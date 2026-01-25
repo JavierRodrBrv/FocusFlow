@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/bootstrap.dart';
-import 'package:focus_flow/presentation/pages/home_page.dart';
+import 'package:focus_flow/features/focus_mode/presentation/pages/focus_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
@@ -29,7 +29,7 @@ class App extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const HomePage(),
+      home: const FocusPage(),
     );
   }
 }

@@ -1,4 +1,3 @@
-
 part of 'focus_bloc.dart';
 
 enum AppStatus { initial, loading, loaded, error }
@@ -23,7 +22,6 @@ class FocusState {
   final Duration remainingTime;
   final Duration pomodoroDuration;
 
-
   const FocusState({
     this.status = AppStatus.initial,
     this.isPremium = false,
@@ -38,6 +36,8 @@ class FocusState {
     this.remainingTime = const Duration(minutes: 25),
     this.pomodoroDuration = const Duration(minutes: 25),
   });
+
+  factory FocusState.initial() => const FocusState();
 
   FocusState copyWith({
     AppStatus? status,
@@ -69,7 +69,6 @@ class FocusState {
     );
   }
 
-  // Methods for serialization
   Map<String, dynamic> toJson() {
     return {
       'status': status.index,
