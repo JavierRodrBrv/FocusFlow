@@ -10,8 +10,21 @@ import 'package:focus_flow/features/focus_mode/presentation/widgets/hardcore_mod
 
 import '../bloc/focus_bloc.dart';
 
-class FocusPage extends StatelessWidget {
+class FocusPage extends StatefulWidget {
   const FocusPage({super.key});
+
+  @override
+  State<FocusPage> createState() => _FocusPageState();
+}
+
+class _FocusPageState extends State<FocusPage> {
+  @override
+  void initState() {
+    super.initState();
+    // HANDSHAKE: Pedir estado activamente al iniciar
+    print('[FocusPage] Requesting initial state...');
+    FlutterBackgroundService().invoke('sendEvent', {'event': 'requestState'});
+  }
 
   @override
   Widget build(BuildContext context) {

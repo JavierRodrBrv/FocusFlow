@@ -36,91 +36,125 @@ Future<void> initializeService() async {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
+  // 1. Bindings críticos primero
+  WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
-  WidgetsFlutterBinding.ensureInitialized(); // Necessary for path_provider
 
-  // Configurar para Android
+  print('[BackgroundService] Starting (Optimized)...');
+
+  // Configuración de plataforma
   if (service is AndroidServiceInstance) {
-    service.on('setAsForeground').listen((event) {
-      service.setAsForegroundService();
-    });
-
-    service.on('setAsBackground').listen((event) {
-      service.setAsBackgroundService();
-    });
+    service.on('setAsForeground').listen((event) => service.setAsForegroundService());
+    service.on('setAsBackground').listen((event) => service.setAsBackgroundService());
   }
+  service.on('stopSelf').listen((event) => service.stopSelf());
 
-  service.on('stopSelf').listen((event) {
-    service.stopSelf();
-  });
+  // Variables de estado local (para responder antes de tener el BLoC)
+  FocusBloc? bloc;
+  bool isInitializing = true;
+  bool initFailed = false;
 
-  // --- El núcleo de la lógica de fondo ---
-  
-  // 0. Inicializar Hive para este Isolate
-  try {
-    final appDocumentDir = await getApplicationDocumentsDirectory();
-    await Hive.initFlutter(appDocumentDir.path);
-    Hive.registerAdapter(PremiumStatusAdapter());
-    print('[BackgroundService] Hive Initialized.');
-  } catch (e) {
-    print('[BackgroundService] Error initializing Hive: $e');
-  }
-
-  // 1. Inicializar GetIt para este Isolate
-  await configureDependencies();
-
-  // 2. Obtener la instancia del BLoC
-  final bloc = getIt<FocusBloc>();
-  // Enviar el estado inicial a la UI por si se conecta tarde
-  service.invoke('update', bloc.state.toJson());
-
-  // 3. Escuchar cambios en el estado del BLoC y enviarlos a la UI
-  bloc.stream.listen((state) {
-    service.invoke('update', state.toJson());
-  });
-
-  // 4. Escuchar eventos que llegan desde la UI
+  // 2. CONFIGURAR LISTENERS INMEDIATAMENTE (Para que la UI pueda preguntar)
   service.on('sendEvent').listen((event) {
     if (event == null) return;
-
     final eventName = event['event'];
-    print('[BackgroundService] Received event: $eventName');
+    
+    // HANDSHAKE: La UI pide estado. Respondemos lo que tengamos.
+    if (eventName == 'requestState') {
+      print('[BackgroundService] UI requested state. Sending...');
+      if (bloc != null) {
+        service.invoke('update', bloc!.state.toJson());
+      } else if (initFailed) {
+        service.invoke('update', _getErrorStateJson());
+      } else {
+        service.invoke('update', _getLoadingStateJson());
+      }
+      return;
+    }
 
-    switch (eventName) {
-      case 'startTimer':
-        bloc.add(StartTimer());
-        break;
-      case 'pauseTimer':
-        bloc.add(PauseTimer());
-        break;
-      case 'resetTimer':
-        bloc.add(ResetTimer());
-        break;
-      case 'toggleHardcore':
-        bloc.add(ToggleHardcoreMode());
-        break;
-      case 'updatePomodoroDuration':
-         final duration = Duration(minutes: event['durationMinutes']);
-         bloc.add(UpdatePomodoroDuration(duration));
-        break;
-      case 'updateRainVolume':
-        bloc.add(UpdateRainVolume(event['volume']));
-        break;
-      case 'updateFireVolume':
-        bloc.add(UpdateFireVolume(event['volume']));
-        break;
-      case 'updateBrownNoiseVolume':
-        bloc.add(UpdateBrownNoiseVolume(event['volume']));
-        break;
-      default:
-        print('[BackgroundService] Unknown event: $eventName');
+    // Si no tenemos BLoC aún, ignoramos otros comandos
+    if (bloc == null) {
+      print('[BackgroundService] Ignoring $eventName (Not ready)');
+      return;
+    }
+
+    try {
+      switch (eventName) {
+        case 'startTimer': bloc!.add(StartTimer()); break;
+        case 'pauseTimer': bloc!.add(PauseTimer()); break;
+        case 'resetTimer': bloc!.add(ResetTimer()); break;
+        case 'toggleHardcore': bloc!.add(ToggleHardcoreMode()); break;
+        case 'updatePomodoroDuration':
+           final duration = Duration(minutes: event['durationMinutes']);
+           bloc!.add(UpdatePomodoroDuration(duration));
+          break;
+        case 'updateRainVolume': bloc!.add(UpdateRainVolume(event['volume'])); break;
+        case 'updateFireVolume': bloc!.add(UpdateFireVolume(event['volume'])); break;
+        case 'updateBrownNoiseVolume': bloc!.add(UpdateBrownNoiseVolume(event['volume'])); break;
+        default: print('[BackgroundService] Unknown event: $eventName');
+      }
+    } catch (e) {
+      print('[BackgroundService] Error handling event $eventName: $e');
     }
   });
 
-  // El BLoC se inicializa automáticamente al crearse,
-  // pero lo disparamos de nuevo para asegurar que todo esté correcto.
-  bloc.add(InitializeApp());
+  // Notificar carga inicial
+  service.invoke('update', _getLoadingStateJson());
+
+  // 3. Inicialización Pesada (Ahora sí)
+  try {
+    print('[BackgroundService] Initializing Hive...');
+    final appDocumentDir = await getApplicationDocumentsDirectory();
+    await Hive.initFlutter(appDocumentDir.path);
+    
+    try {
+      if (!Hive.isAdapterRegistered(0)) {
+         Hive.registerAdapter(PremiumStatusAdapter());
+      }
+    } catch (e) {
+      print('[BackgroundService] Hive Adapter warning: $e');
+    }
+
+    print('[BackgroundService] Configuring Dependencies...');
+    await configureDependencies();
+
+    print('[BackgroundService] Getting FocusBloc...');
+    bloc = getIt<FocusBloc>();
+    isInitializing = false;
+    
+    // Suscribirse y notificar estado real
+    bloc!.stream.listen((state) {
+      service.invoke('update', state.toJson());
+    });
+    
+    print('[BackgroundService] Ready. Triggering Logic...');
+    bloc!.add(InitializeApp());
+    // Forzar envío del estado inicial del BLoC
+    service.invoke('update', bloc!.state.toJson());
+
+  } catch (e, stackTrace) {
+    print('[BackgroundService] FATAL ERROR: $e');
+    print(stackTrace);
+    initFailed = true;
+    isInitializing = false;
+    service.invoke('update', _getErrorStateJson());
+  }
 }
+
+// Helpers para estados dummy
+Map<String, dynamic> _getLoadingStateJson() => {
+  'status': 1, // AppStatus.loading
+  'isPremium': false, 'canRequestAds': false, 'rainVolume': 0.5, 'fireVolume': 0.0, 'brownNoiseVolume': 0.0,
+  'isHardcoreMode': false, 'phoneOrientation': 2, 'isInPenaltyBox': false,
+  'pomodoroStatus': 0, 'remainingTime': 1500, 'pomodoroDuration': 1500,
+};
+
+Map<String, dynamic> _getErrorStateJson() => {
+  'status': 3, // AppStatus.error
+  'isPremium': false, 'canRequestAds': false, 'rainVolume': 0.0, 'fireVolume': 0.0, 'brownNoiseVolume': 0.0,
+  'isHardcoreMode': false, 'phoneOrientation': 2, 'isInPenaltyBox': false,
+  'pomodoroStatus': 0, 'remainingTime': 1500, 'pomodoroDuration': 1500,
+};
 
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
