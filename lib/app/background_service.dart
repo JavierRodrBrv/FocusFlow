@@ -88,10 +88,13 @@ void onStart(ServiceInstance service) async {
                      final duration = Duration(minutes: event['durationMinutes']);
                      bloc!.add(UpdatePomodoroDuration(duration));
                     break;
-                  case 'updateConsentStatus':
-                    bloc!.add(UpdateConsentStatus(event['canRequest']));
-                    break;
-                  case 'updateRainVolume': bloc!.add(UpdateRainVolume(event['volume'])); break;        case 'updateFireVolume': bloc!.add(UpdateFireVolume(event['volume'])); break;
+                            case 'updateConsentStatus':
+                              bloc!.add(UpdateConsentStatus(event['canRequest']));
+                              break;
+                            case 'togglePremium':
+                              bloc!.add(TogglePremiumStatus());
+                              break;
+                            case 'updateRainVolume': bloc!.add(UpdateRainVolume(event['volume'])); break;        case 'updateFireVolume': bloc!.add(UpdateFireVolume(event['volume'])); break;
         case 'updateBrownNoiseVolume': bloc!.add(UpdateBrownNoiseVolume(event['volume'])); break;
         default: print('[BackgroundService] Unknown event: $eventName');
       }

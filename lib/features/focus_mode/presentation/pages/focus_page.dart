@@ -71,6 +71,18 @@ class _FocusPageState extends State<FocusPage> {
             backgroundColor: Colors.transparent,
             centerTitle: true,
             elevation: 0,
+            actions: [
+              IconButton(
+                icon: Icon(
+                  state.isPremium ? Icons.workspace_premium : Icons.workspace_premium_outlined,
+                  color: state.isPremium ? Colors.amber : Colors.white70,
+                ),
+                tooltip: 'Simular Premium',
+                onPressed: () {
+                  FlutterBackgroundService().invoke('sendEvent', {'event': 'togglePremium'});
+                },
+              ),
+            ],
           ),
           body: _buildBody(context, state),
         );
