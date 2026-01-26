@@ -18,8 +18,12 @@ import '../core/services/audio/unified_audio_manager.dart' as _i171;
 import '../core/services/haptic/haptic_feedback_service.dart' as _i182;
 import '../core/services/sensors/sensor_service.dart' as _i350;
 import '../features/focus_mode/data/datasources/timer_service.dart' as _i150;
+import '../features/focus_mode/data/repositories/sound_mix_repository_impl.dart'
+    as _i910;
 import '../features/focus_mode/domain/repositories/i_audio_manager.dart'
     as _i507;
+import '../features/focus_mode/domain/repositories/sound_mix_repository.dart'
+    as _i72;
 import '../features/focus_mode/domain/usecases/focus_session_manager.dart'
     as _i582;
 import '../features/focus_mode/presentation/bloc/focus_bloc.dart' as _i176;
@@ -59,6 +63,8 @@ Future<_i174.GetIt> $initGetIt(
     () => hiveModule.premiumBox,
     preResolve: true,
   );
+  gh.lazySingleton<_i72.SoundMixRepository>(
+      () => _i910.SoundMixRepositoryImpl());
   gh.lazySingleton<_i507.IAudioManager>(() => _i171.UnifiedAudioManager(
         gh<_i582.SoundMixerService>(),
         gh<_i48.SoundEffectService>(),
@@ -74,6 +80,7 @@ Future<_i174.GetIt> $initGetIt(
   gh.factory<_i176.FocusBloc>(() => _i176.FocusBloc(
         gh<_i843.PremiumRepository>(),
         gh<_i582.FocusSessionManager>(),
+        gh<_i72.SoundMixRepository>(),
       ));
   return getIt;
 }

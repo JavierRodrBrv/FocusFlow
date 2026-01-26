@@ -9,6 +9,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 
+import '../features/focus_mode/data/models/sound_mix_model.dart';
+
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
 
@@ -94,6 +96,15 @@ void onStart(ServiceInstance service) async {
                             case 'togglePremium':
                               bloc!.add(TogglePremiumStatus());
                               break;
+                            case 'saveMix':
+                              bloc!.add(SaveCurrentMix());
+                              break;
+                            case 'playSavedMix':
+                              bloc!.add(PlaySavedMix());
+                              break;
+                            case 'pauseMix':
+                              bloc!.add(PauseMix());
+                              break;
                             case 'updateRainVolume': bloc!.add(UpdateRainVolume(event['volume'])); break;        case 'updateFireVolume': bloc!.add(UpdateFireVolume(event['volume'])); break;
         case 'updateBrownNoiseVolume': bloc!.add(UpdateBrownNoiseVolume(event['volume'])); break;
         default: print('[BackgroundService] Unknown event: $eventName');
@@ -115,6 +126,9 @@ void onStart(ServiceInstance service) async {
     try {
       if (!Hive.isAdapterRegistered(0)) {
          Hive.registerAdapter(PremiumStatusAdapter());
+      }
+      if (!Hive.isAdapterRegistered(1)) {
+         Hive.registerAdapter(SoundMixModelAdapter());
       }
     } catch (e) {
       print('[BackgroundService] Hive Adapter warning: $e');

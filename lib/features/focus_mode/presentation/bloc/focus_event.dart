@@ -22,6 +22,12 @@ class UpdateBrownNoiseVolume extends FocusEvent {
   UpdateBrownNoiseVolume(this.volume);
 }
 
+class SaveCurrentMix extends FocusEvent {}
+
+class PlaySavedMix extends FocusEvent {}
+
+class PauseMix extends FocusEvent {}
+
 // Timer & Focus Events
 class ToggleHardcoreMode extends FocusEvent {}
 

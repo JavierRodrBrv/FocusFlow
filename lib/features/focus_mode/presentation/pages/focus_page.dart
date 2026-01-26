@@ -7,6 +7,7 @@ import 'package:focus_flow/features/premium/presentation/utils/ad_consent_manage
 import '../../../premium/presentation/widgets/ad_banner_widget.dart';
 import '../bloc/focus_bloc.dart';
 import '../widgets/sound_mixer.dart';
+import '../widgets/saved_mix_player.dart';
 import '../widgets/timer_controls.dart';
 import '../widgets/timer_display.dart';
 
@@ -117,6 +118,8 @@ class _FocusPageState extends State<FocusPage> {
               
               SoundMixer(state: state, service: service),
               const SizedBox(height: 40),
+
+              SavedMixPlayer(state: state, service: service),
               
               HardcoreModeCard(state: state, service: service),
               

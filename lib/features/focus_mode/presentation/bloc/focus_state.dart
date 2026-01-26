@@ -6,6 +6,8 @@ class FocusState {
   final AppStatus status;
   final bool isPremium;
   final bool canRequestAds;
+  final bool hasSavedMix;
+  final bool isPlayingMix;
 
   // Sound Mixer State
   final double rainVolume;
@@ -26,7 +28,9 @@ class FocusState {
     this.status = AppStatus.initial,
     this.isPremium = false,
     this.canRequestAds = false,
-    this.rainVolume = 0.5,
+    this.hasSavedMix = false,
+    this.isPlayingMix = false,
+    this.rainVolume = 0.0,
     this.fireVolume = 0.0,
     this.brownNoiseVolume = 0.0,
     this.isHardcoreMode = false,
@@ -43,6 +47,8 @@ class FocusState {
     AppStatus? status,
     bool? isPremium,
     bool? canRequestAds,
+    bool? hasSavedMix,
+    bool? isPlayingMix,
     double? rainVolume,
     double? fireVolume,
     double? brownNoiseVolume,
@@ -57,6 +63,8 @@ class FocusState {
       status: status ?? this.status,
       isPremium: isPremium ?? this.isPremium,
       canRequestAds: canRequestAds ?? this.canRequestAds,
+      hasSavedMix: hasSavedMix ?? this.hasSavedMix,
+      isPlayingMix: isPlayingMix ?? this.isPlayingMix,
       rainVolume: rainVolume ?? this.rainVolume,
       fireVolume: fireVolume ?? this.fireVolume,
       brownNoiseVolume: brownNoiseVolume ?? this.brownNoiseVolume,
@@ -74,6 +82,8 @@ class FocusState {
       'status': status.index,
       'isPremium': isPremium,
       'canRequestAds': canRequestAds,
+      'hasSavedMix': hasSavedMix,
+      'isPlayingMix': isPlayingMix,
       'rainVolume': rainVolume,
       'fireVolume': fireVolume,
       'brownNoiseVolume': brownNoiseVolume,
@@ -91,7 +101,9 @@ class FocusState {
       status: AppStatus.values[json['status'] ?? 0],
       isPremium: json['isPremium'] ?? false,
       canRequestAds: json['canRequestAds'] ?? false,
-      rainVolume: (json['rainVolume'] as num?)?.toDouble() ?? 0.5,
+      hasSavedMix: json['hasSavedMix'] ?? false,
+      isPlayingMix: json['isPlayingMix'] ?? false,
+      rainVolume: (json['rainVolume'] as num?)?.toDouble() ?? 0.0,
       fireVolume: (json['fireVolume'] as num?)?.toDouble() ?? 0.0,
       brownNoiseVolume: (json['brownNoiseVolume'] as num?)?.toDouble() ?? 0.0,
       isHardcoreMode: json['isHardcoreMode'] ?? false,
