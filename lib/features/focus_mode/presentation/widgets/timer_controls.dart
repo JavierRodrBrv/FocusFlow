@@ -73,8 +73,24 @@ class TimerControls extends StatelessWidget {
         
         const SizedBox(width: 20),
         
-        // Placeholder for future Skip/Next button (to maintain symmetry)
-        const SizedBox(width: 46), // Adjusted width to match Reset button + padding
+        // Set to Default (20 min) Button
+        BouncingButton(
+          child: IconButton(
+            icon: const Icon(Icons.restore),
+            iconSize: 30,
+            color: Colors.white,
+            tooltip: 'Restablecer a 20 min',
+            onPressed: () {
+              // Primero reiniciamos el estado para asegurar que se pueda cambiar el tiempo
+              service.invoke('sendEvent', {'event': 'resetTimer'});
+              // Luego establecemos 20 minutos
+              service.invoke('sendEvent', {
+                'event': 'updatePomodoroDuration',
+                'durationMinutes': 20,
+              });
+            },
+          ),
+        ),
       ],
     );
   }

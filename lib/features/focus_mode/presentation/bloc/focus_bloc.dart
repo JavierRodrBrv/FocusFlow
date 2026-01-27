@@ -173,6 +173,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     emit(state.copyWith(
       pomodoroStatus: s.status,
       remainingTime: s.remainingTime,
+      pomodoroDuration: s.pomodoroDuration,
       isInPenaltyBox: s.isInPenalty,
       phoneOrientation: s.orientation,
       isHardcoreMode: s.isHardcore,

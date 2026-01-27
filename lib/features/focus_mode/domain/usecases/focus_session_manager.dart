@@ -11,6 +11,7 @@ import 'package:focus_flow/features/focus_mode/data/datasources/timer_service.da
 class SessionState {
   final PomodoroStatus status;
   final Duration remainingTime;
+  final Duration pomodoroDuration; // Añadido
   final bool isInPenalty;
   final PhoneOrientation orientation;
   final bool isHardcore;
@@ -18,6 +19,7 @@ class SessionState {
   SessionState({
     required this.status,
     required this.remainingTime,
+    required this.pomodoroDuration,
     required this.isInPenalty,
     required this.orientation,
     required this.isHardcore,
@@ -26,6 +28,7 @@ class SessionState {
   factory SessionState.initial() => SessionState(
     status: PomodoroStatus.initial,
     remainingTime: const Duration(minutes: 25),
+    pomodoroDuration: const Duration(minutes: 25),
     isInPenalty: false,
     orientation: PhoneOrientation.unknown,
     isHardcore: false,
@@ -172,6 +175,7 @@ class FocusSessionManager {
     _stateController.add(SessionState(
       status: _status,
       remainingTime: _remainingTime,
+      pomodoroDuration: _duration,
       isInPenalty: _isInPenalty,
       orientation: _orientation,
       isHardcore: _isHardcore,
