@@ -26,6 +26,10 @@ import '../features/focus_mode/domain/repositories/sound_mix_repository.dart'
     as _i72;
 import '../features/focus_mode/domain/usecases/focus_session_manager.dart'
     as _i582;
+import '../features/focus_mode/domain/usecases/get_saved_mixes_usecase.dart'
+    as _i438;
+import '../features/focus_mode/domain/usecases/save_sound_mix_usecase.dart'
+    as _i676;
 import '../features/focus_mode/presentation/bloc/focus_bloc.dart' as _i176;
 import '../features/premium/data/models/premium_status.dart' as _i434;
 import '../features/premium/data/repositories/premium_repository_impl.dart'
@@ -69,6 +73,10 @@ Future<_i174.GetIt> $initGetIt(
         gh<_i582.SoundMixerService>(),
         gh<_i48.SoundEffectService>(),
       ));
+  gh.factory<_i438.GetSavedMixesUseCase>(
+      () => _i438.GetSavedMixesUseCase(gh<_i72.SoundMixRepository>()));
+  gh.factory<_i676.SaveSoundMixUseCase>(
+      () => _i676.SaveSoundMixUseCase(gh<_i72.SoundMixRepository>()));
   gh.lazySingleton<_i843.PremiumRepository>(
       () => _i380.PremiumRepositoryImpl(gh<_i979.Box<_i434.PremiumStatus>>()));
   gh.lazySingleton<_i582.FocusSessionManager>(() => _i582.FocusSessionManager(
@@ -80,7 +88,8 @@ Future<_i174.GetIt> $initGetIt(
   gh.factory<_i176.FocusBloc>(() => _i176.FocusBloc(
         gh<_i843.PremiumRepository>(),
         gh<_i582.FocusSessionManager>(),
-        gh<_i72.SoundMixRepository>(),
+        gh<_i676.SaveSoundMixUseCase>(),
+        gh<_i438.GetSavedMixesUseCase>(),
       ));
   return getIt;
 }

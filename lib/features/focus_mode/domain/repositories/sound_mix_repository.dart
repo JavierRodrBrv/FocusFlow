@@ -1,7 +1,9 @@
-import '../../data/models/sound_mix_model.dart';
+import 'package:focus_flow/core/domain/result.dart';
+import 'package:focus_flow/core/error/failures.dart';
+import '../entities/sound_mix.dart';
 
 abstract class SoundMixRepository {
-  Future<void> saveMix(SoundMixModel mix);
-  Future<List<SoundMixModel>> getSavedMixes();
-  Future<void> deleteMix(int index);
+  Future<Result<void, Failure>> saveMix(SoundMix mix);
+  Future<Result<List<SoundMix>, Failure>> getSavedMixes();
+  Future<Result<void, Failure>> deleteMix(String id);
 }

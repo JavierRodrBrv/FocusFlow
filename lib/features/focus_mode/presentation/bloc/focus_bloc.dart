@@ -1,14 +1,17 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:focus_flow/core/domain/result.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
+import 'package:focus_flow/core/error/failures.dart';
+import 'package:focus_flow/core/usecases/usecase.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
+import 'package:focus_flow/features/focus_mode/domain/entities/sound_mix.dart';
 import 'package:focus_flow/features/focus_mode/domain/usecases/focus_session_manager.dart';
+import 'package:focus_flow/features/focus_mode/domain/usecases/get_saved_mixes_usecase.dart';
+import 'package:focus_flow/features/focus_mode/domain/usecases/save_sound_mix_usecase.dart';
 import 'package:injectable/injectable.dart';
 import 'package:focus_flow/features/premium/domain/repositories/premium_repository.dart';
-
-import 'package:focus_flow/features/focus_mode/data/models/sound_mix_model.dart';
-import 'package:focus_flow/features/focus_mode/domain/repositories/sound_mix_repository.dart';
 
 part 'focus_event.dart';
 part 'focus_state.dart';
@@ -17,19 +20,19 @@ part 'focus_state.dart';
 class FocusBloc extends Bloc<FocusEvent, FocusState> {
   final PremiumRepository _premiumRepository;
   final FocusSessionManager _sessionManager;
-  final SoundMixRepository _soundMixRepository;
+  final SaveSoundMixUseCase _saveSoundMixUseCase;
+  final GetSavedMixesUseCase _getSavedMixesUseCase;
   
   StreamSubscription? _sessionSubscription;
 
   FocusBloc(
     this._premiumRepository,
     this._sessionManager,
-    this._soundMixRepository,
+    this._saveSoundMixUseCase,
+    this._getSavedMixesUseCase,
   ) : super(FocusState.initial()) {
-    print('[FocusBloc] Created (Refactored)');
     _registerEventHandlers();
     
-    // Escuchar cambios del Manager
     _sessionSubscription = _sessionManager.stateStream.listen((sessionState) {
       add(_SessionStateChanged(sessionState));
     });
@@ -39,7 +42,6 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     on<InitializeApp>(_onInitializeApp);
     on<TogglePremiumStatus>(_onTogglePremiumStatus);
     
-    // Audio Delegation
     on<UpdateRainVolume>((e, emit) {
       _sessionManager.updateRainVolume(e.volume);
       emit(state.copyWith(rainVolume: e.volume, isPlayingMix: false));
@@ -53,7 +55,6 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
       emit(state.copyWith(brownNoiseVolume: e.volume, isPlayingMix: false));
     });
     
-    // Timer & Focus Delegation
     on<ToggleHardcoreMode>((e, emit) => _sessionManager.toggleHardcore());
     on<StartTimer>((e, emit) => _sessionManager.startTimer());
     on<PauseTimer>((e, emit) => _sessionManager.pauseTimer());
@@ -61,45 +62,52 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     on<UpdatePomodoroDuration>((e, emit) => _sessionManager.setDuration(e.newDuration));
     on<UpdateConsentStatus>((e, emit) => emit(state.copyWith(canRequestAds: e.canRequestAds)));
     
-    // Persistence
     on<SaveCurrentMix>(_onSaveCurrentMix);
     on<PlaySavedMix>(_onPlaySavedMix);
     on<PauseMix>(_onPauseMix);
     
-    // Internal State Update
     on<_SessionStateChanged>(_onSessionStateChanged);
   }
 
   Future<void> _onSaveCurrentMix(SaveCurrentMix event, Emitter<FocusState> emit) async {
     if (!state.isPremium) return;
     
-    final mix = SoundMixModel(
+    final mix = SoundMix(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       rainVolume: state.rainVolume,
       fireVolume: state.fireVolume,
       brownNoiseVolume: state.brownNoiseVolume,
-      name: 'Mi Mezcla ${DateTime.now().hour}:${DateTime.now().minute}',
+      name: 'Mezcla ${DateTime.now().hour}:${DateTime.now().minute}',
       createdAt: DateTime.now(),
     );
     
-    await _soundMixRepository.saveMix(mix);
-    emit(state.copyWith(hasSavedMix: true));
-    print('[FocusBloc] Mix saved successfully: ${mix.name}');
+    final result = await _saveSoundMixUseCase(mix);
+    
+    if (result is Success<void, Failure>) {
+      emit(state.copyWith(hasSavedMix: true));
+    } else if (result is Error<void, Failure>) {
+      emit(state.copyWith(status: AppStatus.error));
+    }
   }
 
   Future<void> _onPlaySavedMix(PlaySavedMix event, Emitter<FocusState> emit) async {
-    final savedMixes = await _soundMixRepository.getSavedMixes();
-    if (savedMixes.isNotEmpty) {
-      final lastMix = savedMixes.last;
-      _sessionManager.updateRainVolume(lastMix.rainVolume);
-      _sessionManager.updateFireVolume(lastMix.fireVolume);
-      _sessionManager.updateBrownNoiseVolume(lastMix.brownNoiseVolume);
-      
-      emit(state.copyWith(
-        rainVolume: lastMix.rainVolume,
-        fireVolume: lastMix.fireVolume,
-        brownNoiseVolume: lastMix.brownNoiseVolume,
-        isPlayingMix: true,
-      ));
+    final result = await _getSavedMixesUseCase(NoParams());
+    
+    if (result is Success<List<SoundMix>, Failure>) {
+      final savedMixes = result.value;
+      if (savedMixes.isNotEmpty) {
+        final lastMix = savedMixes.last;
+        _sessionManager.updateRainVolume(lastMix.rainVolume);
+        _sessionManager.updateFireVolume(lastMix.fireVolume);
+        _sessionManager.updateBrownNoiseVolume(lastMix.brownNoiseVolume);
+        
+        emit(state.copyWith(
+          rainVolume: lastMix.rainVolume,
+          fireVolume: lastMix.fireVolume,
+          brownNoiseVolume: lastMix.brownNoiseVolume,
+          isPlayingMix: true,
+        ));
+      }
     }
   }
 
@@ -116,44 +124,40 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     ));
   }
 
-
   Future<void> _onInitializeApp(InitializeApp event, Emitter<FocusState> emit) async {
-    print('[FocusBloc] Initializing via Manager...');
     emit(state.copyWith(status: AppStatus.loading));
     try {
       _sessionManager.init();
       final isPremium = await _premiumRepository.isPremium();
       
-      // Load saved mix logic
-      final savedMixes = await _soundMixRepository.getSavedMixes();
+      final mixesResult = await _getSavedMixesUseCase(NoParams());
       double rain = 0.0, fire = 0.0, brown = 0.0;
       bool hasSaved = false;
       
-      if (savedMixes.isNotEmpty) {
-        hasSaved = true;
-        final lastMix = savedMixes.last;
-        rain = lastMix.rainVolume;
-        fire = lastMix.fireVolume;
-        brown = lastMix.brownNoiseVolume;
-        
-        // Apply to Audio Manager
-        _sessionManager.updateRainVolume(rain);
-        _sessionManager.updateFireVolume(fire);
-        _sessionManager.updateBrownNoiseVolume(brown);
-        print('[FocusBloc] Restored saved mix: ${lastMix.name}');
+      if (mixesResult is Success<List<SoundMix>, Failure>) {
+        final savedMixes = mixesResult.value;
+        if (savedMixes.isNotEmpty) {
+          hasSaved = true;
+          final lastMix = savedMixes.last;
+          rain = lastMix.rainVolume;
+          fire = lastMix.fireVolume;
+          brown = lastMix.brownNoiseVolume;
+          
+          _sessionManager.updateRainVolume(rain);
+          _sessionManager.updateFireVolume(fire);
+          _sessionManager.updateBrownNoiseVolume(brown);
+        }
       }
 
       emit(state.copyWith(
         status: AppStatus.loaded,
         isPremium: isPremium,
-        canRequestAds: false,
         hasSavedMix: hasSaved,
         rainVolume: rain,
         fireVolume: fire,
         brownNoiseVolume: brown,
       ));
     } catch (e) {
-      print('[FocusBloc] Initialization Error: $e');
       emit(state.copyWith(status: AppStatus.error));
     }
   }
