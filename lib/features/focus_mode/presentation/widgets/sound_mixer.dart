@@ -153,21 +153,35 @@ class _MixerSliderState extends State<_MixerSlider> {
     return Row(
       children: [
         Tooltip(
-            message: widget.label,
-            child: Icon(widget.icon, color: Colors.white.withOpacity(0.8))),
+          message: widget.label,
+          child: Icon(widget.icon, color: Colors.white.withValues(alpha: 0.8)),
+        ),
         const SizedBox(width: 16),
         Expanded(
-          child: Slider(
-            value: _currentValue,
-            min: 0.0,
-            max: 1.0,
-            activeColor: Colors.blueAccent,
-            inactiveColor: Colors.white10,
-            onChangeStart: (_) => _isDragging = true,
-            onChangeEnd: (_) => _isDragging = false,
-            onChanged: (val) {
-              setState(() => _currentValue = val);
-              widget.onChanged(val);
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: _currentValue, end: _currentValue),
+            duration: _isDragging ? Duration.zero : const Duration(milliseconds: 450),
+            curve: Curves.easeOutCubic,
+            builder: (context, animatedValue, child) {
+              return Slider(
+                value: animatedValue,
+                min: 0.0,
+                max: 1.0,
+                activeColor: Colors.blueAccent,
+                inactiveColor: Colors.white10,
+                onChangeStart: (_) {
+                  setState(() => _isDragging = true);
+                },
+                onChangeEnd: (_) {
+                  setState(() => _isDragging = false);
+                },
+                onChanged: (val) {
+                  // Actualizamos estado local inmediatamente para respuesta táctil
+                  setState(() => _currentValue = val);
+                  // Notificamos al servicio
+                  widget.onChanged(val);
+                },
+              );
             },
           ),
         ),

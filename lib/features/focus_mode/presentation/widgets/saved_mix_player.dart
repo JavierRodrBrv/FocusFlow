@@ -6,11 +6,7 @@ class SavedMixPlayer extends StatefulWidget {
   final FocusState state;
   final FlutterBackgroundService service;
 
-  const SavedMixPlayer({
-    super.key,
-    required this.state,
-    required this.service,
-  });
+  const SavedMixPlayer({super.key, required this.state, required this.service});
 
   @override
   State<SavedMixPlayer> createState() => _SavedMixPlayerState();
@@ -60,106 +56,130 @@ class _SavedMixPlayerState extends State<SavedMixPlayer>
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 40.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.queue_music, size: 20, color: Colors.white70),
-              const SizedBox(width: 8),
-              Text(
-                'Tu Mezcla Guardada',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w600,
-                    ),
+
+      child: InkWell(
+        onTap: () {
+          widget.service.invoke('sendEvent', {
+            'event': isPlaying ? 'pauseMix' : 'playSavedMix',
+          });
+
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   SnackBar(
+          //     content: Text(
+          //       isPlaying
+          //           ? 'Mezcla pausada.'
+          //           : 'Reproduciendo tu mezcla guardada...',
+          //     ),
+          //
+          //     duration: const Duration(seconds: 2),
+          //
+          //     behavior: SnackBarBehavior.floating,
+          //   ),
+          // );
+        },
+
+        borderRadius: BorderRadius.circular(16),
+
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+
+          curve: Curves.easeInOut,
+
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isPlaying
+                  ? [Colors.orange.shade900, Colors.deepOrange.shade900]
+                  : [Colors.indigo.shade900, Colors.blue.shade900],
+
+              begin: Alignment.topLeft,
+
+              end: Alignment.bottomRight,
+            ),
+
+            borderRadius: BorderRadius.circular(16),
+
+            border: Border.all(
+              color: isPlaying
+                  ? Colors.orange.withValues(alpha: 0.5)
+                  : Colors.blue.withValues(alpha: 0.5),
+
+              width: 1.5,
+            ),
+
+            boxShadow: [
+              BoxShadow(
+                color: (isPlaying ? Colors.orange : Colors.blue).withValues(
+                  alpha: 0.2,
+                ),
+
+                blurRadius: 15,
+
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          InkWell(
-            onTap: () {
-              widget.service.invoke(
-                'sendEvent',
-                {'event': isPlaying ? 'pauseMix' : 'playSavedMix'},
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(isPlaying
-                      ? 'Mezcla pausada.'
-                      : 'Reproduciendo tu mezcla guardada...'),
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isPlaying
-                      ? [Colors.orange.shade900, Colors.deepOrange.shade900]
-                      : [Colors.indigo.shade900, Colors.blue.shade900],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isPlaying
-                      ? Colors.orange.withOpacity(0.5)
-                      : Colors.blue.withOpacity(0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isPlaying ? Colors.orange : Colors.blue)
-                        .withOpacity(0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+            children: [
+              Row(
                 children: [
-                  Text(
-                    isPlaying ? 'Pausar Mezcla' : 'Reproducir Mezcla',
-                    style: const TextStyle(
+                  const Icon(Icons.queue_music, size: 24, color: Colors.white),
+
+                  const SizedBox(width: 12),
+
+                  const Text(
+                    'Tu Mezcla Guardada',
+
+                    style: TextStyle(
                       color: Colors.white,
+
                       fontSize: 16,
+
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isPlaying ? Colors.deepOrange : Colors.blueAccent,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isPlaying ? Colors.deepOrange : Colors.blueAccent)
-                              .withOpacity(0.4),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: AnimatedIcon(
-                      icon: AnimatedIcons.play_pause,
-                      progress: _iconController,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
                 ],
               ),
-            ),
+
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+
+                padding: const EdgeInsets.all(8),
+
+                decoration: BoxDecoration(
+                  color: isPlaying ? Colors.deepOrange : Colors.blueAccent,
+
+                  shape: BoxShape.circle,
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isPlaying ? Colors.deepOrange : Colors.blueAccent)
+                          .withValues(alpha: 0.4),
+
+                      blurRadius: 8,
+
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+
+                child: AnimatedIcon(
+                  icon: AnimatedIcons.play_pause,
+
+                  progress: _iconController,
+
+                  color: Colors.white,
+
+                  size: 24,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
