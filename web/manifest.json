@@ -1,6 +1,6 @@
 {
-    "name": "focus_flow",
-    "short_name": "focus_flow",
+    "name": "Focus Flow",
+    "short_name": "Focus Flow",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
