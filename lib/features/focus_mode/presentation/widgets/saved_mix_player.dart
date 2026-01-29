@@ -50,7 +50,8 @@ class _SavedMixPlayerState extends State<SavedMixPlayer>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.state.hasSavedMix) return const SizedBox.shrink();
+    // Modified: Always visible
+    // if (!widget.state.hasSavedMix) return const SizedBox.shrink();
 
     final isPlaying = widget.state.isPlayingMix;
 
@@ -60,22 +61,10 @@ class _SavedMixPlayerState extends State<SavedMixPlayer>
       child: InkWell(
         onTap: () {
           widget.service.invoke('sendEvent', {
-            'event': isPlaying ? 'pauseMix' : 'playSavedMix',
+            'event': isPlaying
+                ? 'pauseMix'
+                : 'resumeMix', // Changed from playSavedMix to resumeMix
           });
-
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //   SnackBar(
-          //     content: Text(
-          //       isPlaying
-          //           ? 'Mezcla pausada.'
-          //           : 'Reproduciendo tu mezcla guardada...',
-          //     ),
-          //
-          //     duration: const Duration(seconds: 2),
-          //
-          //     behavior: SnackBarBehavior.floating,
-          //   ),
-          // );
         },
 
         borderRadius: BorderRadius.circular(16),
@@ -127,12 +116,16 @@ class _SavedMixPlayerState extends State<SavedMixPlayer>
             children: [
               Row(
                 children: [
-                  const Icon(Icons.queue_music, size: 24, color: Colors.white),
+                  const Icon(
+                    Icons.music_note,
+                    size: 24,
+                    color: Colors.white,
+                  ), // Changed icon
 
                   const SizedBox(width: 12),
 
                   const Text(
-                    'Tu Mezcla Guardada',
+                    'Reproductor', // Changed text
 
                     style: TextStyle(
                       color: Colors.white,

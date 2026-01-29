@@ -46,8 +46,12 @@ void onStart(ServiceInstance service) async {
 
   // Configuración de plataforma
   if (service is AndroidServiceInstance) {
-    service.on('setAsForeground').listen((event) => service.setAsForegroundService());
-    service.on('setAsBackground').listen((event) => service.setAsBackgroundService());
+    service
+        .on('setAsForeground')
+        .listen((event) => service.setAsForegroundService());
+    service
+        .on('setAsBackground')
+        .listen((event) => service.setAsBackgroundService());
   }
   service.on('stopSelf').listen((event) => service.stopSelf());
 
@@ -60,7 +64,7 @@ void onStart(ServiceInstance service) async {
   service.on('sendEvent').listen((event) {
     if (event == null) return;
     final eventName = event['event'];
-    
+
     // HANDSHAKE: La UI pide estado. Respondemos lo que tengamos.
     if (eventName == 'requestState') {
       print('[BackgroundService] UI requested state. Sending...');
@@ -82,32 +86,54 @@ void onStart(ServiceInstance service) async {
 
     try {
       switch (eventName) {
-        case 'startTimer': bloc!.add(StartTimer()); break;
-        case 'pauseTimer': bloc!.add(PauseTimer()); break;
-        case 'resetTimer': bloc!.add(ResetTimer()); break;
-        case 'toggleHardcore': bloc!.add(ToggleHardcoreMode()); break;
-                  case 'updatePomodoroDuration':
-                     final duration = Duration(minutes: event['durationMinutes']);
-                     bloc!.add(UpdatePomodoroDuration(duration));
-                    break;
-                            case 'updateConsentStatus':
-                              bloc!.add(UpdateConsentStatus(event['canRequest']));
-                              break;
-                            case 'togglePremium':
-                              bloc!.add(TogglePremiumStatus());
-                              break;
-                            case 'saveMix':
-                              bloc!.add(SaveCurrentMix());
-                              break;
-                            case 'playSavedMix':
-                              bloc!.add(PlaySavedMix());
-                              break;
-                            case 'pauseMix':
-                              bloc!.add(PauseMix());
-                              break;
-                            case 'updateRainVolume': bloc!.add(UpdateRainVolume(event['volume'])); break;        case 'updateFireVolume': bloc!.add(UpdateFireVolume(event['volume'])); break;
-        case 'updateBrownNoiseVolume': bloc!.add(UpdateBrownNoiseVolume(event['volume'])); break;
-        default: print('[BackgroundService] Unknown event: $eventName');
+        case 'startTimer':
+          bloc!.add(StartTimer());
+          break;
+        case 'pauseTimer':
+          bloc!.add(PauseTimer());
+          break;
+        case 'resetTimer':
+          bloc!.add(ResetTimer());
+          break;
+        case 'toggleHardcore':
+          bloc!.add(ToggleHardcoreMode());
+          break;
+        case 'updatePomodoroDuration':
+          final duration = Duration(minutes: event['durationMinutes']);
+          bloc!.add(UpdatePomodoroDuration(duration));
+          break;
+        case 'updateConsentStatus':
+          bloc!.add(UpdateConsentStatus(event['canRequest']));
+          break;
+        case 'togglePremium':
+          bloc!.add(TogglePremiumStatus());
+          break;
+        case 'saveMix':
+          bloc!.add(SaveCurrentMix());
+          break;
+        case 'playSavedMix':
+          bloc!.add(PlaySavedMix());
+          break;
+        case 'loadMix':
+          bloc!.add(LoadMix(event['mixId']));
+          break;
+        case 'resumeMix':
+          bloc!.add(ResumeMix());
+          break;
+        case 'pauseMix':
+          bloc!.add(PauseMix());
+          break;
+        case 'updateRainVolume':
+          bloc!.add(UpdateRainVolume(event['volume']));
+          break;
+        case 'updateFireVolume':
+          bloc!.add(UpdateFireVolume(event['volume']));
+          break;
+        case 'updateBrownNoiseVolume':
+          bloc!.add(UpdateBrownNoiseVolume(event['volume']));
+          break;
+        default:
+          print('[BackgroundService] Unknown event: $eventName');
       }
     } catch (e) {
       print('[BackgroundService] Error handling event $eventName: $e');
@@ -122,13 +148,13 @@ void onStart(ServiceInstance service) async {
     print('[BackgroundService] Initializing Hive...');
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
-    
+
     try {
       if (!Hive.isAdapterRegistered(0)) {
-         Hive.registerAdapter(PremiumStatusAdapter());
+        Hive.registerAdapter(PremiumStatusAdapter());
       }
       if (!Hive.isAdapterRegistered(1)) {
-         Hive.registerAdapter(SoundMixModelAdapter());
+        Hive.registerAdapter(SoundMixModelAdapter());
       }
     } catch (e) {
       print('[BackgroundService] Hive Adapter warning: $e');
@@ -140,17 +166,16 @@ void onStart(ServiceInstance service) async {
     print('[BackgroundService] Getting FocusBloc...');
     bloc = getIt<FocusBloc>();
     isInitializing = false;
-    
+
     // Suscribirse y notificar estado real
     bloc!.stream.listen((state) {
       service.invoke('update', state.toJson());
     });
-    
+
     print('[BackgroundService] Ready. Triggering Logic...');
     bloc!.add(InitializeApp());
     // Forzar envío del estado inicial del BLoC
     service.invoke('update', bloc!.state.toJson());
-
   } catch (e, stackTrace) {
     print('[BackgroundService] FATAL ERROR: $e');
     print(stackTrace);
@@ -163,14 +188,22 @@ void onStart(ServiceInstance service) async {
 // Helpers para estados dummy
 Map<String, dynamic> _getLoadingStateJson() => {
   'status': 1, // AppStatus.loading
-  'isPremium': false, 'canRequestAds': false, 'rainVolume': 0.5, 'fireVolume': 0.0, 'brownNoiseVolume': 0.0,
+  'isPremium': false,
+  'canRequestAds': false,
+  'rainVolume': 0.5,
+  'fireVolume': 0.0,
+  'brownNoiseVolume': 0.0,
   'isHardcoreMode': false, 'phoneOrientation': 2, 'isInPenaltyBox': false,
   'pomodoroStatus': 0, 'remainingTime': 1500, 'pomodoroDuration': 1500,
 };
 
 Map<String, dynamic> _getErrorStateJson() => {
   'status': 3, // AppStatus.error
-  'isPremium': false, 'canRequestAds': false, 'rainVolume': 0.0, 'fireVolume': 0.0, 'brownNoiseVolume': 0.0,
+  'isPremium': false,
+  'canRequestAds': false,
+  'rainVolume': 0.0,
+  'fireVolume': 0.0,
+  'brownNoiseVolume': 0.0,
   'isHardcoreMode': false, 'phoneOrientation': 2, 'isInPenaltyBox': false,
   'pomodoroStatus': 0, 'remainingTime': 1500, 'pomodoroDuration': 1500,
 };

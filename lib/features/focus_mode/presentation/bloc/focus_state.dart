@@ -14,6 +14,14 @@ class FocusState {
   final double fireVolume;
   final double brownNoiseVolume;
 
+  // Last Known Volumes (for Resume)
+  final double lastRainVolume;
+  final double lastFireVolume;
+  final double lastBrownNoiseVolume;
+
+  // Saved Mixes
+  final List<SoundMix> savedMixes;
+
   // Hardcore Mode State
   final bool isHardcoreMode;
   final PhoneOrientation phoneOrientation;
@@ -33,6 +41,10 @@ class FocusState {
     this.rainVolume = 0.0,
     this.fireVolume = 0.0,
     this.brownNoiseVolume = 0.0,
+    this.lastRainVolume = 0.0,
+    this.lastFireVolume = 0.0,
+    this.lastBrownNoiseVolume = 0.0,
+    this.savedMixes = const [],
     this.isHardcoreMode = false,
     this.phoneOrientation = PhoneOrientation.unknown,
     this.isInPenaltyBox = false,
@@ -52,6 +64,10 @@ class FocusState {
     double? rainVolume,
     double? fireVolume,
     double? brownNoiseVolume,
+    double? lastRainVolume,
+    double? lastFireVolume,
+    double? lastBrownNoiseVolume,
+    List<SoundMix>? savedMixes,
     bool? isHardcoreMode,
     PhoneOrientation? phoneOrientation,
     bool? isInPenaltyBox,
@@ -68,6 +84,10 @@ class FocusState {
       rainVolume: rainVolume ?? this.rainVolume,
       fireVolume: fireVolume ?? this.fireVolume,
       brownNoiseVolume: brownNoiseVolume ?? this.brownNoiseVolume,
+      lastRainVolume: lastRainVolume ?? this.lastRainVolume,
+      lastFireVolume: lastFireVolume ?? this.lastFireVolume,
+      lastBrownNoiseVolume: lastBrownNoiseVolume ?? this.lastBrownNoiseVolume,
+      savedMixes: savedMixes ?? this.savedMixes,
       isHardcoreMode: isHardcoreMode ?? this.isHardcoreMode,
       phoneOrientation: phoneOrientation ?? this.phoneOrientation,
       isInPenaltyBox: isInPenaltyBox ?? this.isInPenaltyBox,
@@ -87,6 +107,24 @@ class FocusState {
       'rainVolume': rainVolume,
       'fireVolume': fireVolume,
       'brownNoiseVolume': brownNoiseVolume,
+      'lastRainVolume': lastRainVolume,
+      'lastFireVolume': lastFireVolume,
+      'lastBrownNoiseVolume': lastBrownNoiseVolume,
+      // 'savedMixes': savedMixes.map((e) => e.toJson()).toList(), // Optimization: Don't send list every tick?
+      // Actually, for now, let's include it to be safe, but it might be heavy.
+      // Ideally we sync it separately. But sticking to architecture...
+      'savedMixes': savedMixes
+          .map(
+            (e) => {
+              'id': e.id,
+              'name': e.name,
+              'rainVolume': e.rainVolume,
+              'fireVolume': e.fireVolume,
+              'brownNoiseVolume': e.brownNoiseVolume,
+              // Skip createdAt for simplicity in JSON if not needed, or convert
+            },
+          )
+          .toList(),
       'isHardcoreMode': isHardcoreMode,
       'phoneOrientation': phoneOrientation.index,
       'isInPenaltyBox': isInPenaltyBox,
@@ -106,12 +144,36 @@ class FocusState {
       rainVolume: (json['rainVolume'] as num?)?.toDouble() ?? 0.0,
       fireVolume: (json['fireVolume'] as num?)?.toDouble() ?? 0.0,
       brownNoiseVolume: (json['brownNoiseVolume'] as num?)?.toDouble() ?? 0.0,
+      lastRainVolume: (json['lastRainVolume'] as num?)?.toDouble() ?? 0.0,
+      lastFireVolume: (json['lastFireVolume'] as num?)?.toDouble() ?? 0.0,
+      lastBrownNoiseVolume:
+          (json['lastBrownNoiseVolume'] as num?)?.toDouble() ?? 0.0,
+      savedMixes:
+          (json['savedMixes'] as List<dynamic>?)
+              ?.map(
+                (e) => SoundMix(
+                  id: e['id'] ?? '',
+                  name: e['name'] ?? '',
+                  rainVolume: (e['rainVolume'] as num?)?.toDouble() ?? 0.0,
+                  fireVolume: (e['fireVolume'] as num?)?.toDouble() ?? 0.0,
+                  brownNoiseVolume:
+                      (e['brownNoiseVolume'] as num?)?.toDouble() ?? 0.0,
+                  createdAt: DateTime.now(), // Placeholder as we didn't send it
+                ),
+              )
+              .toList() ??
+          [],
       isHardcoreMode: json['isHardcoreMode'] ?? false,
       phoneOrientation: PhoneOrientation.values[json['phoneOrientation'] ?? 2],
       isInPenaltyBox: json['isInPenaltyBox'] ?? false,
       pomodoroStatus: PomodoroStatus.values[json['pomodoroStatus'] ?? 0],
-      remainingTime: Duration(seconds: json['remainingTime'] ?? const Duration(minutes: 25).inSeconds),
-      pomodoroDuration: Duration(seconds: json['pomodoroDuration'] ?? const Duration(minutes: 25).inSeconds),
+      remainingTime: Duration(
+        seconds: json['remainingTime'] ?? const Duration(minutes: 25).inSeconds,
+      ),
+      pomodoroDuration: Duration(
+        seconds:
+            json['pomodoroDuration'] ?? const Duration(minutes: 25).inSeconds,
+      ),
     );
   }
 }

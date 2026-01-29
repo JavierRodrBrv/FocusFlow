@@ -26,6 +26,13 @@ class SaveCurrentMix extends FocusEvent {}
 
 class PlaySavedMix extends FocusEvent {}
 
+class LoadMix extends FocusEvent {
+  final String mixId;
+  LoadMix(this.mixId);
+}
+
+class ResumeMix extends FocusEvent {}
+
 class PauseMix extends FocusEvent {}
 
 // Timer & Focus Events
