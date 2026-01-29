@@ -47,28 +47,50 @@ class SoundMixer extends StatelessWidget {
                       const Divider(color: Colors.white10),
                   itemBuilder: (context, index) {
                     final mix = state.savedMixes[index];
+                    final isSelected = mix.id == state.lastActivatedMixId;
+                    final isHistory =
+                        mix.id == state.persistedLastMixId && !isSelected;
+
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.blueAccent.withValues(alpha: 0.2),
+                          color: isSelected
+                              ? Colors.greenAccent.withValues(alpha: 0.2)
+                              : isHistory
+                              ? Colors.grey.withValues(alpha: 0.2)
+                              : Colors.blueAccent.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.music_note,
-                          color: Colors.blueAccent,
+                        child: Icon(
+                          isSelected
+                              ? Icons.check
+                              : isHistory
+                              ? Icons.history
+                              : Icons.music_note,
+                          color: isSelected
+                              ? Colors.greenAccent
+                              : isHistory
+                              ? Colors.white70
+                              : Colors.blueAccent,
                         ),
                       ),
                       title: Text(
                         mix.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.greenAccent
+                              : isHistory
+                              ? Colors.white70
+                              : Colors.white,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                         ),
                       ),
                       subtitle: Text(
-                        'Lluvia: ${(mix.rainVolume * 100).toInt()}% • Fuego: ${(mix.fireVolume * 100).toInt()}% • Olas: ${(mix.brownNoiseVolume * 100).toInt()}% ',
+                        'Lluvia: ${(mix.rainVolume * 100).toInt()}% • Fuego: ${(mix.fireVolume * 100).toInt()}%${isHistory ? " (Última)" : ""}',
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,

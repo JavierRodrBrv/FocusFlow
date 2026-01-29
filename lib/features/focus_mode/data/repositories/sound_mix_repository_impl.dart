@@ -70,4 +70,26 @@ class SoundMixRepositoryImpl implements SoundMixRepository {
       return Error(CacheFailure('Error al eliminar la mezcla: $e'));
     }
   }
+
+  @override
+  Future<Result<void, Failure>> saveLastPlayedMixId(String id) async {
+    try {
+      final box = await Hive.openBox('mix_settings');
+      await box.put('last_played_mix_id', id);
+      return const Success(null);
+    } catch (e) {
+      return Error(CacheFailure('Error al guardar el ID de la última mezcla: $e'));
+    }
+  }
+
+  @override
+  Future<Result<String?, Failure>> getLastPlayedMixId() async {
+    try {
+      final box = await Hive.openBox('mix_settings');
+      final id = box.get('last_played_mix_id') as String?;
+      return Success(id);
+    } catch (e) {
+      return Error(CacheFailure('Error al recuperar el ID de la última mezcla: $e'));
+    }
+  }
 }

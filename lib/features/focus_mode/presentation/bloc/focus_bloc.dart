@@ -10,6 +10,8 @@ import 'package:focus_flow/features/focus_mode/domain/entities/sound_mix.dart';
 import 'package:focus_flow/features/focus_mode/domain/usecases/focus_session_manager.dart';
 import 'package:focus_flow/features/focus_mode/domain/usecases/get_saved_mixes_usecase.dart';
 import 'package:focus_flow/features/focus_mode/domain/usecases/save_sound_mix_usecase.dart';
+import 'package:focus_flow/features/focus_mode/domain/usecases/get_last_played_mix_usecase.dart';
+import 'package:focus_flow/features/focus_mode/domain/usecases/save_last_played_mix_usecase.dart';
 import 'package:injectable/injectable.dart';
 import 'package:focus_flow/features/premium/domain/repositories/premium_repository.dart';
 
@@ -22,6 +24,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   final FocusSessionManager _sessionManager;
   final SaveSoundMixUseCase _saveSoundMixUseCase;
   final GetSavedMixesUseCase _getSavedMixesUseCase;
+  final GetLastPlayedMixUseCase _getLastPlayedMixUseCase;
+  final SaveLastPlayedMixUseCase _saveLastPlayedMixUseCase;
 
   StreamSubscription? _sessionSubscription;
 
@@ -30,6 +34,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     this._sessionManager,
     this._saveSoundMixUseCase,
     this._getSavedMixesUseCase,
+    this._getLastPlayedMixUseCase,
+    this._saveLastPlayedMixUseCase,
   ) : super(FocusState.initial()) {
     _registerEventHandlers();
 
@@ -99,8 +105,9 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   ) async {
     if (!state.isPremium) return;
 
+    final mixId = DateTime.now().millisecondsSinceEpoch.toString();
     final mix = SoundMix(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: mixId,
       rainVolume: state.rainVolume,
       fireVolume: state.fireVolume,
       brownNoiseVolume: state.brownNoiseVolume,
@@ -117,7 +124,14 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
       if (mixesResult is Success<List<SoundMix>, Failure>) {
         updatedMixes = mixesResult.value;
       }
-      emit(state.copyWith(hasSavedMix: true, savedMixes: updatedMixes));
+      emit(
+        state.copyWith(
+          hasSavedMix: true,
+          savedMixes: updatedMixes,
+          lastActivatedMixId:
+              mixId, // Implicitly active since we just saved it from current settings
+        ),
+      );
     } else if (result is Error<void, Failure>) {
       emit(state.copyWith(status: AppStatus.error));
     }
@@ -146,7 +160,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
             lastRainVolume: lastMix.rainVolume,
             lastFireVolume: lastMix.fireVolume,
             lastBrownNoiseVolume: lastMix.brownNoiseVolume,
-            savedMixes: savedMixes, // Update list too just in case
+            savedMixes: savedMixes,
+            lastActivatedMixId: lastMix.id,
             isPlayingMix: true,
           ),
         );
@@ -164,6 +179,9 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
       _sessionManager.updateFireVolume(mix.fireVolume);
       _sessionManager.updateBrownNoiseVolume(mix.brownNoiseVolume);
 
+      // Persist as last played
+      await _saveLastPlayedMixUseCase(mix.id);
+
       emit(
         state.copyWith(
           rainVolume: mix.rainVolume,
@@ -172,6 +190,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
           lastRainVolume: mix.rainVolume,
           lastFireVolume: mix.fireVolume,
           lastBrownNoiseVolume: mix.brownNoiseVolume,
+          lastActivatedMixId: mix.id,
+          persistedLastMixId: mix.id, // Update history as well
           isPlayingMix: true,
         ),
       );
@@ -227,7 +247,6 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
       final isPremium = await _premiumRepository.isPremium();
 
       final mixesResult = await _getSavedMixesUseCase(NoParams());
-      double rain = 0.0, fire = 0.0, brown = 0.0;
       bool hasSaved = false;
       List<SoundMix> mixes = [];
 
@@ -235,33 +254,37 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
         mixes = mixesResult.value;
         if (mixes.isNotEmpty) {
           hasSaved = true;
-          // Don't auto-play on init, but we can restore last known if we wanted.
-          // For now, respect current behavior (which seems to reset or load last?)
-          // The previous code LOADED the last mix.
-          final lastMix = mixes.last;
-          rain = lastMix.rainVolume;
-          fire = lastMix.fireVolume;
-          brown = lastMix.brownNoiseVolume;
-
-          _sessionManager.updateRainVolume(rain);
-          _sessionManager.updateFireVolume(fire);
-          _sessionManager.updateBrownNoiseVolume(brown);
         }
       }
+
+      // Load Last Played Mix ID
+      final lastMixResult = await _getLastPlayedMixUseCase(NoParams());
+      String? persistedId;
+      if (lastMixResult is Success<String?, Failure>) {
+        persistedId = lastMixResult.value;
+      }
+
+      // Ensure silence on startup
+      _sessionManager.updateRainVolume(0.0);
+      _sessionManager.updateFireVolume(0.0);
+      _sessionManager.updateBrownNoiseVolume(0.0);
 
       emit(
         state.copyWith(
           status: AppStatus.loaded,
           isPremium: isPremium,
           hasSavedMix: hasSaved,
-          savedMixes: mixes, // Populate list
-          rainVolume: rain,
-          fireVolume: fire,
-          brownNoiseVolume: brown,
-          lastRainVolume: rain,
-          lastFireVolume: fire,
-          lastBrownNoiseVolume: brown,
-          isPlayingMix: (rain > 0 || fire > 0 || brown > 0),
+          savedMixes: mixes,
+          // Volumes 0
+          rainVolume: 0.0,
+          fireVolume: 0.0,
+          brownNoiseVolume: 0.0,
+          // Last volumes 0 (Cleaner start, or could set to last mix but user requested no preloaded sound)
+          lastFireVolume: 0.0,
+          lastBrownNoiseVolume: 0.0,
+          isPlayingMix: false,
+          lastActivatedMixId: null, // Reset active
+          persistedLastMixId: persistedId, // Set history
         ),
       );
     } catch (e) {

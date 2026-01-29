@@ -21,6 +21,8 @@ class FocusState {
 
   // Saved Mixes
   final List<SoundMix> savedMixes;
+  final String? lastActivatedMixId;
+  final String? persistedLastMixId;
 
   // Hardcore Mode State
   final bool isHardcoreMode;
@@ -45,12 +47,14 @@ class FocusState {
     this.lastFireVolume = 0.0,
     this.lastBrownNoiseVolume = 0.0,
     this.savedMixes = const [],
+    this.lastActivatedMixId,
     this.isHardcoreMode = false,
     this.phoneOrientation = PhoneOrientation.unknown,
     this.isInPenaltyBox = false,
     this.pomodoroStatus = PomodoroStatus.initial,
     this.remainingTime = const Duration(minutes: 25),
     this.pomodoroDuration = const Duration(minutes: 25),
+    this.persistedLastMixId,
   });
 
   factory FocusState.initial() => const FocusState();
@@ -68,6 +72,8 @@ class FocusState {
     double? lastFireVolume,
     double? lastBrownNoiseVolume,
     List<SoundMix>? savedMixes,
+    String? lastActivatedMixId,
+    String? persistedLastMixId,
     bool? isHardcoreMode,
     PhoneOrientation? phoneOrientation,
     bool? isInPenaltyBox,
@@ -88,6 +94,8 @@ class FocusState {
       lastFireVolume: lastFireVolume ?? this.lastFireVolume,
       lastBrownNoiseVolume: lastBrownNoiseVolume ?? this.lastBrownNoiseVolume,
       savedMixes: savedMixes ?? this.savedMixes,
+      lastActivatedMixId: lastActivatedMixId ?? this.lastActivatedMixId,
+      persistedLastMixId: persistedLastMixId ?? this.persistedLastMixId,
       isHardcoreMode: isHardcoreMode ?? this.isHardcoreMode,
       phoneOrientation: phoneOrientation ?? this.phoneOrientation,
       isInPenaltyBox: isInPenaltyBox ?? this.isInPenaltyBox,
@@ -110,9 +118,6 @@ class FocusState {
       'lastRainVolume': lastRainVolume,
       'lastFireVolume': lastFireVolume,
       'lastBrownNoiseVolume': lastBrownNoiseVolume,
-      // 'savedMixes': savedMixes.map((e) => e.toJson()).toList(), // Optimization: Don't send list every tick?
-      // Actually, for now, let's include it to be safe, but it might be heavy.
-      // Ideally we sync it separately. But sticking to architecture...
       'savedMixes': savedMixes
           .map(
             (e) => {
@@ -121,10 +126,11 @@ class FocusState {
               'rainVolume': e.rainVolume,
               'fireVolume': e.fireVolume,
               'brownNoiseVolume': e.brownNoiseVolume,
-              // Skip createdAt for simplicity in JSON if not needed, or convert
             },
           )
           .toList(),
+      'lastActivatedMixId': lastActivatedMixId,
+      'persistedLastMixId': persistedLastMixId,
       'isHardcoreMode': isHardcoreMode,
       'phoneOrientation': phoneOrientation.index,
       'isInPenaltyBox': isInPenaltyBox,
@@ -158,11 +164,13 @@ class FocusState {
                   fireVolume: (e['fireVolume'] as num?)?.toDouble() ?? 0.0,
                   brownNoiseVolume:
                       (e['brownNoiseVolume'] as num?)?.toDouble() ?? 0.0,
-                  createdAt: DateTime.now(), // Placeholder as we didn't send it
+                  createdAt: DateTime.now(),
                 ),
               )
               .toList() ??
           [],
+      lastActivatedMixId: json['lastActivatedMixId'],
+      persistedLastMixId: json['persistedLastMixId'],
       isHardcoreMode: json['isHardcoreMode'] ?? false,
       phoneOrientation: PhoneOrientation.values[json['phoneOrientation'] ?? 2],
       isInPenaltyBox: json['isInPenaltyBox'] ?? false,
