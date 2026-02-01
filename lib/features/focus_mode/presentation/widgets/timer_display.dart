@@ -92,7 +92,7 @@ class TimerDisplay extends StatelessWidget {
             // +10 Min
             BouncingButton(
               child: IconButton(
-                icon: Icon(Icons.add_circle_outline, color: (canAdjust && !isAtMin) ? color : color.withValues(alpha: 0.2)),
+                icon: Icon(Icons.add_circle_outline, color: canAdjust ? color : color.withValues(alpha: 0.2)),
                 iconSize: 32,
                 tooltip: 'Aumentar 10 min',
                 onPressed: !canAdjust
@@ -103,7 +103,7 @@ class TimerDisplay extends StatelessWidget {
             // +5 Min
             BouncingButton(
               child: IconButton(
-                icon: Icon(Icons.add, color: (canAdjust && !isAtMin) ? color.withValues(alpha: 0.7) : color.withValues(alpha: 0.2)),
+                icon: Icon(Icons.add, color: canAdjust ? color.withValues(alpha: 0.7) : color.withValues(alpha: 0.2)),
                 iconSize: 24,
                 tooltip: 'Aumentar 5 min',
                 onPressed: !canAdjust

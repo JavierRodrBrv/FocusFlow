@@ -90,7 +90,7 @@ class SoundMixer extends StatelessWidget {
                         ),
                       ),
                       subtitle: Text(
-                        'Lluvia: ${(mix.rainVolume * 100).toInt()}% • Fuego: ${(mix.fireVolume * 100).toInt()}%${isHistory ? " (Última)" : ""}',
+                        'Lluvia: ${(mix.rainVolume * 100).toInt()}% • Fuego: ${(mix.fireVolume * 100).toInt()}% • Olas: ${(mix.brownNoiseVolume * 100).toInt()}%${isHistory ? " (Última)" : ""}',
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,
@@ -141,9 +141,44 @@ class SoundMixer extends StatelessWidget {
             Row(
               children: [
                 IconButton(
-                  tooltip: 'Cargar Mix',
-                  icon: const Icon(Icons.queue_music, color: Colors.white70),
-                  onPressed: () => _showSavedMixes(context),
+                  tooltip: state.isPremium
+                      ? 'Cargar Mix'
+                      : 'Cargar Mix (Premium)',
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        Icons.queue_music,
+                        color: state.isPremium
+                            ? Colors.white70
+                            : Colors.white38,
+                      ),
+                      if (!state.isPremium)
+                        const Positioned(
+                          right: -4,
+                          bottom: -4,
+                          child: Icon(
+                            Icons.lock,
+                            size: 14,
+                            color: Colors.amber,
+                          ),
+                        ),
+                    ],
+                  ),
+                  onPressed: () {
+                    if (state.isPremium) {
+                      _showSavedMixes(context);
+                    } else {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const PremiumFeatureDialog(
+                          featureName: 'Cargar Mezclas',
+                          featureDescription:
+                              'Accede a tus mezclas de sonido guardadas y cambia de ambiente al instante.',
+                        ),
+                      );
+                    }
+                  },
                 ),
                 IconButton(
                   tooltip: state.isPremium
