@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -18,6 +19,24 @@ Future<void> initializeService() async {
   //--- Configuración de notificaciones para Android ---
   const notificationChannelId = 'focus_flow_channel';
   const notificationId = 888;
+
+  // Crear el canal manualmente para asegurar visibilidad en pantalla de bloqueo
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    notificationChannelId,
+    'Focus Flow',
+    description: 'Notificaciones persistentes del temporizador',
+    importance: Importance.low, // Low para evitar sonido constante en updates
+    showBadge: true,
+    playSound: false,
+  );
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
 
   await service.configure(
     androidConfiguration: AndroidConfiguration(
