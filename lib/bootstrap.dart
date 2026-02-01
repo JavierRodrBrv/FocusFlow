@@ -26,9 +26,10 @@ Future<void> bootstrap() async {
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
-    Hive.registerAdapter(PremiumStatusAdapter());
-    Hive.registerAdapter(SoundMixModelAdapter());
-    print('[Bootstrap] Hive Initialized.');
+    // Adapters y Dependencies solo necesarios en el servicio de fondo (Isolate secundario)
+    // Hive.registerAdapter(PremiumStatusAdapter());
+    // Hive.registerAdapter(SoundMixModelAdapter());
+    print('[Bootstrap] Hive Initialized (UI Isolate).');
   } catch (e) {
     print('[Bootstrap] Hive Error: $e');
   }
@@ -42,7 +43,9 @@ Future<void> bootstrap() async {
   }
 
   // 5. Inyección de Dependencias
-  await configureDependencies();
+  // OMITIDO EN MAIN ISOLATE: Evita conflictos de bloqueo con Hive en el Background Service.
+  // La UI no necesita los Repositories/Bloc directamente, solo habla con el servicio.
+  // await configureDependencies();
 
   // 6. Servicio en Segundo Plano
   await initializeService();

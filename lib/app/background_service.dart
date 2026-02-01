@@ -64,23 +64,13 @@ void onStart(ServiceInstance service) async {
 
   print('[BackgroundService] Starting (Optimized)...');
 
-  // Configuración de plataforma
-  if (service is AndroidServiceInstance) {
-    service
-        .on('setAsForeground')
-        .listen((event) => service.setAsForegroundService());
-    service
-        .on('setAsBackground')
-        .listen((event) => service.setAsBackgroundService());
-  }
-  service.on('stopSelf').listen((event) => service.stopSelf());
-
   // Variables de estado local (para responder antes de tener el BLoC)
   FocusBloc? bloc;
   bool isInitializing = true;
   bool initFailed = false;
 
   // 2. CONFIGURAR LISTENERS INMEDIATAMENTE (Para que la UI pueda preguntar)
+  // MOVIDO AL PRINCIPIO: Esto garantiza que escuchemos eventos aunque el resto de init tarde.
   service.on('sendEvent').listen((event) {
     if (event == null) return;
     final eventName = event['event'];
@@ -159,6 +149,17 @@ void onStart(ServiceInstance service) async {
       print('[BackgroundService] Error handling event $eventName: $e');
     }
   });
+
+  // Configuración de plataforma
+  if (service is AndroidServiceInstance) {
+    service
+        .on('setAsForeground')
+        .listen((event) => service.setAsForegroundService());
+    service
+        .on('setAsBackground')
+        .listen((event) => service.setAsBackgroundService());
+  }
+  service.on('stopSelf').listen((event) => service.stopSelf());
 
   // Notificar carga inicial
   service.invoke('update', _getLoadingStateJson());
