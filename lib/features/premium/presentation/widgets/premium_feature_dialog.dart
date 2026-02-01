@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/flavors.dart';
 
 class PremiumFeatureDialog extends StatelessWidget {
   final String featureName;
@@ -63,16 +64,30 @@ class PremiumFeatureDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      // Simular compra enviando evento al servicio
-                      FlutterBackgroundService().invoke('sendEvent', {'event': 'togglePremium'});
-                      if (onPurchase != null) onPurchase!();
-                      
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('¡Premium activado! Funcionalidad desbloqueada.'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
+
+                      if (F.appFlavor == Flavor.dev) {
+                        // Simular compra enviando evento al servicio (Solo DEV)
+                        FlutterBackgroundService()
+                            .invoke('sendEvent', {'event': 'togglePremium'});
+                        if (onPurchase != null) onPurchase!();
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                '¡Premium activado! Funcionalidad desbloqueada (DEV).'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        // Lógica de compras reales (PRO - Futuro)
+                        // TODO: Implementar In-App Purchases
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Compras próximamente.'),
+                            backgroundColor: Colors.amber,
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.amber,

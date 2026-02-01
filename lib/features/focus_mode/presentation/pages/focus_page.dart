@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/hardcore_mode_card.dart';
 import 'package:focus_flow/features/premium/presentation/utils/ad_consent_manager.dart';
+import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
+import 'package:focus_flow/flavors.dart';
 
 import '../../../premium/presentation/widgets/ad_banner_widget.dart';
 import '../bloc/focus_bloc.dart';
@@ -75,12 +77,35 @@ class _FocusPageState extends State<FocusPage> {
             actions: [
               IconButton(
                 icon: Icon(
-                  state.isPremium ? Icons.workspace_premium : Icons.workspace_premium_outlined,
+                  state.isPremium
+                      ? Icons.workspace_premium
+                      : Icons.workspace_premium_outlined,
                   color: state.isPremium ? Colors.amber : Colors.white70,
                 ),
-                tooltip: 'Simular Premium',
+                tooltip: F.appFlavor == Flavor.dev
+                    ? 'Simular Premium (Dev)'
+                    : 'Premium',
                 onPressed: () {
-                  FlutterBackgroundService().invoke('sendEvent', {'event': 'togglePremium'});
+                  if (F.appFlavor == Flavor.dev) {
+                    FlutterBackgroundService()
+                        .invoke('sendEvent', {'event': 'togglePremium'});
+                  } else {
+                    // En PRO, mostramos el diálogo de venta (que tiene el botón "Obtener" desactivado/dummy)
+                    if (!state.isPremium) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const PremiumFeatureDialog(
+                          featureName: 'Premium',
+                          featureDescription:
+                              'Desbloquea todas las funciones y elimina los anuncios.',
+                        ),
+                      );
+                    } else {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Ya eres usuario Premium.')),
+                      );
+                    }
+                  }
                 },
               ),
             ],

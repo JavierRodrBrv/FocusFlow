@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:focus_flow/app.dart';
 
 import 'package:focus_flow/main.dart';
 
