@@ -8,6 +8,7 @@ import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:focus_flow/features/premium/data/models/premium_status.dart';
+import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 
 import '../features/focus_mode/data/models/sound_mix_model.dart';
 
@@ -167,9 +168,53 @@ void onStart(ServiceInstance service) async {
     bloc = getIt<FocusBloc>();
     isInitializing = false;
 
+    // Variables de estado local para evitar llamadas redundantes
+    bool isForeground = true; // El servicio inicia en foreground por configuración
+
     // Suscribirse y notificar estado real
     bloc!.stream.listen((state) {
       service.invoke('update', state.toJson());
+
+      if (service is AndroidServiceInstance) {
+        final int minutes = state.remainingTime.inMinutes;
+        final int seconds = state.remainingTime.inSeconds % 60;
+        final timeDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+        String title = 'FocusFlow';
+        String content = 'Manteniendo tu sesión de foco.';
+        bool shouldBeForeground = false;
+
+        if (state.pomodoroStatus == PomodoroStatus.running) {
+          shouldBeForeground = true;
+          title = 'FocusFlow - Enfocando';
+          content = 'Tiempo restante: $timeDisplay';
+        } else {
+          // Paused, Finished, or Initial -> Allow clearing (Background Service)
+          shouldBeForeground = false;
+          
+          if (state.pomodoroStatus == PomodoroStatus.paused) {
+            title = 'FocusFlow - Pausado';
+            content = 'Tiempo restante: $timeDisplay';
+          } else if (state.pomodoroStatus == PomodoroStatus.finished) {
+            title = 'FocusFlow - Finalizado';
+            content = '¡Sesión terminada!';
+          }
+        }
+
+        // Solo cambiar el modo si es necesario
+        if (shouldBeForeground && !isForeground) {
+          service.setAsForegroundService();
+          isForeground = true;
+        } else if (!shouldBeForeground && isForeground) {
+          service.setAsBackgroundService();
+          isForeground = false;
+        }
+
+        service.setForegroundNotificationInfo(
+          title: title,
+          content: content,
+        );
+      }
     });
 
     print('[BackgroundService] Ready. Triggering Logic...');
