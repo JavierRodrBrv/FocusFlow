@@ -77,6 +77,23 @@ void onStart(ServiceInstance service) async {
 
   print('[BackgroundService] Starting (Optimized)...');
 
+  // Inicializar Notificaciones Locales en este Isolate (necesario para iOS/Android updates manuales)
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('launcher_icon'); // Asegúrate que este icono exista
+  final DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false);
+  final InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin);
+  
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
   // Variables de estado local (para responder antes de tener el BLoC)
   FocusBloc? bloc;
   bool isInitializing = true;
@@ -205,33 +222,32 @@ void onStart(ServiceInstance service) async {
     bool isForeground = true; // El servicio inicia en foreground por configuración
 
     // Suscribirse y notificar estado real
-    bloc!.stream.listen((state) {
+    bloc!.stream.listen((state) async {
       service.invoke('update', state.toJson());
 
+      // Preparar textos
+      final int minutes = state.remainingTime.inMinutes;
+      final int seconds = state.remainingTime.inSeconds % 60;
+      final timeDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      
+      String title = 'FocusFlow';
+      String content = 'Manteniendo tu sesión de foco.';
+      
+      if (state.pomodoroStatus == PomodoroStatus.running) {
+        title = 'FocusFlow - Enfocando';
+        content = 'Tiempo restante: $timeDisplay';
+      } else if (state.pomodoroStatus == PomodoroStatus.paused) {
+        title = 'FocusFlow - Pausado';
+        content = 'Tiempo restante: $timeDisplay';
+      } else if (state.pomodoroStatus == PomodoroStatus.finished) {
+        title = 'FocusFlow - Finalizado';
+        content = '¡Sesión terminada!';
+      }
+
       if (service is AndroidServiceInstance) {
-        final int minutes = state.remainingTime.inMinutes;
-        final int seconds = state.remainingTime.inSeconds % 60;
-        final timeDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-
-        String title = 'FocusFlow';
-        String content = 'Manteniendo tu sesión de foco.';
         bool shouldBeForeground = false;
-
         if (state.pomodoroStatus == PomodoroStatus.running) {
           shouldBeForeground = true;
-          title = 'FocusFlow - Enfocando';
-          content = 'Tiempo restante: $timeDisplay';
-        } else {
-          // Paused, Finished, or Initial -> Allow clearing (Background Service)
-          shouldBeForeground = false;
-          
-          if (state.pomodoroStatus == PomodoroStatus.paused) {
-            title = 'FocusFlow - Pausado';
-            content = 'Tiempo restante: $timeDisplay';
-          } else if (state.pomodoroStatus == PomodoroStatus.finished) {
-            title = 'FocusFlow - Finalizado';
-            content = '¡Sesión terminada!';
-          }
         }
 
         // Solo cambiar el modo si es necesario
@@ -247,6 +263,35 @@ void onStart(ServiceInstance service) async {
           title: title,
           content: content,
         );
+      } else if (Platform.isIOS) {
+        // Lógica específica para iOS: Actualizar notificación local manualmente
+        // Usamos siempre el mismo ID (888) para reemplazar la anterior
+        
+        // Solo mostramos notificación si está corriendo, pausado o finalizado recientemente
+        if (state.pomodoroStatus == PomodoroStatus.running || 
+            state.pomodoroStatus == PomodoroStatus.paused ||
+            state.pomodoroStatus == PomodoroStatus.finished) {
+            
+            // Opcional: Reducir frecuencia de actualización en iOS para evitar throttle
+            // Por ahora lo enviamos siempre, si da problemas, añadiremos un throttle.
+            try {
+              await flutterLocalNotificationsPlugin.show(
+                888, // ID coincidente con Android
+                title,
+                content,
+                const NotificationDetails(
+                  iOS: DarwinNotificationDetails(
+                    presentAlert: true, // Mostrar si la app está abierta (opcional)
+                    presentBanner: true,
+                    presentSound: false, // Sin sonido para no molestar cada segundo
+                    interruptionLevel: InterruptionLevel.passive, // Pasiva para no encender pantalla siempre
+                  ),
+                ),
+              );
+            } catch (e) {
+              print('[BackgroundService] iOS Notification Error: $e');
+            }
+        }
       }
     });
 
