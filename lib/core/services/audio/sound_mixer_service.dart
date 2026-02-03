@@ -1,6 +1,7 @@
 
 import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:audio_session/audio_session.dart';
 
 @lazySingleton
 class SoundMixerService {
@@ -17,6 +18,10 @@ class SoundMixerService {
     }
     print('[SoundMixerService] Initializing...');
     try {
+      // Configurar sesión de audio para background (iOS/Android)
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+
       print('[SoundMixerService] Loading assets...');
       // Solo cargar y preparar, NO reproducir.
       await _rainPlayer.setAsset('assets/audio/rain.mp3');

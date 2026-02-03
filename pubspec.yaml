@@ -49,6 +49,7 @@ dependencies:
   permission_handler: ^12.0.1
   flutter_local_notifications: ^20.0.0
   showcaseview: ^5.0.1
+  audio_session: ^0.2.2
 
 dev_dependencies:
   flutter_test:
