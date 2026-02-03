@@ -92,7 +92,7 @@ void onStart(ServiceInstance service) async {
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin);
   
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
 
   // Variables de estado local (para responder antes de tener el BLoC)
   FocusBloc? bloc;
@@ -276,10 +276,10 @@ void onStart(ServiceInstance service) async {
             // Por ahora lo enviamos siempre, si da problemas, añadiremos un throttle.
             try {
               await flutterLocalNotificationsPlugin.show(
-                888, // ID coincidente con Android
-                title,
-                content,
-                const NotificationDetails(
+                id: 888, // ID coincidente con Android
+                title: title,
+                body: content,
+                notificationDetails: const NotificationDetails(
                   iOS: DarwinNotificationDetails(
                     presentAlert: true, // Mostrar si la app está abierta (opcional)
                     presentBanner: true,
