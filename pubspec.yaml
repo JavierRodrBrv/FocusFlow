@@ -52,6 +52,7 @@ dependencies:
   audio_session: ^0.2.2
   url_launcher: ^6.3.2
   http: ^1.6.0
+  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
   flutter_test:
@@ -119,15 +120,16 @@ flutter_launcher_icons:
 
   remove_alpha_ios: true
 
-  image_path: "assets/images/icono_app.png"
+  # IMAGEN BASE (Para iOS y sistemas antiguos)
+  image_path: "assets/images/icono_launcher.png" 
 
   min_sdk_android: 21
 
-  # CONFIGURACIÓN ADAPTATIVE (Android)
-  # Como tu imagen ya tiene fondo negro, úsala como "foreground"
-  # y pon el color de fondo igual para asegurar.
-  adaptive_icon_background: "#0F172A" # O el código hex exacto del fondo de la imagen
-  adaptive_icon_foreground: "assets/images/icono_app.png"
+  # CONFIGURACIÓN ADAPTATIVE (Android 8+)
+  # Usamos una imagen específica (icono_launcher.png) con el logo más grande
+  # para compensar la reducción automática de Android.
+  adaptive_icon_background: "#0F172A"
+  adaptive_icon_foreground: "assets/images/icono_launcher.png"
 
 flavorizr:
   app:
@@ -148,3 +150,14 @@ flavorizr:
         applicationId: "com.example.focus_flow"
       ios:
         bundleId: "com.example.focus_flow"
+
+flutter_native_splash:
+  color: "#0F172A" # Color Negro para el fondo
+  image: "assets/images/icono_app.png"
+  android_12:
+    color: "#0F172A"
+    image: "assets/images/icono_app.png"
+    icon_background_color: "#0F172A"
+  ios: true
+  android: true
+  web: false
