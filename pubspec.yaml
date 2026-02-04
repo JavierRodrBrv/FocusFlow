@@ -120,15 +120,14 @@ flutter_launcher_icons:
 
   remove_alpha_ios: true
 
-  # IMAGEN BASE (Para iOS y sistemas antiguos)
-  image_path: "assets/images/icono_launcher.png" 
+  # CONFIGURACIÓN ESPECÍFICA POR PLATAFORMA
+  image_path_android: "assets/images/icono_launcher.png"
+  image_path_ios: "assets/images/icono_launcher_ios.png" # Esta imagen debe tener fondo negro sólido
 
   min_sdk_android: 21
 
   # CONFIGURACIÓN ADAPTATIVE (Android 8+)
-  # Usamos una imagen específica (icono_launcher.png) con el logo más grande
-  # para compensar la reducción automática de Android.
-  adaptive_icon_background: "#0F172A"
+  adaptive_icon_background: "#000000" 
   adaptive_icon_foreground: "assets/images/icono_launcher.png"
 
 flavorizr:
