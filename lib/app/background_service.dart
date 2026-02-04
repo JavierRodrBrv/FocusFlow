@@ -82,7 +82,7 @@ void onStart(ServiceInstance service) async {
       FlutterLocalNotificationsPlugin();
   
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('launcher_icon'); // Asegúrate que este icono exista
+      AndroidInitializationSettings('@mipmap/launcher_icon'); // Asegúrate que este icono exista
   final DarwinInitializationSettings initializationSettingsDarwin =
       DarwinInitializationSettings(
           requestAlertPermission: false,

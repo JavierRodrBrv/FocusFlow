@@ -16,6 +16,7 @@ import '../widgets/sound_mixer.dart';
 import '../widgets/saved_mix_player.dart';
 import '../widgets/timer_controls.dart';
 import '../widgets/timer_display.dart';
+import '../widgets/settings_menu_bottom_sheet.dart';
 
 class FocusPage extends StatelessWidget {
   const FocusPage({super.key});
@@ -157,13 +158,22 @@ class _FocusViewState extends State<FocusView> {
             elevation: 0,
             leading: Showcase(
               key: _tutorialKey,
-              title: 'Tutorial',
+              title: 'Menú',
               description:
-                  'Toca aquí si quieres ver esta explicación de nuevo.',
+                  'Accede al tutorial, ajustes y feedback aquí.',
               child: IconButton(
-                icon: const Icon(Icons.menu_book, color: Colors.white70),
-                tooltip: 'Ver Tutorial',
-                onPressed: _startShowcase,
+                icon: const Icon(Icons.menu, color: Colors.white70),
+                tooltip: 'Menú',
+                onPressed: () async {
+                  final result = await showModalBottomSheet(
+                    context: context,
+                    builder: (context) => const SettingsMenuBottomSheet(),
+                  );
+                  
+                  if (result == 'tutorial') {
+                    _startShowcase();
+                  }
+                },
               ),
             ),
             actions: [
@@ -302,7 +312,8 @@ void _showDevDialog(BuildContext context) {
       content: const Text(
         'Estás utilizando una versión de prueba (Dev).\n\n'
         '• Las funciones Premium se pueden simular.\n'
-        '• Puede contener errores experimentales.',
+        '• Puede contener errores experimentales.\n'
+        '• ¡Ayúdanos a mejorar! Envía tus ideas o reporta fallos desde el nuevo menú de Ajustes (icono ☰).',
         style: TextStyle(color: Colors.white70),
       ),
       actions: [
