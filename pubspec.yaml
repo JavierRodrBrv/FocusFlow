@@ -122,7 +122,7 @@ flutter_launcher_icons:
 
   # CONFIGURACIÓN ESPECÍFICA POR PLATAFORMA
   image_path_android: "assets/images/icono_launcher.png"
-  image_path_ios: "assets/images/icono_launcher_ios.png" # Esta imagen debe tener fondo negro sólido
+  image_path_ios: "assets/images/icono_launcher.png" # Esta imagen debe tener fondo negro sólido
 
   min_sdk_android: 21
 
