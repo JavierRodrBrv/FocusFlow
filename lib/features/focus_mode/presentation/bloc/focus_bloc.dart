@@ -83,6 +83,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     on<StartTimer>((e, emit) => _sessionManager.startTimer());
     on<PauseTimer>((e, emit) => _sessionManager.pauseTimer());
     on<ResetTimer>((e, emit) => _sessionManager.resetTimer());
+    on<StopAlarm>((e, emit) => _sessionManager.stopAlarm());
     on<UpdatePomodoroDuration>(
       (e, emit) => _sessionManager.setDuration(e.newDuration),
     );

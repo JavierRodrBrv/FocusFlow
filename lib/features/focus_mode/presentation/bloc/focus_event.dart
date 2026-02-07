@@ -44,7 +44,12 @@ class PauseTimer extends FocusEvent {}
 
 class ResetTimer extends FocusEvent {}
 
+class StopAlarm extends FocusEvent {}
+
+
+
 class UpdatePomodoroDuration extends FocusEvent {
+
   final Duration newDuration;
   UpdatePomodoroDuration(this.newDuration);
 }

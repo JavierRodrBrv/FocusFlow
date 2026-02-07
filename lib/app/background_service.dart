@@ -135,11 +135,20 @@ void onStart(ServiceInstance service) async {
         case 'resetTimer':
           bloc!.add(ResetTimer());
           break;
+        case 'stopAlarm':
+          bloc!.add(StopAlarm());
+          break;
         case 'toggleHardcore':
           bloc!.add(ToggleHardcoreMode());
           break;
         case 'updatePomodoroDuration':
-          final duration = Duration(minutes: event['durationMinutes']);
+          final minutes = event['durationMinutes'] ?? 0;
+          final seconds = event['durationSeconds'] ?? 0;
+          // Aseguramos conversión a int y permitimos segundos para pruebas precisas
+          final duration = Duration(
+            minutes: minutes is int ? minutes : (minutes as double).toInt(),
+            seconds: seconds is int ? seconds : (seconds as double).toInt(),
+          );
           bloc!.add(UpdatePomodoroDuration(duration));
           break;
         case 'updateConsentStatus':

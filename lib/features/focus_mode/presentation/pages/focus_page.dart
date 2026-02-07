@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:math';
 
+import 'package:confetti/confetti.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/hardcore_mode_card.dart';
 import 'package:focus_flow/features/premium/presentation/utils/ad_consent_manager.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
@@ -51,10 +54,14 @@ class _FocusViewState extends State<FocusView> {
   final GlobalKey _tutorialKey = GlobalKey();
 
   Timer? _handshakeTimer;
+  late ConfettiController _confettiController;
+  bool _completionDialogShown = false;
 
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+
     // HANDSHAKE: Pedir estado activamente al iniciar y reintentar
     _handshakeTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       print('[FocusPage] Handshake retry...');
@@ -73,7 +80,73 @@ class _FocusViewState extends State<FocusView> {
   @override
   void dispose() {
     _handshakeTimer?.cancel();
+    _confettiController.dispose();
     super.dispose();
+  }
+
+  void _checkCompletion(FocusState state) {
+    if (state.pomodoroStatus == PomodoroStatus.finished) {
+      if (!_completionDialogShown) {
+        _completionDialogShown = true;
+        
+        // Detener alarma inmediatamente al mostrar el diálogo (usuario activo)
+        FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
+        
+        _confettiController.play();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showCompletionDialog(context);
+        });
+      }
+    } else {
+      // Reset flag if not finished (e.g., reset timer)
+      if (state.pomodoroStatus != PomodoroStatus.finished) {
+        _completionDialogShown = false;
+      }
+    }
+  }
+
+  Future<void> _showCompletionDialog(BuildContext context) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.celebration, color: Colors.amber, size: 60),
+              const SizedBox(height: 20),
+              const Text(
+                '¡Sesión Completada!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Has mantenido el foco con éxito. ¡Gran trabajo!',
+                style: TextStyle(color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
+                Navigator.of(context).pop();
+              },
+              child: const Text('Continuar', style: TextStyle(color: Colors.blueAccent, fontSize: 16)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _checkTutorial() async {
@@ -144,6 +217,8 @@ class _FocusViewState extends State<FocusView> {
           try {
             state = FocusState.fromJson(snapshot.data!);
             print("[FocusPage] Received State: ${state.status}");
+            // Chequear si terminó para mostrar confetti/dialog
+            _checkCompletion(state);
           } catch (e) {
             print("Error decoding state: $e");
             state = const FocusState();
@@ -218,7 +293,36 @@ class _FocusViewState extends State<FocusView> {
               ),
             ],
           ),
-          body: _buildBody(context, state),
+          body: Stack(
+            children: [
+              _buildBody(context, state),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: pi / 2, // Hacia abajo
+                  maxBlastForce: 5, // Velocidad
+                  minBlastForce: 2,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 20,
+                  gravity: 0.1,
+                  colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple], 
+                ),
+              ),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              FlutterBackgroundService().invoke('sendEvent', {
+                'event': 'updatePomodoroDuration',
+                'durationSeconds': 10
+              });
+              // Forzamos reseteo para que coja la nueva duración inmediatamente
+              FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
+            },
+            backgroundColor: Colors.redAccent,
+            child: const Text('10s', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
         );
       },
     );

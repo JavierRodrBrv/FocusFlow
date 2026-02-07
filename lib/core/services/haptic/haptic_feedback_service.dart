@@ -27,6 +27,14 @@ class HapticFeedbackService {
     }
   }
 
+  /// Triggers a significant vibration feedback for completion.
+  Future<void> vibrate() async {
+    if (await Vibration.hasVibrator() ?? false) {
+      // Un patrón más notable: dos vibraciones largas
+      Vibration.vibrate(pattern: [0, 500, 200, 500]);
+    }
+  }
+
   @disposeMethod
   void dispose() {
     // Ensure vibration is cancelled when the service is disposed.

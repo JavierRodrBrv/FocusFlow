@@ -8,6 +8,8 @@ abstract class IAudioManager {
   
   // Effect Controls
   Future<void> playFailSound();
+  Future<void> startAlarmLoop();
+  Future<void> stopAlarm();
   Future<void> startFailLoop();
   Future<void> stopFailLoop();
 

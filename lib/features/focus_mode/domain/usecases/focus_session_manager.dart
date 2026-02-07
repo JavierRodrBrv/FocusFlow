@@ -76,10 +76,17 @@ class FocusSessionManager {
       if (_remainingTime.inSeconds == 0) {
         _status = PomodoroStatus.finished;
         _stopPenaltyEffects(); // Seguridad
-        _audioManager.stopKeepAlive();
+        _audioManager.stopKeepAlive(); // Detener el silencio
+        _triggerAlarm();
       }
       _emitState();
     });
+  }
+
+  void _triggerAlarm() {
+    _audioManager.startAlarmLoop();
+    // Vibración suave para indicar finalización
+    _hapticService.vibrate(); 
   }
 
   void init() async {
@@ -137,6 +144,10 @@ class FocusSessionManager {
     _remainingTime = _duration;
     _audioManager.stopKeepAlive();
     _emitState();
+  }
+
+  void stopAlarm() {
+    _audioManager.stopAlarm();
   }
 
   // --- Logic Helpers ---
