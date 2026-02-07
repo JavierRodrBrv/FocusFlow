@@ -19,28 +19,36 @@ class HapticFeedbackService {
     }
   }
 
+
+
+  /// Starts a looping vibration for the alarm (60% intensity).
+  Future<void> startAlarmVibration() async {
+    if (await Vibration.hasVibrator() ?? false) {
+      print('[HapticFeedbackService] Starting alarm vibration loop...');
+      if (await Vibration.hasAmplitudeControl() ?? false) {
+        // Patrón: vibra 1s, pausa 0.5s. Repetir desde el inicio (0).
+        // Intensidad: 155 (60%), 0
+        Vibration.vibrate(
+          pattern: [1000, 500], 
+          intensities: [155, 0],
+          repeat: 0,
+        );
+      } else {
+        Vibration.vibrate(pattern: [1000, 500], repeat: 0);
+      }
+    }
+  }
+
+  /// Stops the alarm vibration.
+  Future<void> stopAlarmVibration() async {
+    await stopFailVibration(); // Vibration.cancel() detiene todo
+  }
+
   /// Stops any ongoing vibration.
   Future<void> stopFailVibration() async {
      if (await Vibration.hasVibrator() ?? false) {
       print('[HapticFeedbackService] Stopping vibration...');
       Vibration.cancel();
-    }
-  }
-
-  /// Triggers a significant vibration feedback for completion (60% intensity).
-  Future<void> vibrate() async {
-    if (await Vibration.hasVibrator() ?? false) {
-      if (await Vibration.hasAmplitudeControl() ?? false) {
-        // Patrón: espera 0, vibra 1s, espera 0.5s, vibra 1s
-        // Intensidad: 0, 155 (60%), 0, 155 (60%)
-        Vibration.vibrate(
-          pattern: [0, 1000, 500, 1000], 
-          intensities: [0, 155, 0, 155],
-        );
-      } else {
-        // Fallback para dispositivos sin control de amplitud
-        Vibration.vibrate(pattern: [0, 1000, 500, 1000]);
-      }
     }
   }
 
