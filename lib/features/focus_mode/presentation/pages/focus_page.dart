@@ -200,24 +200,17 @@ class _FocusViewState extends State<FocusView> {
       builder: (context, snapshot) {
         FocusState state;
 
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            snapshot.data == null) {
-          // ESTADO DE CARGA INICIAL POR DEFECTO
-          // Si no hay datos, asumimos loading pero NO bloqueamos con spinner infinito
-          // si ya tenemos datos previos (snapshot.hasData). 
-          // Si es el primer build, mostramos spinner.
-          return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
-        }
-
+        // Si no hay datos aún, usamos un estado inicial por defecto para no bloquear la UI
         if (!snapshot.hasData || snapshot.data == null) {
-          // Si sigue null tras waiting, loading
-          state = const FocusState(); // Fallback temporal
+          state = const FocusState(
+            status: AppStatus.loaded, // Simulamos loaded para mostrar la UI
+            remainingTime: Duration(minutes: 25),
+            pomodoroDuration: Duration(minutes: 25),
+          );
         } else {
           try {
             state = FocusState.fromJson(snapshot.data!);
-            print("[FocusPage] Received State: ${state.status}");
-            // Chequear si terminó para mostrar confetti/dialog
+            // print("[FocusPage] Received State: ${state.status}"); // Silenciamos log repetitivo
             _checkCompletion(state);
           } catch (e) {
             print("Error decoding state: $e");

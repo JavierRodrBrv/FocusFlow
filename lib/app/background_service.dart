@@ -73,16 +73,20 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
   // 1. Bindings críticos primero
   WidgetsFlutterBinding.ensureInitialized();
-  DartPluginRegistrant.ensureInitialized();
+  
+  // DartPluginRegistrant solo es necesario en Android para ciertos plugins.
+  if (Platform.isAndroid) {
+    DartPluginRegistrant.ensureInitialized();
+  }
 
-  print('[BackgroundService] Starting (Optimized)...');
+  print('[BackgroundService] Starting Isolate...');
 
-  // Inicializar Notificaciones Locales en este Isolate (necesario para iOS/Android updates manuales)
+  // Inicializar Notificaciones Locales
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/launcher_icon'); // Asegúrate que este icono exista
+      AndroidInitializationSettings('@mipmap/launcher_icon');
   final DarwinInitializationSettings initializationSettingsDarwin =
       DarwinInitializationSettings(
           requestAlertPermission: false,
@@ -92,37 +96,32 @@ void onStart(ServiceInstance service) async {
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin);
   
-  await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
+  try {
+    await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
+    print('[BackgroundService] Notifications initialized.');
+  } catch (e) {
+    print('[BackgroundService] Notifications init error: $e');
+  }
 
-  // Variables de estado local (para responder antes de tener el BLoC)
+  // Variables de estado local
   FocusBloc? bloc;
-  bool isInitializing = true;
   bool initFailed = false;
 
-  // 2. CONFIGURAR LISTENERS INMEDIATAMENTE (Para que la UI pueda preguntar)
-  // MOVIDO AL PRINCIPIO: Esto garantiza que escuchemos eventos aunque el resto de init tarde.
+  // 2. CONFIGURAR LISTENERS INMEDIATAMENTE
   service.on('sendEvent').listen((event) {
     if (event == null) return;
     final eventName = event['event'];
 
-    // HANDSHAKE: La UI pide estado. Respondemos lo que tengamos.
     if (eventName == 'requestState') {
-      print('[BackgroundService] UI requested state. Sending...');
       if (bloc != null) {
         service.invoke('update', bloc!.state.toJson());
-      } else if (initFailed) {
-        service.invoke('update', _getErrorStateJson());
       } else {
-        service.invoke('update', _getLoadingStateJson());
+        service.invoke('update', initFailed ? _getErrorStateJson() : _getLoadingStateJson());
       }
       return;
     }
 
-    // Si no tenemos BLoC aún, ignoramos otros comandos
-    if (bloc == null) {
-      print('[BackgroundService] Ignoring $eventName (Not ready)');
-      return;
-    }
+    if (bloc == null) return;
 
     try {
       switch (eventName) {
@@ -144,7 +143,6 @@ void onStart(ServiceInstance service) async {
         case 'updatePomodoroDuration':
           final minutes = event['durationMinutes'] ?? 0;
           final seconds = event['durationSeconds'] ?? 0;
-          // Aseguramos conversión a int y permitimos segundos para pruebas precisas
           final duration = Duration(
             minutes: minutes is int ? minutes : (minutes as double).toInt(),
             seconds: seconds is int ? seconds : (seconds as double).toInt(),
@@ -203,38 +201,28 @@ void onStart(ServiceInstance service) async {
   // Notificar carga inicial
   service.invoke('update', _getLoadingStateJson());
 
-  // 3. Inicialización Pesada (Ahora sí)
+  // 3. Inicialización Pesada
   try {
-    print('[BackgroundService] Initializing Hive...');
+    print('[BackgroundService] Initializing Storage and Dependencies...');
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
 
-    try {
-      if (!Hive.isAdapterRegistered(0)) {
-        Hive.registerAdapter(PremiumStatusAdapter());
-      }
-      if (!Hive.isAdapterRegistered(1)) {
-        Hive.registerAdapter(SoundMixModelAdapter());
-      }
-    } catch (e) {
-      print('[BackgroundService] Hive Adapter warning: $e');
-    }
+    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(PremiumStatusAdapter());
+    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SoundMixModelAdapter());
 
-    print('[BackgroundService] Configuring Dependencies...');
     await configureDependencies();
-
-    print('[BackgroundService] Getting FocusBloc...');
     bloc = getIt<FocusBloc>();
-    isInitializing = false;
 
-    // Variables de estado local para evitar llamadas redundantes
-    bool isForeground = true; // El servicio inicia en foreground por configuración
+    print('[BackgroundService] BLoC ready.');
+    
+    // Variables de estado local para control de notificaciones
+    bool isForeground = true;
 
-    // Suscribirse y notificar estado real
+    // Suscribirse a cambios
     bloc!.stream.listen((state) async {
       service.invoke('update', state.toJson());
 
-      // Preparar textos
+      // Preparar textos para notificación
       final int minutes = state.remainingTime.inMinutes;
       final int seconds = state.remainingTime.inSeconds % 60;
       final timeDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
@@ -273,27 +261,22 @@ void onStart(ServiceInstance service) async {
           content: content,
         );
       } else if (Platform.isIOS) {
-        // Lógica específica para iOS: Actualizar notificación local manualmente
-        // Usamos siempre el mismo ID (888) para reemplazar la anterior
-        
-        // Solo mostramos notificación si está corriendo, pausado o finalizado recientemente
+        // Lógica específica para iOS
         if (state.pomodoroStatus == PomodoroStatus.running || 
             state.pomodoroStatus == PomodoroStatus.paused ||
             state.pomodoroStatus == PomodoroStatus.finished) {
             
-            // Opcional: Reducir frecuencia de actualización en iOS para evitar throttle
-            // Por ahora lo enviamos siempre, si da problemas, añadiremos un throttle.
             try {
               await flutterLocalNotificationsPlugin.show(
-                id: 888, // ID coincidente con Android
+                id: 888,
                 title: title,
                 body: content,
                 notificationDetails: const NotificationDetails(
                   iOS: DarwinNotificationDetails(
-                    presentAlert: true, // Mostrar si la app está abierta (opcional)
+                    presentAlert: true,
                     presentBanner: true,
-                    presentSound: false, // Sin sonido para no molestar cada segundo
-                    interruptionLevel: InterruptionLevel.passive, // Pasiva para no encender pantalla siempre
+                    presentSound: false,
+                    interruptionLevel: InterruptionLevel.passive,
                   ),
                 ),
               );
@@ -304,15 +287,15 @@ void onStart(ServiceInstance service) async {
       }
     });
 
-    print('[BackgroundService] Ready. Triggering Logic...');
+    // Iniciar lógica de negocio
     bloc!.add(InitializeApp());
-    // Forzar envío del estado inicial del BLoC
+    // Forzar envío inicial
     service.invoke('update', bloc!.state.toJson());
+
   } catch (e, stackTrace) {
     print('[BackgroundService] FATAL ERROR: $e');
     print(stackTrace);
     initFailed = true;
-    isInitializing = false;
     service.invoke('update', _getErrorStateJson());
   }
 }
@@ -343,7 +326,9 @@ Map<String, dynamic> _getErrorStateJson() => {
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
-  DartPluginRegistrant.ensureInitialized();
+  if (Platform.isAndroid) {
+    DartPluginRegistrant.ensureInitialized();
+  }
   print('iOS background service initialized');
   return true;
 }
