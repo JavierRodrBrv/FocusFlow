@@ -19,7 +19,9 @@ Future<void> initializeService() async {
 
   //--- Configuración de notificaciones para Android ---
   const notificationChannelId = 'focus_flow_channel';
+  const alarmChannelId = 'focus_flow_alarm_channel'; // Nuevo canal para alarmas
   const notificationId = 888;
+  const alarmNotificationId = 999;
 
   // Crear el canal manualmente para asegurar visibilidad en pantalla de bloqueo
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -27,17 +29,32 @@ Future<void> initializeService() async {
 
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
     notificationChannelId,
-    'Focus Flow',
+    'Focus Flow Status',
     description: 'Notificaciones persistentes del temporizador',
-    importance: Importance.low, // Low para evitar sonido constante en updates
+    importance: Importance.low, 
     showBadge: true,
     playSound: false,
+  );
+
+  // Canal de ALARMA (Alta importancia para encender pantalla)
+  const AndroidNotificationChannel alarmChannel = AndroidNotificationChannel(
+    alarmChannelId,
+    'Focus Flow Alarma',
+    description: 'Notificaciones de finalización de sesión',
+    importance: Importance.max, // MAX IMPORTANCE = Heads up + Screen Wake
+    playSound: false, // El sonido lo manejamos nosotros
+    enableVibration: false, // La vibración la manejamos nosotros
   );
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
+      
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(alarmChannel);
 
   // Solicitar permisos en iOS
   if (Platform.isIOS) {
@@ -242,6 +259,35 @@ void onStart(ServiceInstance service) async {
       } else if (state.pomodoroStatus == PomodoroStatus.finished) {
         title = 'FocusFlow - Finalizado';
         content = '¡Sesión terminada!';
+        
+        // --- NOTIFICACIÓN DE ALARMA (WAKE SCREEN) ---
+        // Se envía una notificación separada de alta prioridad solo al terminar
+        try {
+           await flutterLocalNotificationsPlugin.show(
+            id: 999, // ID diferente para la alarma
+           title:  '¡Sesión Completada!',
+            body: 'Has cumplido tu objetivo. Toca para continuar.',
+           notificationDetails:  const NotificationDetails(
+              android: AndroidNotificationDetails(
+                'focus_flow_alarm_channel', // ID del canal de alta importancia
+                'Focus Flow Alarma',
+                channelDescription: 'Notificaciones de finalización',
+                importance: Importance.max,
+                priority: Priority.high,
+                fullScreenIntent: true, // Intenta despertar la pantalla al máximo
+                category: AndroidNotificationCategory.alarm,
+              ),
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentBanner: true,
+                presentSound: false,
+                interruptionLevel: InterruptionLevel.timeSensitive, // Rompe modos de concentración
+              ),
+            ),
+          );
+        } catch (e) {
+          print('[BackgroundService] Alarm Notification Error: $e');
+        }
       }
 
       if (service is AndroidServiceInstance) {
