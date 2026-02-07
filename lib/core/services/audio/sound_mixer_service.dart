@@ -21,7 +21,22 @@ class SoundMixerService {
     try {
       // Configurar sesión de audio para background (iOS/Android)
       final session = await AudioSession.instance;
-      await session.configure(const AudioSessionConfiguration.music());
+      
+      // Configuración explícita para garantizar Playback en background en iOS
+      await session.configure(const AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playback,
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers, // Para no cortar otros audios si no queremos, o .none para cortar
+        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
+        androidAudioAttributes: AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.music,
+          flags: AndroidAudioFlags.none,
+          usage: AndroidAudioUsage.media,
+        ),
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+        androidWillPauseWhenDucked: true,
+      ));
 
       print('[SoundMixerService] Loading assets...');
       // Solo cargar y preparar, NO reproducir.

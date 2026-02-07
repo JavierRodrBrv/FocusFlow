@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:injectable/injectable.dart';
 import 'package:vibration/vibration.dart';
 
 @lazySingleton
 class HapticFeedbackService {
+  Timer? _vibrationTimer;
   
   HapticFeedbackService() {
     print('[HapticFeedbackService] Created');
@@ -11,44 +13,62 @@ class HapticFeedbackService {
   /// Starts a continuous vibration pattern to signal a penalty.
   /// This pattern will repeat until `stopFailVibration` is called.
   Future<void> startFailVibration() async {
-    if (await Vibration.hasVibrator() ?? false) {
-      // Pattern: vibrate 400ms, wait 600ms.
-      // The `repeat` argument at index 0 makes it loop indefinitely.
-      print('[HapticFeedbackService] Starting fail vibration loop...');
-      Vibration.vibrate(pattern: [400, 600], repeat: 0);
-    }
+    // Usamos el mismo mecanismo de Timer para consistencia
+    startAlarmVibration(); 
   }
 
-
-
   /// Starts a looping vibration for the alarm (60% intensity).
+  /// Uses a Dart Timer to ensure repetition on all platforms.
   Future<void> startAlarmVibration() async {
+    // Detener cualquier timer previo
+    stopFailVibration();
+    
     if (await Vibration.hasVibrator() ?? false) {
-      print('[HapticFeedbackService] Starting alarm vibration loop...');
-      if (await Vibration.hasAmplitudeControl() ?? false) {
-        // Patrón: vibra 1s, pausa 0.5s. Repetir desde el inicio (0).
-        // Intensidad: 155 (60%), 0
-        Vibration.vibrate(
-          pattern: [1000, 500], 
-          intensities: [155, 0],
-          repeat: 0,
-        );
-      } else {
-        Vibration.vibrate(pattern: [1000, 500], repeat: 0);
+      print('[HapticFeedbackService] Starting alarm vibration loop (Timer)...');
+      
+      // Función interna para ejecutar una vibración única
+      Future<void> vibrateOnce() async {
+        if (await Vibration.hasAmplitudeControl() ?? false) {
+          Vibration.vibrate(duration: 1000, amplitude: 155);
+        } else {
+          Vibration.vibrate(duration: 1000);
+        }
       }
+
+      // Ejecutar inmediatamente
+      vibrateOnce();
+
+      // Programar bucle: vibra 1s, espera 1s (ciclo de 2s)
+      _vibrationTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+        vibrateOnce();
+      });
     }
   }
 
   /// Stops the alarm vibration.
   Future<void> stopAlarmVibration() async {
-    await stopFailVibration(); // Vibration.cancel() detiene todo
+    await stopFailVibration();
   }
 
   /// Stops any ongoing vibration.
   Future<void> stopFailVibration() async {
+    _vibrationTimer?.cancel();
+    _vibrationTimer = null;
+    
      if (await Vibration.hasVibrator() ?? false) {
       print('[HapticFeedbackService] Stopping vibration...');
       Vibration.cancel();
+    }
+  }
+
+  /// Triggers a significant vibration feedback for completion (60% intensity).
+  Future<void> vibrate() async {
+     if (await Vibration.hasVibrator() ?? false) {
+      if (await Vibration.hasAmplitudeControl() ?? false) {
+        Vibration.vibrate(duration: 500, amplitude: 155);
+      } else {
+        Vibration.vibrate(duration: 500);
+      }
     }
   }
 
