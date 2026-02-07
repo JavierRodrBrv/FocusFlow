@@ -203,8 +203,18 @@ void onStart(ServiceInstance service) async {
   // 3. Inicialización Pesada
   try {
     print('[BackgroundService] Initializing Storage and Dependencies...');
-    final appDocumentDir = await getApplicationDocumentsDirectory();
+    
+    Directory? appDocumentDir;
+    try {
+      appDocumentDir = await getApplicationDocumentsDirectory();
+      print('[BackgroundService] Path Provider success: ${appDocumentDir.path}');
+    } catch (e) {
+      print('[BackgroundService] CRITICAL: Path Provider failed: $e');
+      throw Exception('Path Provider failed: $e');
+    }
+
     await Hive.initFlutter(appDocumentDir.path);
+    print('[BackgroundService] Hive Initialized.');
 
     if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(PremiumStatusAdapter());
     if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SoundMixModelAdapter());

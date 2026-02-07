@@ -203,7 +203,7 @@ class _FocusViewState extends State<FocusView> {
         // Si no hay datos aún, usamos un estado inicial por defecto para no bloquear la UI
         if (!snapshot.hasData || snapshot.data == null) {
           state = const FocusState(
-            status: AppStatus.loaded, // Simulamos loaded para mostrar la UI
+            status: AppStatus.loading, // Volvemos a Loading para no mentir con el punto verde
             remainingTime: Duration(minutes: 25),
             pomodoroDuration: Duration(minutes: 25),
           );
