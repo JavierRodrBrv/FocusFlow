@@ -29,16 +29,17 @@ class HapticFeedbackService {
       // Función interna para ejecutar una vibración única
       Future<void> vibrateOnce() async {
         if (await Vibration.hasAmplitudeControl() ?? false) {
-          Vibration.vibrate(duration: 1000, amplitude: 155);
+          // Intensidad 90% (~230)
+          Vibration.vibrate(duration: 800, amplitude: 230);
         } else {
-          Vibration.vibrate(duration: 1000);
+          Vibration.vibrate(duration: 800);
         }
       }
 
       // Ejecutar inmediatamente
       vibrateOnce();
 
-      // Programar bucle: vibra 1s, espera 1s (ciclo de 2s)
+      // Programar bucle: vibra 0.8s, espera 1.2s (ciclo de 2s)
       _vibrationTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
         vibrateOnce();
       });
@@ -65,7 +66,7 @@ class HapticFeedbackService {
   Future<void> vibrate() async {
      if (await Vibration.hasVibrator() ?? false) {
       if (await Vibration.hasAmplitudeControl() ?? false) {
-        Vibration.vibrate(duration: 500, amplitude: 155);
+        Vibration.vibrate(duration: 500, amplitude: 230);
       } else {
         Vibration.vibrate(duration: 500);
       }

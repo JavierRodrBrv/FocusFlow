@@ -54,6 +54,7 @@ dependencies:
   http: ^1.6.0
   flutter_native_splash: ^2.4.7
   confetti: ^0.8.0
+  flutter_dnd: ^0.1.4+1
 
 dev_dependencies:
   flutter_test:

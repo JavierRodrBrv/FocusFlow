@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter_dnd/flutter_dnd.dart';
 import 'package:injectable/injectable.dart';
 import 'package:focus_flow/features/focus_mode/domain/repositories/i_audio_manager.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
@@ -83,8 +85,32 @@ class FocusSessionManager {
     });
   }
 
-  void _triggerAlarm() {
-    _audioManager.startAlarmLoop();
+  void _triggerAlarm() async {
+    // Verificar "No Molestar" (Solo fiable en Android, en iOS es mejor confiar en el sistema)
+    bool shouldPlaySound = true;
+    if (Platform.isAndroid) {
+      try {
+        final isDnd = await FlutterDnd.isNotificationPolicyAccessGranted;
+        if (isDnd == true) {
+          final filter = await FlutterDnd.getCurrentInterruptionFilter();
+          // 1 = ALL, 2 = PRIORITY, 3 = NONE, 4 = ALARMS
+          if (filter == 3 || filter == 2) { 
+             // Si es NONE o PRIORITY (y no somos prioridad), silenciamos
+             // Nota: Al usar canal de alarma, a veces salta igual.
+             // Pero el usuario pidió explícitamente lógica de silenciado.
+             shouldPlaySound = false;
+          }
+        }
+      } catch (e) {
+        print('Error checking DND: $e');
+      }
+    }
+
+    if (shouldPlaySound) {
+      _audioManager.startAlarmLoop();
+    }
+    
+    // La vibración siempre va (como pidió el usuario)
     _hapticService.startAlarmVibration(); 
   }
 
@@ -127,27 +153,30 @@ class FocusSessionManager {
     _emitState();
   }
 
-  void pauseTimer() {
+  void pauseTimer() async {
     if (_status == PomodoroStatus.running) {
       _timerService.pause();
       _status = PomodoroStatus.paused;
       _audioManager.stopKeepAlive();
+      await stopAlarm(); // Detener alarma si estaba sonando
       _emitState();
     }
   }
 
-  void resetTimer() {
+  void resetTimer() async {
     _timerService.pause();
     _stopPenaltyEffects();
     _status = PomodoroStatus.initial;
     _remainingTime = _duration;
     _audioManager.stopKeepAlive();
+    await stopAlarm(); // Detener alarma
     _emitState();
   }
 
-  void stopAlarm() {
-    _audioManager.stopAlarm();
-    _hapticService.stopAlarmVibration();
+  Future<void> stopAlarm() async {
+    print('[FocusSessionManager] Stopping Alarm and Vibration...');
+    await _audioManager.stopAlarm();
+    await _hapticService.stopAlarmVibration();
   }
 
   // --- Logic Helpers ---

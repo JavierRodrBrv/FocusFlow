@@ -88,10 +88,6 @@ class _FocusViewState extends State<FocusView> {
     if (state.pomodoroStatus == PomodoroStatus.finished) {
       if (!_completionDialogShown) {
         _completionDialogShown = true;
-        
-        // Detener alarma inmediatamente al mostrar el diálogo (usuario activo)
-        FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
-        
         _confettiController.play();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _showCompletionDialog(context);
@@ -138,6 +134,9 @@ class _FocusViewState extends State<FocusView> {
           actions: [
             TextButton(
               onPressed: () {
+                // Primero detenemos todo de forma explícita
+                FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
+                // Luego reseteamos el temporizador
                 FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
                 Navigator.of(context).pop();
               },
