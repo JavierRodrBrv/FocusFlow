@@ -237,6 +237,7 @@ void onStart(ServiceInstance service) async {
     
     // Variables de estado local para control de notificaciones
     bool isForeground = true;
+    Timer? iosLoopingNotificationTimer; // Timer para el bucle en iOS
 
     // Suscribirse a cambios
     bloc!.stream.listen((state) async {
@@ -250,44 +251,90 @@ void onStart(ServiceInstance service) async {
       String title = 'FocusFlow';
       String content = 'Manteniendo tu sesión de foco.';
       
+      // Control de estados de la notificación
       if (state.pomodoroStatus == PomodoroStatus.running) {
         title = 'FocusFlow - Enfocando';
         content = 'Tiempo restante: $timeDisplay';
+        
+        // Cancelar bucle si estaba activo (al reiniciar)
+        iosLoopingNotificationTimer?.cancel();
+        iosLoopingNotificationTimer = null;
+        
       } else if (state.pomodoroStatus == PomodoroStatus.paused) {
         title = 'FocusFlow - Pausado';
         content = 'Tiempo restante: $timeDisplay';
+         iosLoopingNotificationTimer?.cancel();
+         iosLoopingNotificationTimer = null;
+         
       } else if (state.pomodoroStatus == PomodoroStatus.finished) {
         title = 'FocusFlow - Finalizado';
         content = '¡Sesión terminada!';
         
         // --- NOTIFICACIÓN DE ALARMA (WAKE SCREEN) ---
-        // Se envía una notificación separada de alta prioridad solo al terminar
-        try {
-           await flutterLocalNotificationsPlugin.show(
-            id: 999, // ID diferente para la alarma
-           title:  '¡Sesión Completada!',
-            body: 'Has cumplido tu objetivo. Toca para continuar.',
-           notificationDetails:  const NotificationDetails(
-              android: AndroidNotificationDetails(
-                'focus_flow_alarm_channel', // ID del canal de alta importancia
-                'Focus Flow Alarma',
-                channelDescription: 'Notificaciones de finalización',
-                importance: Importance.max,
-                priority: Priority.high,
-                fullScreenIntent: true, // Intenta despertar la pantalla al máximo
-                category: AndroidNotificationCategory.alarm,
+        // Se envía una notificación separada de alta prioridad solo al terminar.
+        // En iOS, si no hay bucle manual, iniciamos uno.
+        
+        if (Platform.isIOS && iosLoopingNotificationTimer == null) {
+           print('[BackgroundService] Starting iOS Looping Notification...');
+           
+           // Función para enviar la notificación
+           Future<void> sendAlarmNotification() async {
+              try {
+               await flutterLocalNotificationsPlugin.show(
+                id: 999, // ID diferente para la alarma
+                title: '¡Sesión Completada!',
+                body: 'Has cumplido tu objetivo. Toca para continuar.',
+                notificationDetails: const NotificationDetails(
+                  iOS: DarwinNotificationDetails(
+                    presentAlert: true,
+                    presentBanner: true,
+                    presentSound: false, // Seguimos usando audio custom, la vibración viene con la alerta
+                    interruptionLevel: InterruptionLevel.timeSensitive, 
+                  ),
+                ),
+              );
+              } catch (e) {
+                print('[BackgroundService] iOS Loop Notification Error: $e');
+              }
+           }
+
+           // Enviar primera inmediatamente
+           sendAlarmNotification();
+           
+           // Repetir cada 2 segundos (más agresivo para que parezca una vibración continua)
+           iosLoopingNotificationTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+              sendAlarmNotification();
+           });
+        } 
+        
+        // Android: Solo una vez, el canal tiene vibración/sonido continuo si se configura, 
+        // pero aquí usamos custom audio + custom vibration.
+        if (Platform.isAndroid) {
+           try {
+             await flutterLocalNotificationsPlugin.show(
+              id: 999,
+              title: '¡Sesión Completada!',
+              body: 'Has cumplido tu objetivo. Toca para continuar.',
+              notificationDetails: const NotificationDetails(
+                android: AndroidNotificationDetails(
+                  'focus_flow_alarm_channel',
+                  'Focus Flow Alarma',
+                  channelDescription: 'Notificaciones de finalización',
+                  importance: Importance.max,
+                  priority: Priority.high,
+                  fullScreenIntent: true,
+                  category: AndroidNotificationCategory.alarm,
+                ),
               ),
-              iOS: DarwinNotificationDetails(
-                presentAlert: true,
-                presentBanner: true,
-                presentSound: false,
-                interruptionLevel: InterruptionLevel.timeSensitive, // Rompe modos de concentración
-              ),
-            ),
-          );
-        } catch (e) {
-          print('[BackgroundService] Alarm Notification Error: $e');
+            );
+           } catch (e) {
+             print('[BackgroundService] Android Alarm Notification Error: $e');
+           }
         }
+      } else {
+        // Initial state
+         iosLoopingNotificationTimer?.cancel();
+         iosLoopingNotificationTimer = null;
       }
 
       if (service is AndroidServiceInstance) {
@@ -310,11 +357,9 @@ void onStart(ServiceInstance service) async {
           content: content,
         );
       } else if (Platform.isIOS) {
-        // Lógica específica para iOS
-        if (state.pomodoroStatus == PomodoroStatus.running || 
-            state.pomodoroStatus == PomodoroStatus.paused ||
-            state.pomodoroStatus == PomodoroStatus.finished) {
-            
+        // Lógica específica para iOS (Notificación silenciosa de estado normal)
+        // Solo enviamos updates si NO ha terminado, para no pisar la alarma
+        if (state.pomodoroStatus != PomodoroStatus.finished) {
             try {
               await flutterLocalNotificationsPlugin.show(
                 id: 888,
