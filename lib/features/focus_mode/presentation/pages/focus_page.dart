@@ -220,7 +220,34 @@ class _FocusViewState extends State<FocusView> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('FocusFlow'),
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('FocusFlow'),
+                if (state.status == AppStatus.loading || state.status == AppStatus.error) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: state.status == AppStatus.error ? Colors.red : Colors.amber,
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                ] else ...[
+                   // Punto verde temporal para confirmar conexión en debug
+                   const SizedBox(width: 8),
+                   Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Colors.greenAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                ]
+              ],
+            ),
             backgroundColor: Colors.transparent,
             centerTitle: true,
             elevation: 0,

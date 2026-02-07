@@ -74,10 +74,9 @@ void onStart(ServiceInstance service) async {
   // 1. Bindings críticos primero
   WidgetsFlutterBinding.ensureInitialized();
   
-  // DartPluginRegistrant solo es necesario en Android para ciertos plugins.
-  if (Platform.isAndroid) {
-    DartPluginRegistrant.ensureInitialized();
-  }
+  // Reactivamos el registro de plugins para todas las plataformas.
+  // Es necesario para que path_provider y Hive funcionen en el Isolate secundario en iOS.
+  DartPluginRegistrant.ensureInitialized();
 
   print('[BackgroundService] Starting Isolate...');
 
@@ -326,9 +325,7 @@ Map<String, dynamic> _getErrorStateJson() => {
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (Platform.isAndroid) {
-    DartPluginRegistrant.ensureInitialized();
-  }
+  DartPluginRegistrant.ensureInitialized();
   print('iOS background service initialized');
   return true;
 }
