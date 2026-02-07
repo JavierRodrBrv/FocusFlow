@@ -75,7 +75,6 @@ void onStart(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Reactivamos el registro de plugins para todas las plataformas.
-  // Es necesario para que path_provider y Hive funcionen en el Isolate secundario en iOS.
   DartPluginRegistrant.ensureInitialized();
 
   print('[BackgroundService] Starting Isolate...');
@@ -204,21 +203,16 @@ void onStart(ServiceInstance service) async {
   try {
     print('[BackgroundService] Initializing Storage and Dependencies...');
     
-    Directory? appDocumentDir;
-    try {
-      appDocumentDir = await getApplicationDocumentsDirectory();
-      print('[BackgroundService] Path Provider success: ${appDocumentDir.path}');
-    } catch (e) {
-      print('[BackgroundService] CRITICAL: Path Provider failed: $e');
-      throw Exception('Path Provider failed: $e');
-    }
-
+    // IMPORTANTE: Hive.initFlutter() debe llamarse ANTES de configureDependencies()
+    // porque injectable intentará abrir cajas de Hive inmediatamente.
+    final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
-    print('[BackgroundService] Hive Initialized.');
+    print('[BackgroundService] Hive Initialized at: ${appDocumentDir.path}');
 
     if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(PremiumStatusAdapter());
     if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SoundMixModelAdapter());
 
+    // Ahora inicializamos las dependencias (que abrirán las cajas de Hive)
     await configureDependencies();
     bloc = getIt<FocusBloc>();
 
