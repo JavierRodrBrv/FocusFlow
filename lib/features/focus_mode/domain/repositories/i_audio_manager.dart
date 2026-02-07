@@ -10,6 +10,10 @@ abstract class IAudioManager {
   Future<void> playFailSound();
   Future<void> startFailLoop();
   Future<void> stopFailLoop();
+
+  // Background Keep-Alive (mainly for iOS)
+  Future<void> startKeepAlive();
+  Future<void> stopKeepAlive();
   
   Future<void> dispose();
 }

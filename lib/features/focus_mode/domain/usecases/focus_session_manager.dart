@@ -76,6 +76,7 @@ class FocusSessionManager {
       if (_remainingTime.inSeconds == 0) {
         _status = PomodoroStatus.finished;
         _stopPenaltyEffects(); // Seguridad
+        _audioManager.stopKeepAlive();
       }
       _emitState();
     });
@@ -116,6 +117,7 @@ class FocusSessionManager {
     }
     _status = PomodoroStatus.running;
     _isInPenalty = false;
+    _audioManager.startKeepAlive();
     _emitState();
   }
 
@@ -123,6 +125,7 @@ class FocusSessionManager {
     if (_status == PomodoroStatus.running) {
       _timerService.pause();
       _status = PomodoroStatus.paused;
+      _audioManager.stopKeepAlive();
       _emitState();
     }
   }
@@ -132,6 +135,7 @@ class FocusSessionManager {
     _stopPenaltyEffects();
     _status = PomodoroStatus.initial;
     _remainingTime = _duration;
+    _audioManager.stopKeepAlive();
     _emitState();
   }
 
@@ -150,6 +154,7 @@ class FocusSessionManager {
       _timerService.pause();
       _status = PomodoroStatus.paused;
       _isInPenalty = true;
+      _audioManager.stopKeepAlive(); // El castigo ya tiene su propio audio loop
       _startPenaltyEffects();
     } else if (isPausedByPenalty && isFaceDown) {
       // SALIR DE CASTIGO
@@ -157,6 +162,7 @@ class FocusSessionManager {
       _timerService.resume();
       _status = PomodoroStatus.running;
       _isInPenalty = false;
+      _audioManager.startKeepAlive();
     }
   }
 

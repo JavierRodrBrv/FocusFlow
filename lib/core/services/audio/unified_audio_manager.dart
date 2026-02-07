@@ -37,6 +37,12 @@ class UnifiedAudioManager implements IAudioManager {
   Future<void> stopFailLoop() async => _effectService.stopFailLoop();
 
   @override
+  Future<void> startKeepAlive() async => _mixerService.startKeepAlive();
+
+  @override
+  Future<void> stopKeepAlive() async => _mixerService.stopKeepAlive();
+
+  @override
   Future<void> dispose() async {
     _mixerService.dispose();
     _effectService.dispose();
