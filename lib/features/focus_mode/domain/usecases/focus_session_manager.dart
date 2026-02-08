@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:focus_flow/core/services/dnd_service.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:injectable/injectable.dart';
 import 'package:focus_flow/features/focus_mode/domain/repositories/i_audio_manager.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
@@ -49,6 +50,8 @@ class FocusSessionManager {
 
   final _stateController = StreamController<SessionState>.broadcast();
   Stream<SessionState> get stateStream => _stateController.stream;
+
+  Box? _settingsBox;
 
   // Estado interno mutable (Single Source of Truth)
   PomodoroStatus _status = PomodoroStatus.initial;
@@ -111,6 +114,16 @@ class FocusSessionManager {
 
   void init() async {
     await _audioManager.init();
+    // Cargar preferencia guardada de forma segura
+    try {
+      _settingsBox = Hive.isBoxOpen('settings') ? Hive.box('settings') : await Hive.openBox('settings');
+      _isAlarmSoundEnabled = _settingsBox!.get('alarm_sound_enabled', defaultValue: true);
+      print('[FocusSessionManager] Loaded Alarm Sound Preference: $_isAlarmSoundEnabled');
+    } catch (e) {
+      print('[FocusSessionManager] Error loading alarm preference: $e');
+      _isAlarmSoundEnabled = true; // Fallback
+    }
+    _emitState();
   }
 
   // --- Actions ---
@@ -123,8 +136,15 @@ class FocusSessionManager {
     }
   }
 
-  void toggleAlarmSound() {
+  void toggleAlarmSound() async {
     _isAlarmSoundEnabled = !_isAlarmSoundEnabled;
+    try {
+      if (_settingsBox != null) {
+        await _settingsBox!.put('alarm_sound_enabled', _isAlarmSoundEnabled);
+      }
+    } catch (e) {
+      print('[FocusSessionManager] Error saving alarm preference: $e');
+    }
     _emitState();
   }
 

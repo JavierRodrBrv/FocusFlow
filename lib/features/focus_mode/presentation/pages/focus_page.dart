@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:confetti/confetti.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
@@ -21,8 +20,59 @@ import '../widgets/timer_controls.dart';
 import '../widgets/timer_display.dart';
 import '../widgets/settings_menu_bottom_sheet.dart';
 
-class FocusPage extends StatelessWidget {
+class FocusPage extends StatefulWidget {
   const FocusPage({super.key});
+
+  @override
+  State<FocusPage> createState() => _FocusPageState();
+}
+
+class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
+  Key _viewKey = UniqueKey();
+  DateTime? _pauseTime;
+  static const _inactivityThreshold = Duration(minutes: 5);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _pauseTime = DateTime.now();
+      // Notificamos al servicio que la UI se ha ido para que corte el grifo
+      FlutterBackgroundService().invoke('sendEvent', {'event': 'ui_paused'});
+    } else if (state == AppLifecycleState.resumed) {
+      print('[FocusPage] App Resumed: Stabilizing UI...');
+      
+      bool shouldReset = false;
+      if (_pauseTime != null) {
+        final inactiveDuration = DateTime.now().difference(_pauseTime!);
+        if (inactiveDuration > _inactivityThreshold) {
+          shouldReset = true;
+        }
+      }
+
+      if (shouldReset) {
+        print('[FocusPage] Hard Reset triggered by inactivity.');
+        setState(() {
+          _viewKey = UniqueKey();
+          _pauseTime = null;
+        });
+      } else {
+        // Si no hay reset, simplemente avisamos que hemos vuelto
+        FlutterBackgroundService().invoke('sendEvent', {'event': 'ui_resumed'});
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +82,7 @@ class FocusPage extends StatelessWidget {
           _showDevDialog(context);
         }
       },
-      builder: (context) => const FocusView(),
+      builder: (context) => FocusView(key: _viewKey),
     );
   }
 }
@@ -44,7 +94,7 @@ class FocusView extends StatefulWidget {
   State<FocusView> createState() => _FocusViewState();
 }
 
-class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
+class _FocusViewState extends State<FocusView> {
   final GlobalKey _timerKey = GlobalKey();
   final GlobalKey _controlsKey = GlobalKey();
   final GlobalKey _mixerKey = GlobalKey();
@@ -54,104 +104,72 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
   final GlobalKey _tutorialKey = GlobalKey();
 
   Timer? _handshakeTimer;
+  Timer? _heartbeatTimer;
   late ConfettiController _confettiController;
   bool _completionDialogShown = false;
-  
-  // Guardar el último estado para evitar parpadeos/cargando al volver de background
   FocusState? _lastKnownState;
   late Stream<Map<String, dynamic>?> _updateStream;
-  
-  // Flag para evitar bloquear la UI con diálogos pesados durante la animación de desbloqueo
   bool _isResuming = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
-    
-    // Guardar referencia al stream
     _updateStream = FlutterBackgroundService().on('update');
 
-    // HANDSHAKE: Pedir estado activamente al iniciar
     _requestState();
-    
-    // Reintentar periódicamente por si el servicio tarda en arrancar
-    _handshakeTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _startHeartbeat();
+
+    _handshakeTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_lastKnownState == null || _lastKnownState!.status == AppStatus.loading) {
         _requestState();
       }
     });
 
-    // CONSENT
     _checkConsent();
-
-    // CHECK TUTORIAL
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkTutorial());
+    
+    // Si acabamos de ser creados, marcamos un breve periodo de estabilización
+    _isResuming = true;
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) setState(() => _isResuming = false);
+    });
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _handshakeTimer?.cancel();
+    _heartbeatTimer?.cancel();
     _confettiController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      print('[FocusPage] App Resumed: Stabilizing UI...');
-      // 1. Activar modo protección
-      setState(() {
-        _isResuming = true;
-      });
-      
-      // 2. Pedir estado fresco
-      _requestState();
-
-      // 3. Desactivar protección después de que la UI se asiente (800ms)
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-           setState(() {
-            _isResuming = false;
-          });
-          // Forzar una re-verificación por si el estado 'Finished' llegó mientras estábamos protegiendo
-          if (_lastKnownState != null) {
-            _checkCompletion(_lastKnownState!);
-          }
-        }
-      });
-    }
   }
 
   void _requestState() {
     FlutterBackgroundService().invoke('sendEvent', {'event': 'requestState'});
   }
 
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        FlutterBackgroundService().invoke('sendEvent', {'event': 'ui_heartbeat'});
+      }
+    });
+  }
+
   void _checkCompletion(FocusState state) {
-    // Si la app se está reanudando, NO intentar mostrar diálogos ni animaciones pesadas aún.
     if (_isResuming) return;
     
     if (state.pomodoroStatus == PomodoroStatus.finished) {
       if (!_completionDialogShown) {
         _completionDialogShown = true;
-        
-        // Detener alarma automáticamente si el usuario ya está viendo la pantalla (Mejora UX/Performance)
         FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
-        
-        // Iniciar celebración visual
         _confettiController.play();
-        
-        // Mostrar diálogo con seguridad
         if (mounted) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _showCompletionDialog(context);
-          });
+          WidgetsBinding.instance.addPostFrameCallback((_) => _showCompletionDialog(context));
         }
       }
     } else {
-      // Reset flag if not finished (e.g., reset timer)
       if (state.pomodoroStatus != PomodoroStatus.finished) {
         _completionDialogShown = false;
       }
@@ -173,11 +191,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
               const SizedBox(height: 20),
               const Text(
                 '¡Sesión Completada!',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
@@ -191,9 +205,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
           actions: [
             TextButton(
               onPressed: () {
-                // Primero detenemos todo de forma explícita
                 FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
-                // Luego reseteamos el temporizador
                 FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
                 Navigator.of(context).pop();
               },
@@ -209,18 +221,14 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
     try {
       var box = await Hive.openBox('settings');
       bool seen = box.get('tutorial_seen', defaultValue: false);
-
       if (!seen) {
         await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
           _startShowcase();
           box.put('tutorial_seen', true);
         }
-      } else {
-        // Si ya se vio el tutorial, mostramos el diálogo de desarrollo directamente (si aplica)
-        if (F.appFlavor == Flavor.dev && mounted) {
-          _showDevDialog(context);
-        }
+      } else if (F.appFlavor == Flavor.dev && mounted) {
+        _showDevDialog(context);
       }
     } catch (e) {
       print("Error checking tutorial: $e");
@@ -228,25 +236,13 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
   }
 
   void _startShowcase() {
-    ShowCaseWidget.of(context).startShowCase([
-      _timerKey,
-      _controlsKey,
-      _mixerKey,
-      _savedMixesKey,
-      _hardcoreKey,
-      _premiumKey,
-      _tutorialKey,
-    ]);
+    ShowCaseWidget.of(context).startShowCase([_timerKey, _controlsKey, _mixerKey, _savedMixesKey, _hardcoreKey, _premiumKey, _tutorialKey]);
   }
 
   Future<void> _checkConsent() async {
     await Future.delayed(const Duration(milliseconds: 500));
     final canRequest = await AdConsentManager().requestConsent();
-    print(
-        '[FocusPage] Consent result: $canRequest. Updating Background Service...');
-
-    FlutterBackgroundService().invoke('sendEvent',
-        {'event': 'updateConsentStatus', 'canRequest': canRequest});
+    FlutterBackgroundService().invoke('sendEvent', {'event': 'updateConsentStatus', 'canRequest': canRequest});
   }
 
   @override
@@ -255,23 +251,16 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
       stream: _updateStream,
       builder: (context, snapshot) {
         FocusState state;
-
         if (snapshot.hasData && snapshot.data != null) {
           try {
             state = FocusState.fromJson(snapshot.data!);
             _lastKnownState = state;
             _checkCompletion(state);
           } catch (e) {
-            print("Error decoding state: $e");
             state = _lastKnownState ?? const FocusState();
           }
         } else {
-          // Si no hay datos nuevos (ej: al volver de segundo plano), usar el último conocido
-          state = _lastKnownState ?? const FocusState(
-            status: AppStatus.loading,
-            remainingTime: Duration(minutes: 25),
-            pomodoroDuration: Duration(minutes: 25),
-          );
+          state = _lastKnownState ?? const FocusState(status: AppStatus.loading);
         }
 
         return Scaffold(
@@ -282,25 +271,10 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                 const Text('FocusFlow'),
                 if (state.status == AppStatus.loading || state.status == AppStatus.error) ...[
                   const SizedBox(width: 8),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: state.status == AppStatus.error ? Colors.red : Colors.amber,
-                      shape: BoxShape.circle,
-                    ),
-                  )
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: state.status == AppStatus.error ? Colors.red : Colors.amber, shape: BoxShape.circle))
                 ] else ...[
-                   // Punto verde temporal para confirmar conexión en debug
                    const SizedBox(width: 8),
-                   Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Colors.greenAccent,
-                      shape: BoxShape.circle,
-                    ),
-                  )
+                   Container(width: 6, height: 6, decoration: const BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle))
                 ]
               ],
             ),
@@ -310,20 +284,12 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
             leading: Showcase(
               key: _tutorialKey,
               title: 'Menú',
-              description:
-                  'Accede al tutorial, ajustes y feedback aquí.',
+              description: 'Accede al tutorial, ajustes y feedback aquí.',
               child: IconButton(
                 icon: const Icon(Icons.menu, color: Colors.white70),
-                tooltip: 'Menú',
                 onPressed: () async {
-                  final result = await showModalBottomSheet(
-                    context: context,
-                    builder: (context) => const SettingsMenuBottomSheet(),
-                  );
-                  
-                  if (result == 'tutorial') {
-                    _startShowcase();
-                  }
+                  final result = await showModalBottomSheet(context: context, builder: (context) => const SettingsMenuBottomSheet());
+                  if (result == 'tutorial') _startShowcase();
                 },
               ),
             ),
@@ -331,38 +297,14 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
               Showcase(
                 key: _premiumKey,
                 title: 'Premium',
-                description:
-                    'Desbloquea funciones exclusivas y elimina anuncios.',
+                description: 'Desbloquea funciones exclusivas y elimina anuncios.',
                 child: IconButton(
-                  icon: Icon(
-                    state.isPremium
-                        ? Icons.workspace_premium
-                        : Icons.workspace_premium_outlined,
-                    color: state.isPremium ? Colors.amber : Colors.white70,
-                  ),
-                  tooltip: F.appFlavor == Flavor.dev
-                      ? 'Simular Premium (Dev)'
-                      : 'Premium',
+                  icon: Icon(state.isPremium ? Icons.workspace_premium : Icons.workspace_premium_outlined, color: state.isPremium ? Colors.amber : Colors.white70),
                   onPressed: () {
                     if (F.appFlavor == Flavor.dev) {
-                      FlutterBackgroundService()
-                          .invoke('sendEvent', {'event': 'togglePremium'});
-                    } else {
-                      if (!state.isPremium) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const PremiumFeatureDialog(
-                            featureName: 'Premium',
-                            featureDescription:
-                                'Desbloquea todas las funciones y elimina los anuncios.',
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Ya eres usuario Premium.')),
-                        );
-                      }
+                      FlutterBackgroundService().invoke('sendEvent', {'event': 'togglePremium'});
+                    } else if (!state.isPremium) {
+                      showDialog(context: context, builder: (context) => const PremiumFeatureDialog(featureName: 'Premium', featureDescription: 'Desbloquea todas las funciones y elimina los anuncios.'));
                     }
                   },
                 ),
@@ -376,8 +318,8 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
                 alignment: Alignment.topCenter,
                 child: ConfettiWidget(
                   confettiController: _confettiController,
-                  blastDirection: pi / 2, // Hacia abajo
-                  maxBlastForce: 5, // Velocidad
+                  blastDirection: pi / 2,
+                  maxBlastForce: 5,
                   minBlastForce: 2,
                   emissionFrequency: 0.05,
                   numberOfParticles: 20,
@@ -389,11 +331,7 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
           ),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
-              FlutterBackgroundService().invoke('sendEvent', {
-                'event': 'updatePomodoroDuration',
-                'durationSeconds': 10
-              });
-              // Forzamos reseteo para que coja la nueva duración inmediatamente
+              FlutterBackgroundService().invoke('sendEvent', {'event': 'updatePomodoroDuration', 'durationSeconds': 10});
               FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
             },
             backgroundColor: Colors.redAccent,
@@ -405,73 +343,29 @@ class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
   }
 
   Widget _buildBody(BuildContext context, FocusState state) {
-    final service = FlutterBackgroundService();
-
-    if (state.status == AppStatus.initial ||
-        state.status == AppStatus.loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.status == AppStatus.error) {
-      return const Center(child: Text("Error fatal de inicialización"));
-    }
+    if (state.status == AppStatus.initial || state.status == AppStatus.loading) return const Center(child: CircularProgressIndicator());
+    if (state.status == AppStatus.error) return const Center(child: Text("Error fatal de inicialización"));
 
     return Column(
       children: [
         Expanded(
           child: ListView(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
             children: [
               const SizedBox(height: 20),
-              Showcase(
-                key: _timerKey,
-                title: 'Temporizador',
-                description:
-                    'Aquí puedes ver el tiempo restante de tu sesión de enfoque.',
-                child: TimerDisplay(state: state, service: service),
-              ),
+              Showcase(key: _timerKey, title: 'Temporizador', description: 'Tiempo restante.', child: TimerDisplay(state: state, service: FlutterBackgroundService())),
               const SizedBox(height: 30),
-              Showcase(
-                key: _controlsKey,
-                title: 'Controles',
-                description: 'Inicia, pausa o reinicia tu temporizador aquí.',
-                child: TimerControls(state: state, service: service),
-              ),
+              Showcase(key: _controlsKey, title: 'Controles', description: 'Inicia, pausa o reinicia.', child: TimerControls(state: state, service: FlutterBackgroundService())),
               const SizedBox(height: 40),
-              Showcase(
-                key: _mixerKey,
-                title: 'Mezclador de Sonidos',
-                description:
-                    'Crea tu ambiente perfecto ajustando los sonidos de fondo.',
-                child: SoundMixer(state: state, service: service),
-              ),
+              Showcase(key: _mixerKey, title: 'Sonidos', description: 'Ajusta tu ambiente.', child: SoundMixer(state: state, service: FlutterBackgroundService())),
               const SizedBox(height: 40),
-              Showcase(
-                key: _savedMixesKey,
-                title: 'Mezclas Guardadas',
-                description:
-                    'Accede rápidamente a tus combinaciones de sonido favoritas.',
-                child: SavedMixPlayer(state: state, service: service),
-              ),
-              Showcase(
-                key: _hardcoreKey,
-                title: 'Modo Hardcore',
-                description:
-                    'Activa este modo para evitar distracciones. Si giras el móvil, pierdes.',
-                child: HardcoreModeCard(state: state, service: service),
-              ),
+              Showcase(key: _savedMixesKey, title: 'Mezclas', description: 'Tus favoritas.', child: SavedMixPlayer(state: state, service: FlutterBackgroundService())),
+              Showcase(key: _hardcoreKey, title: 'Hardcore', description: 'Si lo giras, pierdes.', child: HardcoreModeCard(state: state, service: FlutterBackgroundService())),
               const SizedBox(height: 40),
             ],
           ),
         ),
-        if (!state.isPremium && state.canRequestAds)
-          const SafeArea(
-            top: false,
-            child: AdBannerWidget(),
-          )
-        else
-          const SizedBox.shrink(),
+        if (!state.isPremium && state.canRequestAds) const SafeArea(top: false, child: AdBannerWidget()) else const SizedBox.shrink(),
       ],
     );
   }
@@ -482,27 +376,9 @@ void _showDevDialog(BuildContext context) {
     context: context,
     builder: (context) => AlertDialog(
       backgroundColor: const Color(0xFF1E293B),
-      title: const Row(
-        children: [
-          Icon(Icons.bug_report, color: Colors.orangeAccent),
-          SizedBox(width: 10),
-          Text('Versión de Desarrollo', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-      content: const Text(
-        'Estás utilizando una versión de prueba (Dev).\n\n'
-        '• Las funciones Premium se pueden simular.\n'
-        '• Puede contener errores experimentales.\n'
-        '• ¡Ayúdanos a mejorar! Envía tus ideas o reporta fallos desde el nuevo menú de Ajustes (icono ☰).',
-        style: TextStyle(color: Colors.white70),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Entendido',
-              style: TextStyle(color: Colors.blueAccent)),
-        ),
-      ],
+      title: const Row(children: [Icon(Icons.bug_report, color: Colors.orangeAccent), SizedBox(width: 10), Text('Versión de Desarrollo', style: TextStyle(color: Colors.white))]),
+      content: const Text('Versión de prueba (Dev). Funciones Premium simulables.', style: TextStyle(color: Colors.white70)),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Entendido', style: TextStyle(color: Colors.blueAccent)))],
     ),
   );
 }
