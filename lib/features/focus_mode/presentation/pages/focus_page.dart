@@ -360,7 +360,7 @@ class _FocusViewState extends State<FocusView> {
               Showcase(key: _mixerKey, title: 'Sonidos', description: 'Ajusta tu ambiente.', child: SoundMixer(state: state, service: FlutterBackgroundService())),
               const SizedBox(height: 40),
               Showcase(key: _savedMixesKey, title: 'Mezclas', description: 'Tus favoritas.', child: SavedMixPlayer(state: state, service: FlutterBackgroundService())),
-              Showcase(key: _hardcoreKey, title: 'Hardcore', description: 'Si lo giras, pierdes.', child: HardcoreModeCard(state: state, service: FlutterBackgroundService())),
+              Showcase(key: _hardcoreKey, title: 'Modo Focus', description: 'Activa este modo para evitar distracciones. Si giras el móvil, el tiempo se detiene.', child: HardcoreModeCard(state: state, service: FlutterBackgroundService())),
               const SizedBox(height: 40),
             ],
           ),
@@ -376,9 +376,27 @@ void _showDevDialog(BuildContext context) {
     context: context,
     builder: (context) => AlertDialog(
       backgroundColor: const Color(0xFF1E293B),
-      title: const Row(children: [Icon(Icons.bug_report, color: Colors.orangeAccent), SizedBox(width: 10), Text('Versión de Desarrollo', style: TextStyle(color: Colors.white))]),
-      content: const Text('Versión de prueba (Dev). Funciones Premium simulables.', style: TextStyle(color: Colors.white70)),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Entendido', style: TextStyle(color: Colors.blueAccent)))],
+      title: const Row(
+        children: [
+          Icon(Icons.bug_report, color: Colors.orangeAccent),
+          SizedBox(width: 10),
+          Text('Versión de Desarrollo', style: TextStyle(color: Colors.white)),
+        ],
+      ),
+      content: const Text(
+        'Estás utilizando una versión de prueba (Dev).\n\n'
+        '• Las funciones Premium se pueden simular.\n'
+        '• Puede contener errores experimentales.\n'
+        '• ¡Ayúdanos a mejorar! Envía tus ideas o reporta fallos desde el nuevo menú de Ajustes (icono ☰).',
+        style: TextStyle(color: Colors.white70),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Entendido',
+              style: TextStyle(color: Colors.blueAccent)),
+        ),
+      ],
     ),
   );
 }

@@ -42,12 +42,12 @@ class HardcoreModeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Modo Hardcore',
+                      'Modo Focus',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'La sesión falla si levantas el móvil',
+                      'La sesión se pausa si levantas el móvil',
                       style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
                     ),
                   ],
@@ -58,12 +58,12 @@ class HardcoreModeCard extends StatelessWidget {
                 onChanged: (_) {
                   service.invoke('sendEvent', {'event': 'toggleHardcore'});
                 },
-                activeColor: Colors.redAccent,
+                activeColor: Colors.blueAccent,
               ),
             ],
           ),
           
-          // Solo mostramos el mensaje de estado si el modo Hardcore está activado
+          // Solo mostramos el mensaje de estado si el modo Focus está activado
           if (state.isHardcoreMode) ...[
             const SizedBox(height: 16),
             const Divider(height: 1, color: Colors.white10),
@@ -86,8 +86,8 @@ class _StatusMessage extends StatelessWidget {
     if (state.isInPenaltyBox) {
       return _buildRow(
         icon: Icons.error_outline,
-        color: Colors.redAccent,
-        text: '¡CASTIGO! Pon el móvil boca abajo YA.',
+        color: Colors.orangeAccent,
+        text: '¡FUERA DE FOCO! Pon el móvil boca abajo.',
         isBold: true,
       );
     }
