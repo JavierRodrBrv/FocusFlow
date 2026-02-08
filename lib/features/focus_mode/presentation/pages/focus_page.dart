@@ -44,7 +44,7 @@ class FocusView extends StatefulWidget {
   State<FocusView> createState() => _FocusViewState();
 }
 
-class _FocusViewState extends State<FocusView> {
+class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
   final GlobalKey _timerKey = GlobalKey();
   final GlobalKey _controlsKey = GlobalKey();
   final GlobalKey _mixerKey = GlobalKey();
@@ -56,42 +56,99 @@ class _FocusViewState extends State<FocusView> {
   Timer? _handshakeTimer;
   late ConfettiController _confettiController;
   bool _completionDialogShown = false;
+  
+  // Guardar el último estado para evitar parpadeos/cargando al volver de background
+  FocusState? _lastKnownState;
+  late Stream<Map<String, dynamic>?> _updateStream;
+  
+  // Flag para evitar bloquear la UI con diálogos pesados durante la animación de desbloqueo
+  bool _isResuming = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    
+    // Guardar referencia al stream
+    _updateStream = FlutterBackgroundService().on('update');
 
-    // HANDSHAKE: Pedir estado activamente al iniciar y reintentar
-    _handshakeTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      print('[FocusPage] Handshake retry...');
-      FlutterBackgroundService().invoke('sendEvent', {'event': 'requestState'});
+    // HANDSHAKE: Pedir estado activamente al iniciar
+    _requestState();
+    
+    // Reintentar periódicamente por si el servicio tarda en arrancar
+    _handshakeTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_lastKnownState == null || _lastKnownState!.status == AppStatus.loading) {
+        _requestState();
+      }
     });
-    print('[FocusPage] Requesting initial state...');
-    FlutterBackgroundService().invoke('sendEvent', {'event': 'requestState'});
 
     // CONSENT
     _checkConsent();
 
-    // CHECK TUTORIAL (Handles Dev Dialog logic)
+    // CHECK TUTORIAL
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkTutorial());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _handshakeTimer?.cancel();
     _confettiController.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print('[FocusPage] App Resumed: Stabilizing UI...');
+      // 1. Activar modo protección
+      setState(() {
+        _isResuming = true;
+      });
+      
+      // 2. Pedir estado fresco
+      _requestState();
+
+      // 3. Desactivar protección después de que la UI se asiente (800ms)
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) {
+           setState(() {
+            _isResuming = false;
+          });
+          // Forzar una re-verificación por si el estado 'Finished' llegó mientras estábamos protegiendo
+          if (_lastKnownState != null) {
+            _checkCompletion(_lastKnownState!);
+          }
+        }
+      });
+    }
+  }
+
+  void _requestState() {
+    FlutterBackgroundService().invoke('sendEvent', {'event': 'requestState'});
+  }
+
   void _checkCompletion(FocusState state) {
+    // Si la app se está reanudando, NO intentar mostrar diálogos ni animaciones pesadas aún.
+    if (_isResuming) return;
+    
     if (state.pomodoroStatus == PomodoroStatus.finished) {
       if (!_completionDialogShown) {
         _completionDialogShown = true;
+        
+        // Detener alarma automáticamente si el usuario ya está viendo la pantalla (Mejora UX/Performance)
+        FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
+        
+        // Iniciar celebración visual
         _confettiController.play();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showCompletionDialog(context);
-        });
+        
+        // Mostrar diálogo con seguridad
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showCompletionDialog(context);
+          });
+        }
       }
     } else {
       // Reset flag if not finished (e.g., reset timer)
@@ -195,26 +252,26 @@ class _FocusViewState extends State<FocusView> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Map<String, dynamic>?>(
-      stream: FlutterBackgroundService().on('update'),
+      stream: _updateStream,
       builder: (context, snapshot) {
         FocusState state;
 
-        // Si no hay datos aún, usamos un estado inicial por defecto para no bloquear la UI
-        if (!snapshot.hasData || snapshot.data == null) {
-          state = const FocusState(
-            status: AppStatus.loading, // Volvemos a Loading para no mentir con el punto verde
-            remainingTime: Duration(minutes: 25),
-            pomodoroDuration: Duration(minutes: 25),
-          );
-        } else {
+        if (snapshot.hasData && snapshot.data != null) {
           try {
             state = FocusState.fromJson(snapshot.data!);
-            // print("[FocusPage] Received State: ${state.status}"); // Silenciamos log repetitivo
+            _lastKnownState = state;
             _checkCompletion(state);
           } catch (e) {
             print("Error decoding state: $e");
-            state = const FocusState();
+            state = _lastKnownState ?? const FocusState();
           }
+        } else {
+          // Si no hay datos nuevos (ej: al volver de segundo plano), usar el último conocido
+          state = _lastKnownState ?? const FocusState(
+            status: AppStatus.loading,
+            remainingTime: Duration(minutes: 25),
+            pomodoroDuration: Duration(minutes: 25),
+          );
         }
 
         return Scaffold(

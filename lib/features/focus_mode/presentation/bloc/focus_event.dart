@@ -38,6 +38,8 @@ class PauseMix extends FocusEvent {}
 // Timer & Focus Events
 class ToggleHardcoreMode extends FocusEvent {}
 
+class ToggleAlarmSound extends FocusEvent {}
+
 class StartTimer extends FocusEvent {}
 
 class PauseTimer extends FocusEvent {}

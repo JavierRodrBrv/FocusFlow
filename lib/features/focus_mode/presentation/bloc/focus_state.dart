@@ -28,6 +28,7 @@ class FocusState {
   final bool isHardcoreMode;
   final PhoneOrientation phoneOrientation;
   final bool isInPenaltyBox;
+  final bool isAlarmSoundEnabled;
 
   // Pomodoro Timer State
   final PomodoroStatus pomodoroStatus;
@@ -51,6 +52,7 @@ class FocusState {
     this.isHardcoreMode = false,
     this.phoneOrientation = PhoneOrientation.unknown,
     this.isInPenaltyBox = false,
+    this.isAlarmSoundEnabled = true,
     this.pomodoroStatus = PomodoroStatus.initial,
     this.remainingTime = const Duration(minutes: 25),
     this.pomodoroDuration = const Duration(minutes: 25),
@@ -77,6 +79,7 @@ class FocusState {
     bool? isHardcoreMode,
     PhoneOrientation? phoneOrientation,
     bool? isInPenaltyBox,
+    bool? isAlarmSoundEnabled,
     PomodoroStatus? pomodoroStatus,
     Duration? remainingTime,
     Duration? pomodoroDuration,
@@ -99,6 +102,7 @@ class FocusState {
       isHardcoreMode: isHardcoreMode ?? this.isHardcoreMode,
       phoneOrientation: phoneOrientation ?? this.phoneOrientation,
       isInPenaltyBox: isInPenaltyBox ?? this.isInPenaltyBox,
+      isAlarmSoundEnabled: isAlarmSoundEnabled ?? this.isAlarmSoundEnabled,
       pomodoroStatus: pomodoroStatus ?? this.pomodoroStatus,
       remainingTime: remainingTime ?? this.remainingTime,
       pomodoroDuration: pomodoroDuration ?? this.pomodoroDuration,
@@ -134,6 +138,7 @@ class FocusState {
       'isHardcoreMode': isHardcoreMode,
       'phoneOrientation': phoneOrientation.index,
       'isInPenaltyBox': isInPenaltyBox,
+      'isAlarmSoundEnabled': isAlarmSoundEnabled,
       'pomodoroStatus': pomodoroStatus.index,
       'remainingTime': remainingTime.inSeconds,
       'pomodoroDuration': pomodoroDuration.inSeconds,
@@ -174,6 +179,7 @@ class FocusState {
       isHardcoreMode: json['isHardcoreMode'] ?? false,
       phoneOrientation: PhoneOrientation.values[json['phoneOrientation'] ?? 2],
       isInPenaltyBox: json['isInPenaltyBox'] ?? false,
+      isAlarmSoundEnabled: json['isAlarmSoundEnabled'] ?? true,
       pomodoroStatus: PomodoroStatus.values[json['pomodoroStatus'] ?? 0],
       remainingTime: Duration(
         seconds: json['remainingTime'] ?? const Duration(minutes: 25).inSeconds,

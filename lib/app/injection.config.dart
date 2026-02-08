@@ -15,6 +15,7 @@ import 'package:injectable/injectable.dart' as _i526;
 import '../core/services/audio/sound_effect_service.dart' as _i48;
 import '../core/services/audio/sound_mixer_service.dart' as _i582;
 import '../core/services/audio/unified_audio_manager.dart' as _i171;
+import '../core/services/dnd_service.dart' as _i579;
 import '../core/services/haptic/haptic_feedback_service.dart' as _i182;
 import '../core/services/sensors/sensor_service.dart' as _i350;
 import '../features/focus_mode/data/datasources/timer_service.dart' as _i150;
@@ -59,6 +60,7 @@ Future<_i174.GetIt> $initGetIt(
     dispose: (i) => i.dispose(),
   );
   gh.lazySingleton<_i582.SoundMixerService>(() => _i582.SoundMixerService());
+  gh.lazySingleton<_i579.DndService>(() => _i579.DndService());
   gh.lazySingleton<_i182.HapticFeedbackService>(
     () => _i182.HapticFeedbackService(),
     dispose: (i) => i.dispose(),
@@ -92,6 +94,7 @@ Future<_i174.GetIt> $initGetIt(
         gh<_i350.SensorService>(),
         gh<_i150.TimerService>(),
         gh<_i182.HapticFeedbackService>(),
+        gh<_i579.DndService>(),
       ));
   gh.factory<_i176.FocusBloc>(() => _i176.FocusBloc(
         gh<_i843.PremiumRepository>(),

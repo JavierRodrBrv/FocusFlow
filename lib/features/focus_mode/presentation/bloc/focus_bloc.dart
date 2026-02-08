@@ -80,6 +80,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     });
 
     on<ToggleHardcoreMode>((e, emit) => _sessionManager.toggleHardcore());
+    on<ToggleAlarmSound>((e, emit) => _sessionManager.toggleAlarmSound());
     on<StartTimer>((e, emit) => _sessionManager.startTimer());
     on<PauseTimer>((e, emit) => _sessionManager.pauseTimer());
     on<ResetTimer>((e, emit) => _sessionManager.resetTimer());
@@ -315,6 +316,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
         isInPenaltyBox: s.isInPenalty,
         phoneOrientation: s.orientation,
         isHardcoreMode: s.isHardcore,
+        isAlarmSoundEnabled: s.isAlarmSoundEnabled,
       ),
     );
   }

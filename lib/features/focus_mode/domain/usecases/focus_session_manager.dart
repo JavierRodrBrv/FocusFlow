@@ -1,6 +1,5 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter_dnd/flutter_dnd.dart';
+import 'package:focus_flow/core/services/dnd_service.dart';
 import 'package:injectable/injectable.dart';
 import 'package:focus_flow/features/focus_mode/domain/repositories/i_audio_manager.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
@@ -13,10 +12,11 @@ import 'package:focus_flow/features/focus_mode/data/datasources/timer_service.da
 class SessionState {
   final PomodoroStatus status;
   final Duration remainingTime;
-  final Duration pomodoroDuration; // Añadido
+  final Duration pomodoroDuration;
   final bool isInPenalty;
   final PhoneOrientation orientation;
   final bool isHardcore;
+  final bool isAlarmSoundEnabled;
 
   SessionState({
     required this.status,
@@ -25,6 +25,7 @@ class SessionState {
     required this.isInPenalty,
     required this.orientation,
     required this.isHardcore,
+    required this.isAlarmSoundEnabled,
   });
 
   factory SessionState.initial() => SessionState(
@@ -34,6 +35,7 @@ class SessionState {
     isInPenalty: false,
     orientation: PhoneOrientation.unknown,
     isHardcore: false,
+    isAlarmSoundEnabled: true,
   );
 }
 
@@ -43,6 +45,7 @@ class FocusSessionManager {
   final SensorService _sensorService;
   final TimerService _timerService;
   final HapticFeedbackService _hapticService;
+  final DndService _dndService;
 
   final _stateController = StreamController<SessionState>.broadcast();
   Stream<SessionState> get stateStream => _stateController.stream;
@@ -54,12 +57,14 @@ class FocusSessionManager {
   bool _isInPenalty = false;
   PhoneOrientation _orientation = PhoneOrientation.unknown;
   bool _isHardcore = false;
+  bool _isAlarmSoundEnabled = true;
 
   FocusSessionManager(
     this._audioManager,
     this._sensorService,
     this._timerService,
     this._hapticService,
+    this._dndService,
   ) {
     _initSubscriptions();
   }
@@ -86,28 +91,18 @@ class FocusSessionManager {
   }
 
   void _triggerAlarm() async {
-    // Verificar "No Molestar" (Solo fiable en Android, en iOS es mejor confiar en el sistema)
-    bool shouldPlaySound = true;
-    if (Platform.isAndroid) {
-      try {
-        final isDnd = await FlutterDnd.isNotificationPolicyAccessGranted;
-        if (isDnd == true) {
-          final filter = await FlutterDnd.getCurrentInterruptionFilter();
-          // 1 = ALL, 2 = PRIORITY, 3 = NONE, 4 = ALARMS
-          if (filter == 3 || filter == 2) { 
-             // Si es NONE o PRIORITY (y no somos prioridad), silenciamos
-             // Nota: Al usar canal de alarma, a veces salta igual.
-             // Pero el usuario pidió explícitamente lógica de silenciado.
-             shouldPlaySound = false;
-          }
-        }
-      } catch (e) {
-        print('Error checking DND: $e');
+    // 1. Verificar preferencia de usuario
+    if (!_isAlarmSoundEnabled) {
+      print('[FocusSessionManager] Alarm sound disabled by user preference.');
+    } else {
+      // 2. Comprobar si el modo No Molestar está activo
+      final isDnd = await _dndService.isDndActive();
+      
+      if (!isDnd) {
+        _audioManager.startAlarmLoop();
+      } else {
+        print('[FocusSessionManager] DND Active: Silencing alarm sound.');
       }
-    }
-
-    if (shouldPlaySound) {
-      _audioManager.startAlarmLoop();
     }
     
     // La vibración siempre va (como pidió el usuario)
@@ -126,6 +121,11 @@ class FocusSessionManager {
       _remainingTime = duration;
       _emitState();
     }
+  }
+
+  void toggleAlarmSound() {
+    _isAlarmSoundEnabled = !_isAlarmSoundEnabled;
+    _emitState();
   }
 
   void toggleHardcore() {
@@ -225,6 +225,7 @@ class FocusSessionManager {
       isInPenalty: _isInPenalty,
       orientation: _orientation,
       isHardcore: _isHardcore,
+      isAlarmSoundEnabled: _isAlarmSoundEnabled,
     ));
   }
   

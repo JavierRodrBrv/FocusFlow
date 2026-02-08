@@ -19,7 +19,7 @@ Future<void> initializeService() async {
 
   //--- Configuración de notificaciones para Android ---
   const notificationChannelId = 'focus_flow_channel';
-  const alarmChannelId = 'focus_flow_alarm_channel'; // Nuevo canal para alarmas
+  const alarmChannelId = 'focus_flow_alarm_channel_v2'; // Nuevo canal para forzar actualización
   const notificationId = 888;
   const alarmNotificationId = 999;
 
@@ -43,7 +43,7 @@ Future<void> initializeService() async {
     description: 'Notificaciones de finalización de sesión',
     importance: Importance.max, // MAX IMPORTANCE = Heads up + Screen Wake
     playSound: false, // El sonido lo manejamos nosotros
-    enableVibration: false, // La vibración la manejamos nosotros
+    enableVibration: true, // Permitir que el sistema vibre (útil en DND)
   );
 
   await flutterLocalNotificationsPlugin
@@ -154,6 +154,9 @@ void onStart(ServiceInstance service) async {
           break;
         case 'toggleHardcore':
           bloc!.add(ToggleHardcoreMode());
+          break;
+        case 'toggleAlarmSound':
+          bloc!.add(ToggleAlarmSound());
           break;
         case 'updatePomodoroDuration':
           final minutes = event['durationMinutes'] ?? 0;
@@ -312,12 +315,12 @@ void onStart(ServiceInstance service) async {
         if (Platform.isAndroid) {
            try {
              await flutterLocalNotificationsPlugin.show(
-              id: 999,
+              id: 888,
               title: '¡Sesión Completada!',
               body: 'Has cumplido tu objetivo. Toca para continuar.',
               notificationDetails: const NotificationDetails(
                 android: AndroidNotificationDetails(
-                  'focus_flow_alarm_channel',
+                  'focus_flow_alarm_channel_v2',
                   'Focus Flow Alarma',
                   channelDescription: 'Notificaciones de finalización',
                   importance: Importance.max,

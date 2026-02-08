@@ -1,5 +1,6 @@
 import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:audio_session/audio_session.dart';
 
 @lazySingleton
 class SoundEffectService {
@@ -17,6 +18,17 @@ class SoundEffectService {
   Future<void> init() async {
     if (_isInitialized) return;
     print('[SoundEffectService] Initializing...');
+    
+    // Configuración de Sesión de Audio para respetar DND
+    try {
+      final session = await AudioSession.instance;
+      // Usamos 'speech' para que el sistema lo trate como contenido que DND puede silenciar.
+      // Si usáramos 'alarm', sonaría incluso en 'No Molestar' (dependiendo del filtro).
+      await session.configure(const AudioSessionConfiguration.speech());
+    } catch (e) {
+      print('[SoundEffectService] Error configuring AudioSession: $e');
+    }
+
     try {
       await _failPlayer.setAsset('assets/audio/fail.mp3');
       await _failPlayer.setLoopMode(LoopMode.one); // Set player to loop this single track
