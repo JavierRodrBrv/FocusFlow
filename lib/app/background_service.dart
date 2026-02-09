@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'dart:convert'; // Importar para jsonEncode
 import 'dart:io';
+import 'package:android_intent_plus/flag.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
@@ -12,6 +13,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
+import 'package:android_intent_plus/android_intent.dart';
 
 import '../features/focus_mode/data/models/sound_mix_model.dart';
 
@@ -20,7 +22,7 @@ Future<void> initializeService() async {
 
   //--- Configuración de notificaciones para Android ---
   const notificationChannelId = 'focus_flow_channel';
-  const alarmChannelId = 'focus_flow_alarm_channel_v2';
+  const alarmChannelId = 'focus_flow_alarm_channel_v3';
   const notificationId = 888;
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -40,7 +42,7 @@ Future<void> initializeService() async {
     'Focus Flow Alarma',
     description: 'Notificaciones de finalización de sesión',
     importance: Importance.max,
-    playSound: false,
+    playSound: true,
     enableVibration: true,
   );
 
@@ -288,13 +290,14 @@ void onStart(ServiceInstance service) async {
               body: 'Has cumplido tu objetivo. Toca para continuar.',
               notificationDetails: const NotificationDetails(
                 android: AndroidNotificationDetails(
-                  'focus_flow_alarm_channel_v2',
+                  'focus_flow_alarm_channel_v3',
                   'Focus Flow Alarma',
                   channelDescription: 'Notificaciones de finalización',
                   importance: Importance.max,
                   priority: Priority.high,
                   fullScreenIntent: true,
                   category: AndroidNotificationCategory.alarm,
+                  visibility: NotificationVisibility.public,
                 ),
               ),
             );
