@@ -50,7 +50,7 @@ class SoundMixerService {
       await _firePlayer.setLoopMode(LoopMode.one);
       await _brownNoisePlayer.setLoopMode(LoopMode.one);
       await _keepAlivePlayer.setLoopMode(LoopMode.one);
-      await _keepAlivePlayer.setVolume(0.01); // Casi imperceptible, pero no 0 absoluto para evitar suspensión
+      await _keepAlivePlayer.setVolume(0.0); // Silencio total para evitar que sea audible, pero mantiene la sesión activa
 
       _isInitialized = true;
       print('[SoundMixerService] Initialized successfully and players are ready.');
