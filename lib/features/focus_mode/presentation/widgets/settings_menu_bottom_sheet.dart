@@ -4,14 +4,16 @@ import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart
 import 'package:focus_flow/features/focus_mode/presentation/widgets/feedback_bottom_sheet.dart';
 
 class SettingsMenuBottomSheet extends StatelessWidget {
-  const SettingsMenuBottomSheet({super.key});
+  final FocusState initialState;
+  const SettingsMenuBottomSheet({super.key, required this.initialState});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Map<String, dynamic>?>(
       stream: FlutterBackgroundService().on('update'),
+      initialData: initialState.toJson(),
       builder: (context, snapshot) {
-        bool isAlarmSoundEnabled = true; // Default
+        bool isAlarmSoundEnabled = initialState.isAlarmSoundEnabled;
         if (snapshot.hasData && snapshot.data != null) {
           try {
             final state = FocusState.fromJson(snapshot.data!);

@@ -245,7 +245,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   ) async {
     emit(state.copyWith(status: AppStatus.loading));
     try {
-      _sessionManager.init();
+      await _sessionManager.init();
       final isPremium = await _premiumRepository.isPremium();
 
       final mixesResult = await _getSavedMixesUseCase(NoParams());
@@ -277,6 +277,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
           isPremium: isPremium,
           hasSavedMix: hasSaved,
           savedMixes: mixes,
+          isAlarmSoundEnabled: _sessionManager.isAlarmSoundEnabled,
           // Volumes 0
           rainVolume: 0.0,
           fireVolume: 0.0,

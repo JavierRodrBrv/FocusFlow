@@ -62,6 +62,8 @@ class FocusSessionManager {
   bool _isHardcore = false;
   bool _isAlarmSoundEnabled = true;
 
+  bool get isAlarmSoundEnabled => _isAlarmSoundEnabled;
+
   FocusSessionManager(
     this._audioManager,
     this._sensorService,
@@ -112,7 +114,7 @@ class FocusSessionManager {
     _hapticService.startAlarmVibration(); 
   }
 
-  void init() async {
+  Future<void> init() async {
     await _audioManager.init();
     // Cargar preferencia guardada de forma segura
     try {

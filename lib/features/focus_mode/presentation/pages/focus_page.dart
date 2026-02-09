@@ -288,7 +288,11 @@ class _FocusViewState extends State<FocusView> {
               child: IconButton(
                 icon: const Icon(Icons.menu, color: Colors.white70),
                 onPressed: () async {
-                  final result = await showModalBottomSheet(context: context, builder: (context) => const SettingsMenuBottomSheet());
+                  final result = await showModalBottomSheet(
+                    context: context,
+                    builder: (context) =>
+                        SettingsMenuBottomSheet(initialState: state),
+                  );
                   if (result == 'tutorial') _startShowcase();
                 },
               ),
