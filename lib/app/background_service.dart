@@ -194,9 +194,15 @@ void onStart(ServiceInstance service) async {
         case 'loadMix': bloc!.add(LoadMix(event['mixId'])); break;
         case 'resumeMix': bloc!.add(ResumeMix()); break;
         case 'pauseMix': bloc!.add(PauseMix()); break;
-        case 'updateRainVolume': bloc!.add(UpdateRainVolume(event['volume'])); break;
-        case 'updateFireVolume': bloc!.add(UpdateFireVolume(event['volume'])); break;
-        case 'updateBrownNoiseVolume': bloc!.add(UpdateBrownNoiseVolume(event['volume'])); break;
+        case 'updateRainVolume': 
+          bloc!.add(UpdateRainVolume((event['volume'] as num).toDouble())); 
+          break;
+        case 'updateFireVolume': 
+          bloc!.add(UpdateFireVolume((event['volume'] as num).toDouble())); 
+          break;
+        case 'updateBrownNoiseVolume': 
+          bloc!.add(UpdateBrownNoiseVolume((event['volume'] as num).toDouble())); 
+          break;
         default: print('[BackgroundService] Unknown event: $eventName');
       }
     } catch (e) {

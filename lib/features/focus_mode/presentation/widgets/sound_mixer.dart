@@ -308,7 +308,11 @@ class _MixerSliderState extends State<_MixerSlider> {
     final timeSinceInteraction = DateTime.now().difference(_lastInteractionTime);
     final isUserInteracting = _isDragging || timeSinceInteraction.inMilliseconds < 500;
 
-    if (!isUserInteracting && widget.value != _currentValue) {
+    // Si el valor entrante es 0.0, es una orden de pausa (manual o auto),
+    // así que forzamos la actualización visual ignorando el periodo de gracia.
+    final isExplicitZero = widget.value == 0.0;
+
+    if ((!isUserInteracting || isExplicitZero) && widget.value != _currentValue) {
       setState(() {
         _currentValue = widget.value;
       });
