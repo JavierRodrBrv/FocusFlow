@@ -61,6 +61,7 @@ class FocusSessionManager {
   PhoneOrientation _orientation = PhoneOrientation.unknown;
   bool _isHardcore = false;
   bool _isAlarmSoundEnabled = true;
+  bool _hasBeenFaceDownAtLeastOnce = false;
 
   bool get isAlarmSoundEnabled => _isAlarmSoundEnabled;
 
@@ -175,19 +176,20 @@ class FocusSessionManager {
   }
 
   void startTimer() {
-    if (_isHardcore && _orientation != PhoneOrientation.faceDown) {
-      // Regla de negocio: No empezar si no está boca abajo en hardcore
-      return;
-    }
-    
     if (_status == PomodoroStatus.paused) {
       _timerService.resume();
     } else {
       _timerService.start(startDuration: _remainingTime);
+      _hasBeenFaceDownAtLeastOnce = false;
     }
     _status = PomodoroStatus.running;
     _isInPenalty = false;
     _audioManager.startKeepAlive();
+
+    if (_isHardcore) {
+      _checkHardcoreRules();
+    }
+
     _emitState();
   }
 
@@ -196,7 +198,7 @@ class FocusSessionManager {
       _timerService.pause();
       _status = PomodoroStatus.paused;
       _audioManager.stopKeepAlive();
-      await stopAlarm(); // Detener alarma si estaba sonando
+      await stopAlarm(); 
       _emitState();
     }
   }
@@ -207,7 +209,8 @@ class FocusSessionManager {
     _status = PomodoroStatus.initial;
     _remainingTime = _duration;
     _audioManager.stopKeepAlive();
-    await stopAlarm(); // Detener alarma
+    _hasBeenFaceDownAtLeastOnce = false;
+    await stopAlarm(); 
     _emitState();
   }
 
@@ -227,12 +230,16 @@ class FocusSessionManager {
     final isFaceUp = _orientation == PhoneOrientation.faceUp;
     final isFaceDown = _orientation == PhoneOrientation.faceDown;
 
-    if (isRunning && isFaceUp && !_isInPenalty) {
+    if (isFaceDown && !isPausedByPenalty) {
+      _hasBeenFaceDownAtLeastOnce = true;
+    }
+
+    if (isRunning && isFaceUp && !_isInPenalty && _hasBeenFaceDownAtLeastOnce) {
       // ENTRAR EN CASTIGO
       _timerService.pause();
       _status = PomodoroStatus.paused;
       _isInPenalty = true;
-      _audioManager.stopKeepAlive(); // El castigo ya tiene su propio audio loop
+      _audioManager.stopKeepAlive(); 
       _startPenaltyEffects();
     } else if (isPausedByPenalty && isFaceDown) {
       // SALIR DE CASTIGO

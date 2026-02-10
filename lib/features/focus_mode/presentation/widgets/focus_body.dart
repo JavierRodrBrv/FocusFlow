@@ -59,6 +59,14 @@ class FocusBody extends StatelessWidget {
                 description: 'Inicia, pausa o reinicia.',
                 child: TimerControls(state: state, service: service),
               ),
+              const SizedBox(height: 24),
+              Showcase(
+                key: hardcoreKey,
+                title: 'Modo Focus',
+                description:
+                    'Activa este modo para evitar distracciones. Si giras el móvil, el tiempo se detiene.',
+                child: HardcoreModeCard(state: state, service: service),
+              ),
               const SizedBox(height: 40),
               Showcase(
                 key: mixerKey,
@@ -72,13 +80,6 @@ class FocusBody extends StatelessWidget {
                 title: 'Mezclas',
                 description: 'Tus favoritas.',
                 child: SavedMixPlayer(state: state, service: service),
-              ),
-              Showcase(
-                key: hardcoreKey,
-                title: 'Modo Focus',
-                description:
-                    'Activa este modo para evitar distracciones. Si giras el móvil, el tiempo se detiene.',
-                child: HardcoreModeCard(state: state, service: service),
               ),
               const SizedBox(height: 40),
             ],
