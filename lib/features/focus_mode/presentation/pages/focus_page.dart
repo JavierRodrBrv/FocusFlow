@@ -223,9 +223,9 @@ class _FocusViewState extends State<FocusView> {
     ShowCaseWidget.of(context).startShowCase([
       _timerKey,
       _controlsKey,
+      _hardcoreKey,
       _mixerKey,
       _savedMixesKey,
-      _hardcoreKey,
       _premiumKey,
       _tutorialKey,
     ]);
