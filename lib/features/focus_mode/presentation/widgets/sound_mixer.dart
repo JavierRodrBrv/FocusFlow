@@ -289,6 +289,8 @@ class _MixerSlider extends StatefulWidget {
 class _MixerSliderState extends State<_MixerSlider> {
   late double _currentValue;
   bool _isDragging = false;
+  DateTime _lastUpdateTime = DateTime.now();
+  DateTime _lastInteractionTime = DateTime.now().subtract(const Duration(seconds: 1));
 
   @override
   void initState() {
@@ -299,12 +301,31 @@ class _MixerSliderState extends State<_MixerSlider> {
   @override
   void didUpdateWidget(covariant _MixerSlider oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Solo actualizamos desde el padre si el usuario NO está arrastrando.
-    // Esto evita saltos ("jitter") si el stream tiene lag.
-    if (!_isDragging && widget.value != _currentValue) {
+    
+    // PERIODO DE GRACIA:
+    // Si el usuario acaba de interactuar (hace menos de 500ms), ignoramos
+    // lo que diga el servicio, porque probablemente sea información antigua (lag).
+    final timeSinceInteraction = DateTime.now().difference(_lastInteractionTime);
+    final isUserInteracting = _isDragging || timeSinceInteraction.inMilliseconds < 500;
+
+    if (!isUserInteracting && widget.value != _currentValue) {
       setState(() {
         _currentValue = widget.value;
       });
+    }
+  }
+
+  void _handleChanged(double val) {
+    setState(() {
+      _currentValue = val;
+      _lastInteractionTime = DateTime.now(); // Marcamos interacción
+    });
+    
+    // Throttling ligero para no saturar el canal de comunicación
+    final now = DateTime.now();
+    if (now.difference(_lastUpdateTime) > const Duration(milliseconds: 16)) {
+      widget.onChanged(val);
+      _lastUpdateTime = now;
     }
   }
 
@@ -320,9 +341,7 @@ class _MixerSliderState extends State<_MixerSlider> {
         Expanded(
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: _currentValue, end: _currentValue),
-            duration: _isDragging
-                ? Duration.zero
-                : const Duration(milliseconds: 450),
+            duration: _isDragging ? Duration.zero : const Duration(milliseconds: 450),
             curve: Curves.easeOutCubic,
             builder: (context, animatedValue, child) {
               return Slider(
@@ -334,15 +353,14 @@ class _MixerSliderState extends State<_MixerSlider> {
                 onChangeStart: (_) {
                   setState(() => _isDragging = true);
                 },
-                onChangeEnd: (_) {
-                  setState(() => _isDragging = false);
-                },
-                onChanged: (val) {
-                  // Actualizamos estado local inmediatamente para respuesta táctil
-                  setState(() => _currentValue = val);
-                  // Notificamos al servicio
+                onChangeEnd: (val) {
+                  setState(() {
+                     _isDragging = false;
+                     _lastInteractionTime = DateTime.now();
+                  });
                   widget.onChanged(val);
                 },
+                onChanged: _handleChanged,
               );
             },
           ),
