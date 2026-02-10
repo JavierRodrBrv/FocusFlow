@@ -77,9 +77,14 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return ShowCaseWidget(
-      onFinish: () {
+      onFinish: () async {
         if (F.appFlavor == Flavor.dev) {
-          _showDevDialog(context);
+          var box = await Hive.openBox('settings');
+          bool devNoticeSeen = box.get('dev_notice_seen', defaultValue: false);
+          if (!devNoticeSeen) {
+            if (mounted) _showDevDialog(context);
+            box.put('dev_notice_seen', true);
+          }
         }
       },
       builder: (context) => FocusView(key: _viewKey),
@@ -221,14 +226,17 @@ class _FocusViewState extends State<FocusView> {
     try {
       var box = await Hive.openBox('settings');
       bool seen = box.get('tutorial_seen', defaultValue: false);
+      bool devNoticeSeen = box.get('dev_notice_seen', defaultValue: false);
+
       if (!seen) {
         await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
           _startShowcase();
           box.put('tutorial_seen', true);
         }
-      } else if (F.appFlavor == Flavor.dev && mounted) {
+      } else if (F.appFlavor == Flavor.dev && !devNoticeSeen && mounted) {
         _showDevDialog(context);
+        box.put('dev_notice_seen', true);
       }
     } catch (e) {
       print("Error checking tutorial: $e");
@@ -391,13 +399,13 @@ void _showDevDialog(BuildContext context) {
         'Estás utilizando una versión de prueba (Dev).\n\n'
         '• Las funciones Premium se pueden simular.\n'
         '• Puede contener errores experimentales.\n'
-        '• ¡Ayúdanos a mejorar! Envía tus ideas o reporta fallos desde el nuevo menú de Ajustes (icono ☰).',
+        '• ¡Ayúdanos a mejorar! Envía tus ideas o reporta fallos desde el menú de Ajustes (icono ☰).',
         style: TextStyle(color: Colors.white70),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Entendido',
+          child: const Text('OK',
               style: TextStyle(color: Colors.blueAccent)),
         ),
       ],
