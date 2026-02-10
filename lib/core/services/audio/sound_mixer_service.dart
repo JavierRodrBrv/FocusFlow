@@ -43,14 +43,14 @@ class SoundMixerService {
       await _rainPlayer.setAsset('assets/audio/rain.mp3');
       await _firePlayer.setAsset('assets/audio/fire.mp3');
       await _brownNoisePlayer.setAsset('assets/audio/brown.mp3');
-      await _keepAlivePlayer.setAsset('assets/audio/rain.mp3'); // Usamos rain como base para el keep-alive
+      await _keepAlivePlayer.setAsset('assets/audio/silence.mp3'); // Usamos el archivo de silencio real
       print('[SoundMixerService] Assets loaded.');
 
       await _rainPlayer.setLoopMode(LoopMode.one);
       await _firePlayer.setLoopMode(LoopMode.one);
       await _brownNoisePlayer.setLoopMode(LoopMode.one);
       await _keepAlivePlayer.setLoopMode(LoopMode.one);
-      await _keepAlivePlayer.setVolume(0.0); // Silencio total para evitar que sea audible, pero mantiene la sesión activa
+      await _keepAlivePlayer.setVolume(1.0); // Volumen al máximo (es silencio grabado, no se oirá nada)
 
       _isInitialized = true;
       print('[SoundMixerService] Initialized successfully and players are ready.');

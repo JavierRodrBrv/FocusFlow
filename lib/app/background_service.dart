@@ -271,7 +271,7 @@ void onStart(ServiceInstance service) async {
                   iOS: DarwinNotificationDetails(
                     presentAlert: true,
                     presentBanner: true,
-                    presentSound: false,
+                    presentSound: true, // HABILITADO: Necesario para que vibre en iOS
                     interruptionLevel: InterruptionLevel.timeSensitive, 
                   ),
                 ),

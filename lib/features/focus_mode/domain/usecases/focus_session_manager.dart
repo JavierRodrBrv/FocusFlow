@@ -88,29 +88,45 @@ class FocusSessionManager {
       if (_remainingTime.inSeconds == 0) {
         _status = PomodoroStatus.finished;
         _stopPenaltyEffects(); // Seguridad
-        _triggerAlarm(); // Iniciamos alarma PRIMERO para mantener el isolate vivo
-        _audioManager.stopKeepAlive(); // Luego quitamos el silencio
+        
+        // NO detenemos el KeepAlive aquí globalmente. 
+        // Delegamos esa decisión a _triggerAlarm dependiendo de si suena la alarma o no.
+        
+        _triggerAlarm(); 
       }
       _emitState();
     });
   }
 
   void _triggerAlarm() async {
+    bool alarmWillPlay = false;
+
     // 1. Verificar preferencia de usuario
-    if (!_isAlarmSoundEnabled) {
-      print('[FocusSessionManager] Alarm sound disabled by user preference.');
-    } else {
+    if (_isAlarmSoundEnabled) {
       // 2. Comprobar si el modo No Molestar está activo
       final isDnd = await _dndService.isDndActive();
       
       if (!isDnd) {
-        _audioManager.startAlarmLoop();
+        alarmWillPlay = true;
       } else {
         print('[FocusSessionManager] DND Active: Silencing alarm sound.');
       }
+    } else {
+      print('[FocusSessionManager] Alarm sound disabled by user preference.');
     }
     
-    // La vibración siempre va (como pidió el usuario)
+    if (alarmWillPlay) {
+       // Si vamos a reproducir alarma, paramos el silencio (KeepAlive) para limpiar el canal
+       // y evitar mezclas raras, ya que la alarma mantendrá la app viva.
+       _audioManager.stopKeepAlive();
+       _audioManager.startAlarmLoop();
+    } else {
+      // Si NO hay alarma (por DND o config), MANTENEMOS el KeepAlive (silence.mp3)
+      // sonando. Esto es CRÍTICO para que el Timer de vibración siga ejecutándose en background.
+      print('[FocusSessionManager] Keeping silence audio active to support vibration.');
+    }
+
+    // La vibración siempre va
     _hapticService.startAlarmVibration(); 
   }
 

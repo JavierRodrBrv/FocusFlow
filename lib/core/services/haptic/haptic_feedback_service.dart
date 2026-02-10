@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 import 'package:vibration/vibration.dart';
 
 @lazySingleton
 class HapticFeedbackService {
   Timer? _vibrationTimer;
+  static const platform = MethodChannel('com.example.focus_flow/native');
   
   HapticFeedbackService() {
     print('[HapticFeedbackService] Created');
@@ -23,24 +26,40 @@ class HapticFeedbackService {
     // Detener cualquier timer previo
     stopFailVibration();
     
-    if (await Vibration.hasVibrator() ?? false) {
+    // On iOS, we skip the plugin check because we use a native channel that bypasses some checks
+    bool hasVibrator = true;
+    if (!Platform.isIOS) {
+       hasVibrator = await Vibration.hasVibrator() ?? false;
+    }
+
+    if (hasVibrator) {
       print('[HapticFeedbackService] Starting alarm vibration loop (Timer)...');
       
       // Función interna para ejecutar una vibración única
       Future<void> vibrateOnce() async {
-        if (await Vibration.hasAmplitudeControl() ?? false) {
-          // Intensidad 90% (~230)
-          Vibration.vibrate(duration: 800, amplitude: 230);
+        if (Platform.isIOS) {
+           try {
+             // Invocar vibración nativa (AudioServicesPlaySystemSound) que funciona mejor en background
+             // si la app está reproduciendo audio (KeepAlive).
+             await platform.invokeMethod('vibrate');
+           } catch (e) {
+             print('[HapticFeedbackService] iOS Native Vibrate Error: $e');
+           }
         } else {
-          Vibration.vibrate(duration: 800);
+          if (await Vibration.hasAmplitudeControl() ?? false) {
+            // Intensidad 90% (~230)
+            Vibration.vibrate(duration: 800, amplitude: 230);
+          } else {
+            Vibration.vibrate(duration: 800);
+          }
         }
       }
 
       // Ejecutar inmediatamente
       vibrateOnce();
 
-      // Programar bucle: vibra 0.8s, espera 1.2s (ciclo de 2s)
-      _vibrationTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      // Programar bucle: vibra 0.8s, espera (ahora ciclo de 1s para ser más insistente)
+      _vibrationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         vibrateOnce();
       });
     }
@@ -56,7 +75,7 @@ class HapticFeedbackService {
     _vibrationTimer?.cancel();
     _vibrationTimer = null;
     
-     if (await Vibration.hasVibrator() ?? false) {
+    if (!Platform.isIOS && (await Vibration.hasVibrator() ?? false)) {
       print('[HapticFeedbackService] Stopping vibration...');
       Vibration.cancel();
     }
@@ -64,7 +83,14 @@ class HapticFeedbackService {
 
   /// Triggers a significant vibration feedback for completion (60% intensity).
   Future<void> vibrate() async {
-     if (await Vibration.hasVibrator() ?? false) {
+    if (Platform.isIOS) {
+       try {
+         await platform.invokeMethod('vibrate');
+       } catch (e) { print(e); }
+       return;
+    }
+
+    if (await Vibration.hasVibrator() ?? false) {
       if (await Vibration.hasAmplitudeControl() ?? false) {
         Vibration.vibrate(duration: 500, amplitude: 230);
       } else {

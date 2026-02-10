@@ -19,15 +19,8 @@ class SoundEffectService {
     if (_isInitialized) return;
     print('[SoundEffectService] Initializing...');
     
-    // Configuración de Sesión de Audio para respetar DND
-    try {
-      final session = await AudioSession.instance;
-      // Usamos 'speech' para que el sistema lo trate como contenido que DND puede silenciar.
-      // Si usáramos 'alarm', sonaría incluso en 'No Molestar' (dependiendo del filtro).
-      await session.configure(const AudioSessionConfiguration.speech());
-    } catch (e) {
-      print('[SoundEffectService] Error configuring AudioSession: $e');
-    }
+    // Configuración de Sesión de Audio eliminada para evitar conflictos con SoundMixerService.
+    // SoundMixerService ya configura la sesión con las opciones correctas para Background.
 
     try {
       await _failPlayer.setAsset('assets/audio/fail.mp3');
@@ -66,8 +59,12 @@ class SoundEffectService {
       if (!_isInitialized) return;
       
       print('[SoundEffectService] Starting alarm loop...');
+      // Asegurar configuración de sesión adecuada para alarma (Playback) si no se hizo globalmente
+      // En este caso confiamos en SoundMixerService, pero el player individual debe estar listo.
+      
       await _alarmPlayer.setLoopMode(LoopMode.one); // Bucle infinito
       await _alarmPlayer.seek(Duration.zero);
+      await _alarmPlayer.setVolume(1.0); // Asegurar volumen máximo para la alarma
       
       if (!_alarmPlayer.playing) {
         await _alarmPlayer.play();
