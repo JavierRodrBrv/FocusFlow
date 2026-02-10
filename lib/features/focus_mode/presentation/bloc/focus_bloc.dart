@@ -309,17 +309,53 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     Emitter<FocusState> emit,
   ) {
     final s = event.sessionState;
-    emit(
-      state.copyWith(
-        pomodoroStatus: s.status,
-        remainingTime: s.remainingTime,
-        pomodoroDuration: s.pomodoroDuration,
-        isInPenaltyBox: s.isInPenalty,
-        phoneOrientation: s.orientation,
-        isHardcoreMode: s.isHardcore,
-        isAlarmSoundEnabled: s.isAlarmSoundEnabled,
-      ),
-    );
+
+    // Detect if the session just transitioned to 'finished'
+    final justFinished = s.status == PomodoroStatus.finished &&
+        state.pomodoroStatus != PomodoroStatus.finished;
+
+    if (justFinished && state.isPlayingMix) {
+      // Auto-pause mix to avoid overlapping with alarm/vibration
+      final currentRain = state.rainVolume;
+      final currentFire = state.fireVolume;
+      final currentBrown = state.brownNoiseVolume;
+
+      _sessionManager.updateRainVolume(0.0);
+      _sessionManager.updateFireVolume(0.0);
+      _sessionManager.updateBrownNoiseVolume(0.0);
+
+      emit(
+        state.copyWith(
+          pomodoroStatus: s.status,
+          remainingTime: s.remainingTime,
+          pomodoroDuration: s.pomodoroDuration,
+          isInPenaltyBox: s.isInPenalty,
+          phoneOrientation: s.orientation,
+          isHardcoreMode: s.isHardcore,
+          isAlarmSoundEnabled: s.isAlarmSoundEnabled,
+          // Update mix state to paused
+          rainVolume: 0.0,
+          fireVolume: 0.0,
+          brownNoiseVolume: 0.0,
+          lastRainVolume: currentRain,
+          lastFireVolume: currentFire,
+          lastBrownNoiseVolume: currentBrown,
+          isPlayingMix: false,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          pomodoroStatus: s.status,
+          remainingTime: s.remainingTime,
+          pomodoroDuration: s.pomodoroDuration,
+          isInPenaltyBox: s.isInPenalty,
+          phoneOrientation: s.orientation,
+          isHardcoreMode: s.isHardcore,
+          isAlarmSoundEnabled: s.isAlarmSoundEnabled,
+        ),
+      );
+    }
   }
 
   @override

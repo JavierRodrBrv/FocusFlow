@@ -212,6 +212,7 @@ class _FocusViewState extends State<FocusView> {
               onPressed: () {
                 FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
                 FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
+                FlutterBackgroundService().invoke('sendEvent', {'event': 'resumeMix'});
                 Navigator.of(context).pop();
               },
               child: const Text('Continuar', style: TextStyle(color: Colors.blueAccent, fontSize: 16)),
