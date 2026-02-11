@@ -15,7 +15,9 @@ class DndService {
   Future<int> getCurrentInterruptionFilter() async {
     if (!Platform.isAndroid) return 1;
     try {
-      final int filter = await _channel.invokeMethod('getCurrentInterruptionFilter');
+      final int filter = await _channel.invokeMethod(
+        'getCurrentInterruptionFilter',
+      );
       return filter;
     } catch (e) {
       print('[DndService] Error getting DND status: $e');

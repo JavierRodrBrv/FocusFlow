@@ -13,10 +13,12 @@ class SaveSoundMixUseCase implements UseCase<void, SoundMix> {
 
   @override
   Future<Result<void, Failure>> call(SoundMix params) async {
-    // Aquí podríamos añadir lógica de negocio extra, 
+    // Aquí podríamos añadir lógica de negocio extra,
     // como validar que el nombre no esté vacío.
     if (params.name.trim().isEmpty) {
-      return const Error(UnexpectedFailure('El nombre de la mezcla no puede estar vacío'));
+      return const Error(
+        UnexpectedFailure('El nombre de la mezcla no puede estar vacío'),
+      );
     }
     return await _repository.saveMix(params);
   }

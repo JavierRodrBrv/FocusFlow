@@ -21,7 +21,10 @@ class App extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFF0F172A), // Fondo oscuro deep
       ),
-      home: _flavorBanner(child: const FocusPage(), show: F.appFlavor == Flavor.dev),
+      home: _flavorBanner(
+        child: const FocusPage(),
+        show: F.appFlavor == Flavor.dev,
+      ),
     );
   }
 

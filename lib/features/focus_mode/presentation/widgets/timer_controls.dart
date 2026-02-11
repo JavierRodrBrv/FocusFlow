@@ -9,16 +9,12 @@ class TimerControls extends StatelessWidget {
   final FocusState state;
   final FlutterBackgroundService service;
 
-  const TimerControls({
-    super.key,
-    required this.state,
-    required this.service,
-  });
+  const TimerControls({super.key, required this.state, required this.service});
 
   @override
   Widget build(BuildContext context) {
     final status = state.pomodoroStatus;
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -29,23 +25,29 @@ class TimerControls extends StatelessWidget {
             iconSize: 30,
             color: Colors.white,
             tooltip: 'Reiniciar sesión',
-            onPressed: () => service.invoke('sendEvent', {'event': 'resetTimer'}),
+            onPressed: () =>
+                service.invoke('sendEvent', {'event': 'resetTimer'}),
           ),
         ),
-        
+
         const SizedBox(width: 20),
-        
+
         // Play/Pause Button
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+          transitionBuilder: (child, animation) =>
+              ScaleTransition(scale: animation, child: child),
           child: BouncingButton(
             // Key is crucial for AnimatedSwitcher to recognize change
-            key: ValueKey(status == PomodoroStatus.running ? 'pause_btn' : 'play_btn'),
+            key: ValueKey(
+              status == PomodoroStatus.running ? 'pause_btn' : 'play_btn',
+            ),
             child: GestureDetector(
               onTap: () {
-                 final event = status == PomodoroStatus.running ? 'pauseTimer' : 'startTimer';
-                 service.invoke('sendEvent', {'event': event});
+                final event = status == PomodoroStatus.running
+                    ? 'pauseTimer'
+                    : 'startTimer';
+                service.invoke('sendEvent', {'event': event});
               },
               child: Container(
                 width: 72,
@@ -55,14 +57,18 @@ class TimerControls extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.4),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
-                    )
+                    ),
                   ],
                 ),
                 child: Icon(
-                  status == PomodoroStatus.running ? Icons.pause : Icons.play_arrow,
+                  status == PomodoroStatus.running
+                      ? Icons.pause
+                      : Icons.play_arrow,
                   size: 48,
                   color: Theme.of(context).colorScheme.onPrimary,
                 ),
@@ -70,9 +76,9 @@ class TimerControls extends StatelessWidget {
             ),
           ),
         ),
-        
+
         const SizedBox(width: 20),
-        
+
         // Set to Default (20 min) Button
         BouncingButton(
           child: IconButton(

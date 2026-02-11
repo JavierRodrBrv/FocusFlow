@@ -48,11 +48,7 @@ Future<_i174.GetIt> $initGetIt(
   String? environment,
   _i526.EnvironmentFilter? environmentFilter,
 }) async {
-  final gh = _i526.GetItHelper(
-    getIt,
-    environment,
-    environmentFilter,
-  );
+  final gh = _i526.GetItHelper(getIt, environment, environmentFilter);
   final hiveModule = _$HiveModule();
   gh.factory<_i150.TimerService>(() => _i150.TimerService());
   gh.lazySingleton<_i48.SoundEffectService>(
@@ -74,36 +70,48 @@ Future<_i174.GetIt> $initGetIt(
     preResolve: true,
   );
   gh.lazySingleton<_i72.SoundMixRepository>(
-      () => _i910.SoundMixRepositoryImpl());
-  gh.lazySingleton<_i507.IAudioManager>(() => _i171.UnifiedAudioManager(
-        gh<_i582.SoundMixerService>(),
-        gh<_i48.SoundEffectService>(),
-      ));
+    () => _i910.SoundMixRepositoryImpl(),
+  );
+  gh.lazySingleton<_i507.IAudioManager>(
+    () => _i171.UnifiedAudioManager(
+      gh<_i582.SoundMixerService>(),
+      gh<_i48.SoundEffectService>(),
+    ),
+  );
   gh.factory<_i438.GetSavedMixesUseCase>(
-      () => _i438.GetSavedMixesUseCase(gh<_i72.SoundMixRepository>()));
+    () => _i438.GetSavedMixesUseCase(gh<_i72.SoundMixRepository>()),
+  );
   gh.factory<_i676.SaveSoundMixUseCase>(
-      () => _i676.SaveSoundMixUseCase(gh<_i72.SoundMixRepository>()));
+    () => _i676.SaveSoundMixUseCase(gh<_i72.SoundMixRepository>()),
+  );
   gh.lazySingleton<_i1064.GetLastPlayedMixUseCase>(
-      () => _i1064.GetLastPlayedMixUseCase(gh<_i72.SoundMixRepository>()));
+    () => _i1064.GetLastPlayedMixUseCase(gh<_i72.SoundMixRepository>()),
+  );
   gh.lazySingleton<_i657.SaveLastPlayedMixUseCase>(
-      () => _i657.SaveLastPlayedMixUseCase(gh<_i72.SoundMixRepository>()));
+    () => _i657.SaveLastPlayedMixUseCase(gh<_i72.SoundMixRepository>()),
+  );
   gh.lazySingleton<_i843.PremiumRepository>(
-      () => _i380.PremiumRepositoryImpl(gh<_i979.Box<_i434.PremiumStatus>>()));
-  gh.lazySingleton<_i582.FocusSessionManager>(() => _i582.FocusSessionManager(
-        gh<_i507.IAudioManager>(),
-        gh<_i350.SensorService>(),
-        gh<_i150.TimerService>(),
-        gh<_i182.HapticFeedbackService>(),
-        gh<_i579.DndService>(),
-      ));
-  gh.factory<_i176.FocusBloc>(() => _i176.FocusBloc(
-        gh<_i843.PremiumRepository>(),
-        gh<_i582.FocusSessionManager>(),
-        gh<_i676.SaveSoundMixUseCase>(),
-        gh<_i438.GetSavedMixesUseCase>(),
-        gh<_i1064.GetLastPlayedMixUseCase>(),
-        gh<_i657.SaveLastPlayedMixUseCase>(),
-      ));
+    () => _i380.PremiumRepositoryImpl(gh<_i979.Box<_i434.PremiumStatus>>()),
+  );
+  gh.lazySingleton<_i582.FocusSessionManager>(
+    () => _i582.FocusSessionManager(
+      gh<_i507.IAudioManager>(),
+      gh<_i350.SensorService>(),
+      gh<_i150.TimerService>(),
+      gh<_i182.HapticFeedbackService>(),
+      gh<_i579.DndService>(),
+    ),
+  );
+  gh.factory<_i176.FocusBloc>(
+    () => _i176.FocusBloc(
+      gh<_i843.PremiumRepository>(),
+      gh<_i582.FocusSessionManager>(),
+      gh<_i676.SaveSoundMixUseCase>(),
+      gh<_i438.GetSavedMixesUseCase>(),
+      gh<_i1064.GetLastPlayedMixUseCase>(),
+      gh<_i657.SaveLastPlayedMixUseCase>(),
+    ),
+  );
   return getIt;
 }
 

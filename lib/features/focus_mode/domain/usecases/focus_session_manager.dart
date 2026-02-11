@@ -89,11 +89,11 @@ class FocusSessionManager {
       if (_remainingTime.inSeconds == 0) {
         _status = PomodoroStatus.finished;
         _stopPenaltyEffects(); // Seguridad
-        
-        // NO detenemos el KeepAlive aquí globalmente. 
+
+        // NO detenemos el KeepAlive aquí globalmente.
         // Delegamos esa decisión a _triggerAlarm dependiendo de si suena la alarma o no.
-        
-        _triggerAlarm(); 
+
+        _triggerAlarm();
       }
       _emitState();
     });
@@ -106,7 +106,7 @@ class FocusSessionManager {
     if (_isAlarmSoundEnabled) {
       // 2. Comprobar si el modo No Molestar está activo
       final isDnd = await _dndService.isDndActive();
-      
+
       if (!isDnd) {
         alarmWillPlay = true;
       } else {
@@ -115,29 +115,38 @@ class FocusSessionManager {
     } else {
       print('[FocusSessionManager] Alarm sound disabled by user preference.');
     }
-    
+
     if (alarmWillPlay) {
-       // Si vamos a reproducir alarma, paramos el silencio (KeepAlive) para limpiar el canal
-       // y evitar mezclas raras, ya que la alarma mantendrá la app viva.
-       _audioManager.stopKeepAlive();
-       _audioManager.startAlarmLoop();
+      // Si vamos a reproducir alarma, paramos el silencio (KeepAlive) para limpiar el canal
+      // y evitar mezclas raras, ya que la alarma mantendrá la app viva.
+      _audioManager.stopKeepAlive();
+      _audioManager.startAlarmLoop();
     } else {
       // Si NO hay alarma (por DND o config), MANTENEMOS el KeepAlive (silence.mp3)
       // sonando. Esto es CRÍTICO para que el Timer de vibración siga ejecutándose en background.
-      print('[FocusSessionManager] Keeping silence audio active to support vibration.');
+      print(
+        '[FocusSessionManager] Keeping silence audio active to support vibration.',
+      );
     }
 
     // La vibración siempre va
-    _hapticService.startAlarmVibration(); 
+    _hapticService.startAlarmVibration();
   }
 
   Future<void> init() async {
     await _audioManager.init();
     // Cargar preferencia guardada de forma segura
     try {
-      _settingsBox = Hive.isBoxOpen('settings') ? Hive.box('settings') : await Hive.openBox('settings');
-      _isAlarmSoundEnabled = _settingsBox!.get('alarm_sound_enabled', defaultValue: true);
-      print('[FocusSessionManager] Loaded Alarm Sound Preference: $_isAlarmSoundEnabled');
+      _settingsBox = Hive.isBoxOpen('settings')
+          ? Hive.box('settings')
+          : await Hive.openBox('settings');
+      _isAlarmSoundEnabled = _settingsBox!.get(
+        'alarm_sound_enabled',
+        defaultValue: true,
+      );
+      print(
+        '[FocusSessionManager] Loaded Alarm Sound Preference: $_isAlarmSoundEnabled',
+      );
     } catch (e) {
       print('[FocusSessionManager] Error loading alarm preference: $e');
       _isAlarmSoundEnabled = true; // Fallback
@@ -198,7 +207,7 @@ class FocusSessionManager {
       _timerService.pause();
       _status = PomodoroStatus.paused;
       _audioManager.stopKeepAlive();
-      await stopAlarm(); 
+      await stopAlarm();
       _emitState();
     }
   }
@@ -210,7 +219,7 @@ class FocusSessionManager {
     _remainingTime = _duration;
     _audioManager.stopKeepAlive();
     _hasBeenFaceDownAtLeastOnce = false;
-    await stopAlarm(); 
+    await stopAlarm();
     _emitState();
   }
 
@@ -239,7 +248,7 @@ class FocusSessionManager {
       _timerService.pause();
       _status = PomodoroStatus.paused;
       _isInPenalty = true;
-      _audioManager.stopKeepAlive(); 
+      _audioManager.stopKeepAlive();
       _startPenaltyEffects();
     } else if (isPausedByPenalty && isFaceDown) {
       // SALIR DE CASTIGO
@@ -263,17 +272,19 @@ class FocusSessionManager {
   }
 
   void _emitState() {
-    _stateController.add(SessionState(
-      status: _status,
-      remainingTime: _remainingTime,
-      pomodoroDuration: _duration,
-      isInPenalty: _isInPenalty,
-      orientation: _orientation,
-      isHardcore: _isHardcore,
-      isAlarmSoundEnabled: _isAlarmSoundEnabled,
-    ));
+    _stateController.add(
+      SessionState(
+        status: _status,
+        remainingTime: _remainingTime,
+        pomodoroDuration: _duration,
+        isInPenalty: _isInPenalty,
+        orientation: _orientation,
+        isHardcore: _isHardcore,
+        isAlarmSoundEnabled: _isAlarmSoundEnabled,
+      ),
+    );
   }
-  
+
   // Audio pass-through
   void updateRainVolume(double v) => _audioManager.setRainVolume(v);
   void updateFireVolume(double v) => _audioManager.setFireVolume(v);

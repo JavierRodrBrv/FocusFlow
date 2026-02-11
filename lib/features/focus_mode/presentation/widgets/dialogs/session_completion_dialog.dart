@@ -34,9 +34,15 @@ class SessionCompletionDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () {
-            FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
-            FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
-            FlutterBackgroundService().invoke('sendEvent', {'event': 'resumeMix'});
+            FlutterBackgroundService().invoke('sendEvent', {
+              'event': 'stopAlarm',
+            });
+            FlutterBackgroundService().invoke('sendEvent', {
+              'event': 'resetTimer',
+            });
+            FlutterBackgroundService().invoke('sendEvent', {
+              'event': 'resumeMix',
+            });
             Navigator.of(context).pop();
           },
           child: const Text(

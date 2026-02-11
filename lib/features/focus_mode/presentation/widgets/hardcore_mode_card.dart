@@ -17,12 +17,12 @@ class HardcoreModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = state.isInPenaltyBox 
-        ? Colors.red.withOpacity(0.5) 
+    final borderColor = state.isInPenaltyBox
+        ? Colors.red.withOpacity(0.5)
         : Colors.white.withOpacity(0.1);
-        
-    final backgroundColor = state.isInPenaltyBox 
-        ? Colors.red.withOpacity(0.05) 
+
+    final backgroundColor = state.isInPenaltyBox
+        ? Colors.red.withOpacity(0.05)
         : Colors.transparent;
 
     return Container(
@@ -43,12 +43,18 @@ class HardcoreModeCard extends StatelessWidget {
                   children: [
                     const Text(
                       'Modo Focus',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'La sesión se pausa si levantas el móvil',
-                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.6),
+                      ),
                     ),
                   ],
                 ),
@@ -62,14 +68,14 @@ class HardcoreModeCard extends StatelessWidget {
               ),
             ],
           ),
-          
+
           // Solo mostramos el mensaje de estado si el modo Focus está activado
           if (state.isHardcoreMode) ...[
             const SizedBox(height: 16),
             const Divider(height: 1, color: Colors.white10),
             const SizedBox(height: 12),
             _StatusMessage(state: state),
-          ]
+          ],
         ],
       ),
     );

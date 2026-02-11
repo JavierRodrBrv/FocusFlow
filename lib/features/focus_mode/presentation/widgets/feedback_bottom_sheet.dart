@@ -14,10 +14,10 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
     with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  
+
   // 0 = Bug, 1 = Idea
   int _selectedIndex = 0;
-  
+
   // Button State
   bool _isLoading = false;
   bool _isSuccess = false;
@@ -52,14 +52,14 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
     if (text.isEmpty) return;
 
     HapticFeedback.mediumImpact();
-    
+
     // Start Loading
     setState(() {
       _isLoading = true;
     });
 
-    final subject = _selectedIndex == 0 
-        ? 'Bug Report [FocusFlow]' 
+    final subject = _selectedIndex == 0
+        ? 'Bug Report [FocusFlow]'
         : 'Feature Idea [FocusFlow]';
 
     // Usando FormSubmit
@@ -74,16 +74,17 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           // TRUCO: FormSubmit requiere un Referer válido para no pensar que es spam o archivo local
-          'Referer': 'https://focusflow.app', 
+          'Referer': 'https://focusflow.app',
         },
         body: jsonEncode({
-          '_subject': subject, // Usar _subject para que sea el asunto del correo
+          '_subject':
+              subject, // Usar _subject para que sea el asunto del correo
           'name': 'FocusFlow App User', // Identificador
           'message': text,
-          '_template': 'table', 
+          '_template': 'table',
           '_captcha': 'false',
           // Opcional: Responder a una dirección dummy si no pedimos email al usuario
-          // 'email': 'no-reply@focusflow.app', 
+          // 'email': 'no-reply@focusflow.app',
         }),
       );
 
@@ -96,17 +97,19 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
           _isLoading = false;
           _isSuccess = true;
         });
-        
+
         HapticFeedback.heavyImpact();
 
         // Wait 2 seconds then close
         await Future.delayed(const Duration(seconds: 2));
-        
+
         if (mounted) {
           Navigator.pop(context);
         }
       } else {
-        throw Exception('Server returned ${response.statusCode}: ${response.body}');
+        throw Exception(
+          'Server returned ${response.statusCode}: ${response.body}',
+        );
       }
     } catch (e) {
       debugPrint('Error sending feedback: $e');
@@ -124,7 +127,7 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
     }
   }
 
-  Color get _activeColor => _selectedIndex == 0 
+  Color get _activeColor => _selectedIndex == 0
       ? const Color(0xFFEF5350) // Soft Red for Bug
       : const Color(0xFF2979FF); // Electric Blue for Idea
 
@@ -183,16 +186,24 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        color: _selectedIndex == 0 ? _activeColor.withOpacity(0.2) : Colors.transparent,
+                        color: _selectedIndex == 0
+                            ? _activeColor.withOpacity(0.2)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(25),
-                        border: _selectedIndex == 0 ? Border.all(color: _activeColor, width: 2) : null,
+                        border: _selectedIndex == 0
+                            ? Border.all(color: _activeColor, width: 2)
+                            : null,
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         '¿Es un Bug? 🐞',
                         style: TextStyle(
-                          color: _selectedIndex == 0 ? Colors.white : Colors.white54,
-                          fontWeight: _selectedIndex == 0 ? FontWeight.bold : FontWeight.normal,
+                          color: _selectedIndex == 0
+                              ? Colors.white
+                              : Colors.white54,
+                          fontWeight: _selectedIndex == 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -204,16 +215,24 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        color: _selectedIndex == 1 ? _activeColor.withOpacity(0.2) : Colors.transparent,
+                        color: _selectedIndex == 1
+                            ? _activeColor.withOpacity(0.2)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(25),
-                        border: _selectedIndex == 1 ? Border.all(color: _activeColor, width: 2) : null,
+                        border: _selectedIndex == 1
+                            ? Border.all(color: _activeColor, width: 2)
+                            : null,
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         '¿Una Idea? 💡',
                         style: TextStyle(
-                          color: _selectedIndex == 1 ? Colors.white : Colors.white54,
-                          fontWeight: _selectedIndex == 1 ? FontWeight.bold : FontWeight.normal,
+                          color: _selectedIndex == 1
+                              ? Colors.white
+                              : Colors.white54,
+                          fontWeight: _selectedIndex == 1
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -222,7 +241,7 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
 
           // Input Field
@@ -234,8 +253,8 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
             decoration: InputDecoration(
               filled: true,
               fillColor: Colors.grey[100],
-              hintText: _selectedIndex == 0 
-                  ? 'Describe el error que encontraste...' 
+              hintText: _selectedIndex == 0
+                  ? 'Describe el error que encontraste...'
                   : 'Cuéntanos qué te gustaría ver...',
               hintStyle: TextStyle(color: Colors.grey[500]),
               border: OutlineInputBorder(
@@ -256,7 +275,9 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
               height: 56,
               decoration: BoxDecoration(
                 color: _isSuccess ? Colors.green : _activeColor,
-                borderRadius: BorderRadius.circular(_isLoading || _isSuccess ? 50 : 16),
+                borderRadius: BorderRadius.circular(
+                  _isLoading || _isSuccess ? 50 : 16,
+                ),
               ),
               alignment: Alignment.center,
               child: _buildButtonContent(),
@@ -272,13 +293,10 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
       return const SizedBox(
         height: 24,
         width: 24,
-        child: CircularProgressIndicator(
-          color: Colors.white,
-          strokeWidth: 2,
-        ),
+        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
       );
     }
-    
+
     if (_isSuccess) {
       return const Row(
         mainAxisAlignment: MainAxisAlignment.center,

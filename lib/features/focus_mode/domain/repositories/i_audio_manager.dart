@@ -1,11 +1,11 @@
 abstract class IAudioManager {
   Future<void> init();
-  
+
   // Mixer Controls
   Future<void> setRainVolume(double volume);
   Future<void> setFireVolume(double volume);
   Future<void> setBrownNoiseVolume(double volume);
-  
+
   // Effect Controls
   Future<void> playFailSound();
   Future<void> startAlarmLoop();
@@ -16,6 +16,6 @@ abstract class IAudioManager {
   // Background Keep-Alive (mainly for iOS)
   Future<void> startKeepAlive();
   Future<void> stopKeepAlive();
-  
+
   Future<void> dispose();
 }

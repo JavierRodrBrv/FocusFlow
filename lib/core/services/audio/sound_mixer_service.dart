@@ -1,4 +1,3 @@
-
 import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
@@ -21,46 +20,57 @@ class SoundMixerService {
     try {
       // Configurar sesión de audio para background (iOS/Android)
       final session = await AudioSession.instance;
-      
+
       // Configuración explícita para garantizar Playback en background en iOS
-      await session.configure(const AudioSessionConfiguration(
-        avAudioSessionCategory: AVAudioSessionCategory.playback,
-        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers, // Para no cortar otros audios si no queremos, o .none para cortar
-        avAudioSessionMode: AVAudioSessionMode.defaultMode,
-        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
-        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
-        androidAudioAttributes: AndroidAudioAttributes(
-          contentType: AndroidAudioContentType.music,
-          flags: AndroidAudioFlags.none,
-          usage: AndroidAudioUsage.media,
+      await session.configure(
+        const AudioSessionConfiguration(
+          avAudioSessionCategory: AVAudioSessionCategory.playback,
+          avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions
+              .mixWithOthers, // Para no cortar otros audios si no queremos, o .none para cortar
+          avAudioSessionMode: AVAudioSessionMode.defaultMode,
+          avAudioSessionRouteSharingPolicy:
+              AVAudioSessionRouteSharingPolicy.defaultPolicy,
+          avAudioSessionSetActiveOptions:
+              AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
+          androidAudioAttributes: AndroidAudioAttributes(
+            contentType: AndroidAudioContentType.music,
+            flags: AndroidAudioFlags.none,
+            usage: AndroidAudioUsage.media,
+          ),
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+          androidWillPauseWhenDucked: true,
         ),
-        androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
-        androidWillPauseWhenDucked: true,
-      ));
+      );
 
       print('[SoundMixerService] Loading assets...');
       // Solo cargar y preparar, NO reproducir.
       await _rainPlayer.setAsset('assets/audio/rain.mp3');
       await _firePlayer.setAsset('assets/audio/fire.mp3');
       await _brownNoisePlayer.setAsset('assets/audio/brown.mp3');
-      await _keepAlivePlayer.setAsset('assets/audio/silence.mp3'); // Usamos el archivo de silencio real
+      await _keepAlivePlayer.setAsset(
+        'assets/audio/silence.mp3',
+      ); // Usamos el archivo de silencio real
       print('[SoundMixerService] Assets loaded.');
 
       await _rainPlayer.setLoopMode(LoopMode.one);
       await _firePlayer.setLoopMode(LoopMode.one);
       await _brownNoisePlayer.setLoopMode(LoopMode.one);
       await _keepAlivePlayer.setLoopMode(LoopMode.one);
-      await _keepAlivePlayer.setVolume(1.0); // Volumen al máximo (es silencio grabado, no se oirá nada)
+      await _keepAlivePlayer.setVolume(
+        1.0,
+      ); // Volumen al máximo (es silencio grabado, no se oirá nada)
 
       _isInitialized = true;
-      print('[SoundMixerService] Initialized successfully and players are ready.');
+      print(
+        '[SoundMixerService] Initialized successfully and players are ready.',
+      );
     } catch (e) {
       print('[SoundMixerService] ERROR initializing: $e');
       rethrow;
     }
   }
 
-  /// Inicia un reproductor silencioso en segundo plano para evitar que iOS 
+  /// Inicia un reproductor silencioso en segundo plano para evitar que iOS
   /// suspenda la aplicación mientras el temporizador está activo.
   void startKeepAlive() {
     if (!_isInitialized) return;

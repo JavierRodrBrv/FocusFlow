@@ -32,7 +32,8 @@ class FocusBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.status == AppStatus.initial || state.status == AppStatus.loading) {
+    if (state.status == AppStatus.initial ||
+        state.status == AppStatus.loading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state.status == AppStatus.error) {
@@ -43,7 +44,10 @@ class FocusBody extends StatelessWidget {
       children: [
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 16.0,
+            ),
             children: [
               const SizedBox(height: 20),
               Showcase(

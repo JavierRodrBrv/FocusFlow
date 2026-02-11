@@ -29,9 +29,9 @@ class PremiumFeatureDialog extends StatelessWidget {
             Text(
               'Función Premium',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
@@ -56,7 +56,10 @@ class PremiumFeatureDialog extends StatelessWidget {
                 Expanded(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancelar', style: TextStyle(color: Colors.white60)),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(color: Colors.white60),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -67,14 +70,16 @@ class PremiumFeatureDialog extends StatelessWidget {
 
                       if (F.appFlavor == Flavor.dev) {
                         // Simular compra enviando evento al servicio (Solo DEV)
-                        FlutterBackgroundService()
-                            .invoke('sendEvent', {'event': 'togglePremium'});
+                        FlutterBackgroundService().invoke('sendEvent', {
+                          'event': 'togglePremium',
+                        });
                         if (onPurchase != null) onPurchase!();
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                                '¡Premium activado! Funcionalidad desbloqueada (DEV).'),
+                              '¡Premium activado! Funcionalidad desbloqueada (DEV).',
+                            ),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -116,10 +121,7 @@ class PremiumFeatureDialog extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: const [
-          Text(
-            'Solo ',
-            style: TextStyle(color: Colors.white70),
-          ),
+          Text('Solo ', style: TextStyle(color: Colors.white70)),
           Text(
             '4,99 €',
             style: TextStyle(
@@ -128,10 +130,7 @@ class PremiumFeatureDialog extends StatelessWidget {
               fontSize: 18,
             ),
           ),
-          Text(
-            ' / pago único',
-            style: TextStyle(color: Colors.white70),
-          ),
+          Text(' / pago único', style: TextStyle(color: Colors.white70)),
         ],
       ),
     );

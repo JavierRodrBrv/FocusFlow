@@ -12,20 +12,20 @@ class UnifiedAudioManager implements IAudioManager {
 
   @override
   Future<void> init() async {
-    await Future.wait([
-      _mixerService.init(),
-      _effectService.init(),
-    ]);
+    await Future.wait([_mixerService.init(), _effectService.init()]);
   }
 
   @override
-  Future<void> setRainVolume(double volume) async => _mixerService.setRainVolume(volume);
+  Future<void> setRainVolume(double volume) async =>
+      _mixerService.setRainVolume(volume);
 
   @override
-  Future<void> setFireVolume(double volume) async => _mixerService.setFireVolume(volume);
+  Future<void> setFireVolume(double volume) async =>
+      _mixerService.setFireVolume(volume);
 
   @override
-  Future<void> setBrownNoiseVolume(double volume) async => _mixerService.setBrownNoiseVolume(volume);
+  Future<void> setBrownNoiseVolume(double volume) async =>
+      _mixerService.setBrownNoiseVolume(volume);
 
   @override
   Future<void> playFailSound() async => _effectService.playFailSoundOnce();

@@ -1,5 +1,1 @@
-enum PhoneOrientation {
-  faceUp,
-  faceDown,
-  unknown,
-}
+enum PhoneOrientation { faceUp, faceDown, unknown }

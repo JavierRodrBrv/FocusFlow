@@ -311,7 +311,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     final s = event.sessionState;
 
     // Detect if the session just transitioned to 'finished'
-    final justFinished = s.status == PomodoroStatus.finished &&
+    final justFinished =
+        s.status == PomodoroStatus.finished &&
         state.pomodoroStatus != PomodoroStatus.finished;
 
     if (justFinished && state.isPlayingMix) {

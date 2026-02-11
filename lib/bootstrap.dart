@@ -13,7 +13,7 @@ import 'features/premium/data/models/premium_status.dart';
 /// Inicializa los sistemas críticos antes de lanzar la UI.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 1. Configuración de UI
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
@@ -49,6 +49,6 @@ Future<void> bootstrap() async {
 
   // 6. Servicio en Segundo Plano
   await initializeService();
-  
+
   print('[Bootstrap] System initialized successfully.');
 }

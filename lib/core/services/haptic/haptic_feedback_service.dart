@@ -8,7 +8,7 @@ import 'package:vibration/vibration.dart';
 class HapticFeedbackService {
   Timer? _vibrationTimer;
   static const platform = MethodChannel('com.example.focus_flow/native');
-  
+
   HapticFeedbackService() {
     print('[HapticFeedbackService] Created');
   }
@@ -17,7 +17,7 @@ class HapticFeedbackService {
   /// This pattern will repeat until `stopFailVibration` is called.
   Future<void> startFailVibration() async {
     // Usamos el mismo mecanismo de Timer para consistencia
-    startAlarmVibration(); 
+    startAlarmVibration();
   }
 
   /// Starts a looping vibration for the alarm (60% intensity).
@@ -25,26 +25,26 @@ class HapticFeedbackService {
   Future<void> startAlarmVibration() async {
     // Detener cualquier timer previo
     stopFailVibration();
-    
+
     // On iOS, we skip the plugin check because we use a native channel that bypasses some checks
     bool hasVibrator = true;
     if (!Platform.isIOS) {
-       hasVibrator = await Vibration.hasVibrator() ?? false;
+      hasVibrator = await Vibration.hasVibrator() ?? false;
     }
 
     if (hasVibrator) {
       print('[HapticFeedbackService] Starting alarm vibration loop (Timer)...');
-      
+
       // Función interna para ejecutar una vibración única
       Future<void> vibrateOnce() async {
         if (Platform.isIOS) {
-           try {
-             // Invocar vibración nativa (AudioServicesPlaySystemSound) que funciona mejor en background
-             // si la app está reproduciendo audio (KeepAlive).
-             await platform.invokeMethod('vibrate');
-           } catch (e) {
-             print('[HapticFeedbackService] iOS Native Vibrate Error: $e');
-           }
+          try {
+            // Invocar vibración nativa (AudioServicesPlaySystemSound) que funciona mejor en background
+            // si la app está reproduciendo audio (KeepAlive).
+            await platform.invokeMethod('vibrate');
+          } catch (e) {
+            print('[HapticFeedbackService] iOS Native Vibrate Error: $e');
+          }
         } else {
           if (await Vibration.hasAmplitudeControl() ?? false) {
             // Intensidad 90% (~230)
@@ -74,7 +74,7 @@ class HapticFeedbackService {
   Future<void> stopFailVibration() async {
     _vibrationTimer?.cancel();
     _vibrationTimer = null;
-    
+
     if (!Platform.isIOS && (await Vibration.hasVibrator() ?? false)) {
       print('[HapticFeedbackService] Stopping vibration...');
       Vibration.cancel();
@@ -84,10 +84,12 @@ class HapticFeedbackService {
   /// Triggers a significant vibration feedback for completion (60% intensity).
   Future<void> vibrate() async {
     if (Platform.isIOS) {
-       try {
-         await platform.invokeMethod('vibrate');
-       } catch (e) { print(e); }
-       return;
+      try {
+        await platform.invokeMethod('vibrate');
+      } catch (e) {
+        print(e);
+      }
+      return;
     }
 
     if (await Vibration.hasVibrator() ?? false) {

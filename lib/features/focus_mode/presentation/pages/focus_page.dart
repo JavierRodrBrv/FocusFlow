@@ -72,24 +72,59 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
     }
   }
 
+  void _handleTutorialCompletion() async {
+    if (F.appFlavor == Flavor.dev) {
+      var box = await Hive.openBox('settings');
+      bool devNoticeSeen = box.get('dev_notice_seen', defaultValue: false);
+      if (!devNoticeSeen) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => const DevVersionDialog(),
+          );
+        }
+        box.put('dev_notice_seen', true);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ShowCaseWidget(
-      onFinish: () async {
-        if (F.appFlavor == Flavor.dev) {
-          var box = await Hive.openBox('settings');
-          bool devNoticeSeen = box.get('dev_notice_seen', defaultValue: false);
-          if (!devNoticeSeen) {
-            if (mounted) {
-              showDialog(
-                context: context,
-                builder: (context) => const DevVersionDialog(),
-              );
-            }
-            box.put('dev_notice_seen', true);
-          }
-        }
-      },
+      onFinish: _handleTutorialCompletion,
+      onDismiss: (_) => _handleTutorialCompletion(),
+      globalFloatingActionWidget: (context) => FloatingActionWidget(
+        top: 80,
+        right: 20,
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.shade900,
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.blue.shade900,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: () => ShowCaseWidget.of(context).dismiss(),
+              customBorder: const CircleBorder(),
+              child: const Padding(
+                padding: EdgeInsets.all(10.0),
+                child: Icon(
+                  Icons.skip_next,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       builder: (context) => FocusView(key: _viewKey),
     );
   }

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -34,13 +33,17 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
     print('[AdBannerWidget] Getting ad size...');
     // Obtener el ancho de la pantalla para el banner adaptativo.
     final width = MediaQuery.of(context).size.width.truncate();
-    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
-    
+    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+      width,
+    );
+
     if (size == null) {
       print('[AdBannerWidget] ERROR: Unable to get adaptive ad size.');
       return;
     }
-    print('[AdBannerWidget] Adaptive ad size obtained: ${size.width}x${size.height}');
+    print(
+      '[AdBannerWidget] Adaptive ad size obtained: ${size.width}x${size.height}',
+    );
 
     // Actualizar el estado con el tamaño calculado si es necesario.
     if (mounted) {
@@ -80,11 +83,13 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
         child: AdWidget(ad: _bannerAd!),
       );
     }
-    
+
     // Devuelve un contenedor con el alto esperado del anuncio mientras carga
     // para evitar saltos en la UI.
     return SizedBox(
-      height: _adSize?.height.toDouble() ?? 50, // Default to 50 if size not yet known
+      height:
+          _adSize?.height.toDouble() ??
+          50, // Default to 50 if size not yet known
     );
   }
 

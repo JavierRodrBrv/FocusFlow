@@ -10,7 +10,7 @@ class AdConsentManager {
     final completer = Completer<bool>();
 
     final params = ConsentRequestParameters();
-    
+
     // Descomentar para pruebas:
     // final debugSettings = ConsentDebugSettings(
     //   debugGeography: DebugGeography.debugGeographyEea,
@@ -25,10 +25,13 @@ class AdConsentManager {
           ConsentForm.loadAndShowConsentFormIfRequired((formError) async {
             if (formError != null) {
               // Error mostrando el formulario
-              print('[AdConsentManager] Error showing consent form: ${formError.message}');
+              print(
+                '[AdConsentManager] Error showing consent form: ${formError.message}',
+              );
             }
             // Haya error o no, comprobamos si podemos pedir anuncios
-            final canRequest = await ConsentInformation.instance.canRequestAds();
+            final canRequest = await ConsentInformation.instance
+                .canRequestAds();
             completer.complete(canRequest);
           });
         } else {
@@ -38,7 +41,9 @@ class AdConsentManager {
         }
       },
       (FormError error) {
-        print('[AdConsentManager] Error requesting consent info: ${error.message}');
+        print(
+          '[AdConsentManager] Error requesting consent info: ${error.message}',
+        );
         completer.complete(false); // Asumimos false por seguridad en error
       },
     );

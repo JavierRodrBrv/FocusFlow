@@ -32,7 +32,7 @@ Future<void> initializeService() async {
     notificationChannelId,
     'Focus Flow Status',
     description: 'Notificaciones persistentes del temporizador',
-    importance: Importance.low, 
+    importance: Importance.low,
     showBadge: true,
     playSound: false,
   );
@@ -48,23 +48,22 @@ Future<void> initializeService() async {
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+        AndroidFlutterLocalNotificationsPlugin
+      >()
       ?.createNotificationChannel(channel);
-      
+
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+        AndroidFlutterLocalNotificationsPlugin
+      >()
       ?.createNotificationChannel(alarmChannel);
 
   if (Platform.isIOS) {
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
   await service.configure(
@@ -94,31 +93,35 @@ void onStart(ServiceInstance service) async {
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
-  
+
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/launcher_icon');
   final DarwinInitializationSettings initializationSettingsDarwin =
       DarwinInitializationSettings(
-          requestAlertPermission: false,
-          requestBadgePermission: false,
-          requestSoundPermission: false);
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
   final InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin);
-  
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsDarwin,
+  );
+
   try {
-    await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
+    await flutterLocalNotificationsPlugin.initialize(
+      settings: initializationSettings,
+    );
   } catch (e) {
     print('[BackgroundService] Notifications init error: $e');
   }
 
   FocusBloc? bloc;
   bool initFailed = false;
-  
+
   // LOGICA DE HEARTBEAT Y OPTIMIZACIÓN
   DateTime lastUiHeartbeat = DateTime.now();
   String lastEncodedJson = '';
-  
+
   // Timer de limpieza: si no hay latido en 10s, marcamos la UI como desconectada
   Timer.periodic(const Duration(seconds: 5), (timer) {
     final diff = DateTime.now().difference(lastUiHeartbeat).inSeconds;
@@ -128,7 +131,7 @@ void onStart(ServiceInstance service) async {
       // print('UI Heartbeat lost ($diff s). Pausing updates.'); // Comentado para no saturar log
     }
   });
-  
+
   bool isForeground = true;
   Timer? iosLoopingNotificationTimer;
   const alarmNotificationId = 999;
@@ -145,13 +148,13 @@ void onStart(ServiceInstance service) async {
     if (eventName == 'ui_resumed') {
       lastUiHeartbeat = DateTime.now(); // Reset inmediato
       if (bloc != null) {
-         // Forzamos envío al reconectar, ignorando el dirty check
-         lastEncodedJson = ''; 
-         service.invoke('update', bloc!.state.toJson());
+        // Forzamos envío al reconectar, ignorando el dirty check
+        lastEncodedJson = '';
+        service.invoke('update', bloc!.state.toJson());
       }
       return;
     }
-    
+
     if (eventName == 'ui_paused') {
       // Forzar desconexión inmediata (ponemos fecha antigua)
       lastUiHeartbeat = DateTime.now().subtract(const Duration(minutes: 1));
@@ -163,7 +166,10 @@ void onStart(ServiceInstance service) async {
       if (bloc != null) {
         service.invoke('update', bloc!.state.toJson());
       } else {
-        service.invoke('update', initFailed ? _getErrorStateJson() : _getLoadingStateJson());
+        service.invoke(
+          'update',
+          initFailed ? _getErrorStateJson() : _getLoadingStateJson(),
+        );
       }
       return;
     }
@@ -172,12 +178,24 @@ void onStart(ServiceInstance service) async {
 
     try {
       switch (eventName) {
-        case 'startTimer': bloc!.add(StartTimer()); break;
-        case 'pauseTimer': bloc!.add(PauseTimer()); break;
-        case 'resetTimer': bloc!.add(ResetTimer()); break;
-        case 'stopAlarm': bloc!.add(StopAlarm()); break;
-        case 'toggleHardcore': bloc!.add(ToggleHardcoreMode()); break;
-        case 'toggleAlarmSound': bloc!.add(ToggleAlarmSound()); break;
+        case 'startTimer':
+          bloc!.add(StartTimer());
+          break;
+        case 'pauseTimer':
+          bloc!.add(PauseTimer());
+          break;
+        case 'resetTimer':
+          bloc!.add(ResetTimer());
+          break;
+        case 'stopAlarm':
+          bloc!.add(StopAlarm());
+          break;
+        case 'toggleHardcore':
+          bloc!.add(ToggleHardcoreMode());
+          break;
+        case 'toggleAlarmSound':
+          bloc!.add(ToggleAlarmSound());
+          break;
         case 'updatePomodoroDuration':
           final minutes = event['durationMinutes'] ?? 0;
           final seconds = event['durationSeconds'] ?? 0;
@@ -187,23 +205,40 @@ void onStart(ServiceInstance service) async {
           );
           bloc!.add(UpdatePomodoroDuration(duration));
           break;
-        case 'updateConsentStatus': bloc!.add(UpdateConsentStatus(event['canRequest'])); break;
-        case 'togglePremium': bloc!.add(TogglePremiumStatus()); break;
-        case 'saveMix': bloc!.add(SaveCurrentMix()); break;
-        case 'playSavedMix': bloc!.add(PlaySavedMix()); break;
-        case 'loadMix': bloc!.add(LoadMix(event['mixId'])); break;
-        case 'resumeMix': bloc!.add(ResumeMix()); break;
-        case 'pauseMix': bloc!.add(PauseMix()); break;
-        case 'updateRainVolume': 
-          bloc!.add(UpdateRainVolume((event['volume'] as num).toDouble())); 
+        case 'updateConsentStatus':
+          bloc!.add(UpdateConsentStatus(event['canRequest']));
           break;
-        case 'updateFireVolume': 
-          bloc!.add(UpdateFireVolume((event['volume'] as num).toDouble())); 
+        case 'togglePremium':
+          bloc!.add(TogglePremiumStatus());
           break;
-        case 'updateBrownNoiseVolume': 
-          bloc!.add(UpdateBrownNoiseVolume((event['volume'] as num).toDouble())); 
+        case 'saveMix':
+          bloc!.add(SaveCurrentMix());
           break;
-        default: print('[BackgroundService] Unknown event: $eventName');
+        case 'playSavedMix':
+          bloc!.add(PlaySavedMix());
+          break;
+        case 'loadMix':
+          bloc!.add(LoadMix(event['mixId']));
+          break;
+        case 'resumeMix':
+          bloc!.add(ResumeMix());
+          break;
+        case 'pauseMix':
+          bloc!.add(PauseMix());
+          break;
+        case 'updateRainVolume':
+          bloc!.add(UpdateRainVolume((event['volume'] as num).toDouble()));
+          break;
+        case 'updateFireVolume':
+          bloc!.add(UpdateFireVolume((event['volume'] as num).toDouble()));
+          break;
+        case 'updateBrownNoiseVolume':
+          bloc!.add(
+            UpdateBrownNoiseVolume((event['volume'] as num).toDouble()),
+          );
+          break;
+        default:
+          print('[BackgroundService] Unknown event: $eventName');
       }
     } catch (e) {
       print('[BackgroundService] Error handling event $eventName: $e');
@@ -211,8 +246,12 @@ void onStart(ServiceInstance service) async {
   });
 
   if (service is AndroidServiceInstance) {
-    service.on('setAsForeground').listen((event) => service.setAsForegroundService());
-    service.on('setAsBackground').listen((event) => service.setAsBackgroundService());
+    service
+        .on('setAsForeground')
+        .listen((event) => service.setAsForegroundService());
+    service
+        .on('setAsBackground')
+        .listen((event) => service.setAsBackgroundService());
   }
   service.on('stopSelf').listen((event) => service.stopSelf());
 
@@ -222,36 +261,43 @@ void onStart(ServiceInstance service) async {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
 
-    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(PremiumStatusAdapter());
-    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SoundMixModelAdapter());
+    if (!Hive.isAdapterRegistered(0))
+      Hive.registerAdapter(PremiumStatusAdapter());
+    if (!Hive.isAdapterRegistered(1))
+      Hive.registerAdapter(SoundMixModelAdapter());
 
     await configureDependencies();
     bloc = getIt<FocusBloc>();
 
     bloc!.stream.listen((state) async {
       // 1. Verificar si la UI está escuchando (Heartbeat check)
-      final secondsSinceHeartbeat = DateTime.now().difference(lastUiHeartbeat).inSeconds;
-      final isUiAlive = secondsSinceHeartbeat < 8; // Margen de seguridad (el timer de ui es cada 3s)
+      final secondsSinceHeartbeat = DateTime.now()
+          .difference(lastUiHeartbeat)
+          .inSeconds;
+      final isUiAlive =
+          secondsSinceHeartbeat <
+          8; // Margen de seguridad (el timer de ui es cada 3s)
 
       if (isUiAlive) {
-         // 2. Dirty Check: Solo enviar si el JSON ha cambiado
-         // Esto evita enviar actualizaciones redundantes (ej: timer pausado)
-         final newJson = state.toJson();
-         final newEncoded = jsonEncode(newJson);
-         
-         if (newEncoded != lastEncodedJson) {
-           service.invoke('update', newJson);
-           lastEncodedJson = newEncoded;
-         }
+        // 2. Dirty Check: Solo enviar si el JSON ha cambiado
+        // Esto evita enviar actualizaciones redundantes (ej: timer pausado)
+        final newJson = state.toJson();
+        final newEncoded = jsonEncode(newJson);
+
+        if (newEncoded != lastEncodedJson) {
+          service.invoke('update', newJson);
+          lastEncodedJson = newEncoded;
+        }
       }
 
       final int minutes = state.remainingTime.inMinutes;
       final int seconds = state.remainingTime.inSeconds % 60;
-      final timeDisplay = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-      
+      final timeDisplay =
+          '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
       String title = 'FocusFlow';
       String content = 'Manteniendo tu sesión de foco.';
-      
+
       if (state.pomodoroStatus == PomodoroStatus.running) {
         title = 'FocusFlow - Enfocando';
         content = 'Tiempo restante: $timeDisplay';
@@ -265,11 +311,11 @@ void onStart(ServiceInstance service) async {
       } else if (state.pomodoroStatus == PomodoroStatus.finished) {
         title = 'FocusFlow - Finalizado';
         content = '¡Sesión terminada!';
-        
+
         if (Platform.isIOS && iosLoopingNotificationTimer == null) {
-           Future<void> sendAlarmNotification() async {
-              try {
-               await flutterLocalNotificationsPlugin.show(
+          Future<void> sendAlarmNotification() async {
+            try {
+              await flutterLocalNotificationsPlugin.show(
                 id: 999,
                 title: '¡Sesión Completada!',
                 body: 'Has cumplido tu objetivo. Toca para continuar.',
@@ -277,20 +323,27 @@ void onStart(ServiceInstance service) async {
                   iOS: DarwinNotificationDetails(
                     presentAlert: true,
                     presentBanner: true,
-                    presentSound: true, // HABILITADO: Necesario para que vibre en iOS
-                    interruptionLevel: InterruptionLevel.timeSensitive, 
+                    presentSound:
+                        true, // HABILITADO: Necesario para que vibre en iOS
+                    interruptionLevel: InterruptionLevel.timeSensitive,
                   ),
                 ),
               );
-              } catch (e) { print('[BackgroundService] iOS Loop Notification Error: $e'); }
-           }
-           sendAlarmNotification();
-           iosLoopingNotificationTimer = Timer.periodic(const Duration(seconds: 2), (timer) => sendAlarmNotification());
-        } 
-        
+            } catch (e) {
+              print('[BackgroundService] iOS Loop Notification Error: $e');
+            }
+          }
+
+          sendAlarmNotification();
+          iosLoopingNotificationTimer = Timer.periodic(
+            const Duration(seconds: 2),
+            (timer) => sendAlarmNotification(),
+          );
+        }
+
         if (Platform.isAndroid) {
-           try {
-             await flutterLocalNotificationsPlugin.show(
+          try {
+            await flutterLocalNotificationsPlugin.show(
               id: alarmNotificationId,
               title: '¡Sesión Completada!',
               body: 'Has cumplido tu objetivo. Toca para continuar.',
@@ -307,15 +360,18 @@ void onStart(ServiceInstance service) async {
                 ),
               ),
             );
-           } catch (e) { print('[BackgroundService] Android Alarm Notification Error: $e'); }
+          } catch (e) {
+            print('[BackgroundService] Android Alarm Notification Error: $e');
+          }
         }
       } else {
-         iosLoopingNotificationTimer?.cancel();
-         iosLoopingNotificationTimer = null;
+        iosLoopingNotificationTimer?.cancel();
+        iosLoopingNotificationTimer = null;
       }
 
       if (service is AndroidServiceInstance) {
-        bool shouldBeForeground = state.pomodoroStatus == PomodoroStatus.running;
+        bool shouldBeForeground =
+            state.pomodoroStatus == PomodoroStatus.running;
         if (shouldBeForeground && !isForeground) {
           service.setAsForegroundService();
           isForeground = true;
@@ -324,28 +380,30 @@ void onStart(ServiceInstance service) async {
           isForeground = false;
         }
         service.setForegroundNotificationInfo(title: title, content: content);
-      } else if (Platform.isIOS && state.pomodoroStatus != PomodoroStatus.finished) {
-          try {
-            await flutterLocalNotificationsPlugin.show(
-              id: 888,
-              title: title,
-              body: content,
-              notificationDetails: const NotificationDetails(
-                iOS: DarwinNotificationDetails(
-                  presentAlert: true,
-                  presentBanner: true,
-                  presentSound: false,
-                  interruptionLevel: InterruptionLevel.passive,
-                ),
+      } else if (Platform.isIOS &&
+          state.pomodoroStatus != PomodoroStatus.finished) {
+        try {
+          await flutterLocalNotificationsPlugin.show(
+            id: 888,
+            title: title,
+            body: content,
+            notificationDetails: const NotificationDetails(
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentBanner: true,
+                presentSound: false,
+                interruptionLevel: InterruptionLevel.passive,
               ),
-            );
-          } catch (e) { print('[BackgroundService] iOS Notification Error: $e'); }
+            ),
+          );
+        } catch (e) {
+          print('[BackgroundService] iOS Notification Error: $e');
+        }
       }
     });
 
     bloc!.add(InitializeApp());
     service.invoke('update', bloc!.state.toJson());
-
   } catch (e, stackTrace) {
     print('[BackgroundService] FATAL ERROR: $e\n$stackTrace');
     initFailed = true;
@@ -354,15 +412,35 @@ void onStart(ServiceInstance service) async {
 }
 
 Map<String, dynamic> _getLoadingStateJson() => {
-  'status': 1, 'isPremium': false, 'canRequestAds': false, 'rainVolume': 0.5, 'fireVolume': 0.0, 'brownNoiseVolume': 0.0,
-  'isHardcoreMode': false, 'phoneOrientation': 2, 'isInPenaltyBox': false, 'isAlarmSoundEnabled': true,
-  'pomodoroStatus': 0, 'remainingTime': 1500, 'pomodoroDuration': 1500,
+  'status': 1,
+  'isPremium': false,
+  'canRequestAds': false,
+  'rainVolume': 0.5,
+  'fireVolume': 0.0,
+  'brownNoiseVolume': 0.0,
+  'isHardcoreMode': false,
+  'phoneOrientation': 2,
+  'isInPenaltyBox': false,
+  'isAlarmSoundEnabled': true,
+  'pomodoroStatus': 0,
+  'remainingTime': 1500,
+  'pomodoroDuration': 1500,
 };
 
 Map<String, dynamic> _getErrorStateJson() => {
-  'status': 3, 'isPremium': false, 'canRequestAds': false, 'rainVolume': 0.0, 'fireVolume': 0.0, 'brownNoiseVolume': 0.0,
-  'isHardcoreMode': false, 'phoneOrientation': 2, 'isInPenaltyBox': false, 'isAlarmSoundEnabled': true,
-  'pomodoroStatus': 0, 'remainingTime': 1500, 'pomodoroDuration': 1500,
+  'status': 3,
+  'isPremium': false,
+  'canRequestAds': false,
+  'rainVolume': 0.0,
+  'fireVolume': 0.0,
+  'brownNoiseVolume': 0.0,
+  'isHardcoreMode': false,
+  'phoneOrientation': 2,
+  'isInPenaltyBox': false,
+  'isAlarmSoundEnabled': true,
+  'pomodoroStatus': 0,
+  'remainingTime': 1500,
+  'pomodoroDuration': 1500,
 };
 
 @pragma('vm:entry-point')

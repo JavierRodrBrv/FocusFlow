@@ -1,7 +1,4 @@
-enum Flavor {
-  dev,
-  pro,
-}
+enum Flavor { dev, pro }
 
 class F {
   static late final Flavor appFlavor;
@@ -16,5 +13,4 @@ class F {
         return 'FocusFlow';
     }
   }
-
 }

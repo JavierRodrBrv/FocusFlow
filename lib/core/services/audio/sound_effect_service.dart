@@ -18,14 +18,16 @@ class SoundEffectService {
   Future<void> init() async {
     if (_isInitialized) return;
     print('[SoundEffectService] Initializing...');
-    
+
     // Configuración de Sesión de Audio eliminada para evitar conflictos con SoundMixerService.
     // SoundMixerService ya configura la sesión con las opciones correctas para Background.
 
     try {
       await _failPlayer.setAsset('assets/audio/fail.mp3');
-      await _failPlayer.setLoopMode(LoopMode.one); // Set player to loop this single track
-      
+      await _failPlayer.setLoopMode(
+        LoopMode.one,
+      ); // Set player to loop this single track
+
       await _alarmPlayer.setAsset('assets/audio/alarm.mp3');
       await _alarmPlayer.setLoopMode(LoopMode.off);
 
@@ -48,24 +50,27 @@ class SoundEffectService {
   Future<void> stopFailLoop() async {
     if (_failPlayer.playing) {
       print('[SoundEffectService] Stopping fail sound loop...');
-      await _failPlayer.pause(); // Use pause to stop without releasing resources
+      await _failPlayer
+          .pause(); // Use pause to stop without releasing resources
       await _failPlayer.seek(Duration.zero);
     }
   }
-  
+
   /// Starts playing the alarm sound in a loop.
   Future<void> startAlarmLoop() async {
     try {
       if (!_isInitialized) return;
-      
+
       print('[SoundEffectService] Starting alarm loop...');
       // Asegurar configuración de sesión adecuada para alarma (Playback) si no se hizo globalmente
       // En este caso confiamos en SoundMixerService, pero el player individual debe estar listo.
-      
+
       await _alarmPlayer.setLoopMode(LoopMode.one); // Bucle infinito
       await _alarmPlayer.seek(Duration.zero);
-      await _alarmPlayer.setVolume(1.0); // Asegurar volumen máximo para la alarma
-      
+      await _alarmPlayer.setVolume(
+        1.0,
+      ); // Asegurar volumen máximo para la alarma
+
       if (!_alarmPlayer.playing) {
         await _alarmPlayer.play();
       }

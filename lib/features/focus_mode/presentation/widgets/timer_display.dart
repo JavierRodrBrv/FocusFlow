@@ -42,30 +42,41 @@ class TimerDisplay extends StatelessWidget {
             // -10 Min
             BouncingButton(
               child: IconButton(
-                icon: Icon(Icons.remove_circle_outline, 
-                     color: (canAdjust && !isAtMin) ? color : color.withValues(alpha: 0.2)),
+                icon: Icon(
+                  Icons.remove_circle_outline,
+                  color: (canAdjust && !isAtMin)
+                      ? color
+                      : color.withValues(alpha: 0.2),
+                ),
                 iconSize: 32,
                 tooltip: 'Reducir 10 min',
                 onPressed: (!canAdjust || isAtMin)
                     ? null
-                    : () => _updateDuration(state.pomodoroDuration.inMinutes - 10),
+                    : () => _updateDuration(
+                        state.pomodoroDuration.inMinutes - 10,
+                      ),
               ),
             ),
             // -5 Min
             BouncingButton(
               child: IconButton(
-                icon: Icon(Icons.remove, 
-                     color: (canAdjust && !isAtMin) ? color.withValues(alpha: 0.7) : color.withValues(alpha: 0.2)),
+                icon: Icon(
+                  Icons.remove,
+                  color: (canAdjust && !isAtMin)
+                      ? color.withValues(alpha: 0.7)
+                      : color.withValues(alpha: 0.2),
+                ),
                 iconSize: 24,
                 tooltip: 'Reducir 5 min',
                 onPressed: (!canAdjust || isAtMin)
                     ? null
-                    : () => _updateDuration(state.pomodoroDuration.inMinutes - 5),
+                    : () =>
+                          _updateDuration(state.pomodoroDuration.inMinutes - 5),
               ),
             ),
           ],
         ),
-        
+
         // Time Display
         Flexible(
           child: Padding(
@@ -78,7 +89,7 @@ class TimerDisplay extends StatelessWidget {
                   fontSize: state.remainingTime.inHours > 0 ? 52 : 64,
                   fontWeight: FontWeight.bold,
                   color: color,
-                  fontFeatures: const [FontFeature.tabularFigures()], 
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ),
@@ -92,23 +103,34 @@ class TimerDisplay extends StatelessWidget {
             // +10 Min
             BouncingButton(
               child: IconButton(
-                icon: Icon(Icons.add_circle_outline, color: canAdjust ? color : color.withValues(alpha: 0.2)),
+                icon: Icon(
+                  Icons.add_circle_outline,
+                  color: canAdjust ? color : color.withValues(alpha: 0.2),
+                ),
                 iconSize: 32,
                 tooltip: 'Aumentar 10 min',
                 onPressed: !canAdjust
                     ? null
-                    : () => _updateDuration(state.pomodoroDuration.inMinutes + 10),
+                    : () => _updateDuration(
+                        state.pomodoroDuration.inMinutes + 10,
+                      ),
               ),
             ),
             // +5 Min
             BouncingButton(
               child: IconButton(
-                icon: Icon(Icons.add, color: canAdjust ? color.withValues(alpha: 0.7) : color.withValues(alpha: 0.2)),
+                icon: Icon(
+                  Icons.add,
+                  color: canAdjust
+                      ? color.withValues(alpha: 0.7)
+                      : color.withValues(alpha: 0.2),
+                ),
                 iconSize: 24,
                 tooltip: 'Aumentar 5 min',
                 onPressed: !canAdjust
                     ? null
-                    : () => _updateDuration(state.pomodoroDuration.inMinutes + 5),
+                    : () =>
+                          _updateDuration(state.pomodoroDuration.inMinutes + 5),
               ),
             ),
           ],

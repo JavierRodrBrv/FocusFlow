@@ -14,12 +14,12 @@ class SoundMixRepositoryImpl implements SoundMixRepository {
     if (Hive.isBoxOpen(_boxName)) {
       return Hive.box<SoundMixModel>(_boxName);
     }
-    
+
     try {
       return await Hive.openBox<SoundMixModel>(_boxName);
     } catch (e) {
       print('[SoundMixRepository] Error crítico abriendo Hive box: $e');
-      
+
       // Intento de recuperación destructiva
       try {
         if (await Hive.boxExists(_boxName)) {
@@ -54,7 +54,9 @@ class SoundMixRepositoryImpl implements SoundMixRepository {
       final mixes = box.values.map((model) => model.toEntity()).toList();
       return Success(mixes);
     } catch (e) {
-      print('[SoundMixRepository] Error recuperando mezclas: $e. Retornando lista vacía por seguridad.');
+      print(
+        '[SoundMixRepository] Error recuperando mezclas: $e. Retornando lista vacía por seguridad.',
+      );
       // En lugar de error, devolvemos lista vacía para no bloquear la app
       return const Success([]);
     }
@@ -78,7 +80,9 @@ class SoundMixRepositoryImpl implements SoundMixRepository {
       await box.put('last_played_mix_id', id);
       return const Success(null);
     } catch (e) {
-      return Error(CacheFailure('Error al guardar el ID de la última mezcla: $e'));
+      return Error(
+        CacheFailure('Error al guardar el ID de la última mezcla: $e'),
+      );
     }
   }
 
@@ -89,7 +93,9 @@ class SoundMixRepositoryImpl implements SoundMixRepository {
       final id = box.get('last_played_mix_id') as String?;
       return Success(id);
     } catch (e) {
-      return Error(CacheFailure('Error al recuperar el ID de la última mezcla: $e'));
+      return Error(
+        CacheFailure('Error al recuperar el ID de la última mezcla: $e'),
+      );
     }
   }
 }

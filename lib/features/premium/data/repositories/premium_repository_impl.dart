@@ -1,4 +1,3 @@
-
 import 'package:hive/hive.dart';
 import 'package:injectable/injectable.dart';
 
@@ -16,7 +15,10 @@ class PremiumRepositoryImpl implements PremiumRepository {
 
   @override
   Future<bool> isPremium() async {
-    final status = box.get(_premiumStatusKey, defaultValue: PremiumStatus(isPremium: false));
+    final status = box.get(
+      _premiumStatusKey,
+      defaultValue: PremiumStatus(isPremium: false),
+    );
     print('[PremiumRepository] Getting premium status: ${status!.isPremium}');
     return status.isPremium;
   }
