@@ -6,8 +6,7 @@ import '../../../premium/presentation/widgets/ad_banner_widget.dart';
 import '../bloc/focus_bloc.dart';
 import 'timer_display.dart';
 import 'timer_controls.dart';
-import 'sound_mixer.dart';
-import 'saved_mix_player.dart';
+import 'expandable_sound_mixer.dart';
 import 'hardcore_mode_card.dart';
 
 class FocusBody extends StatelessWidget {
@@ -71,19 +70,12 @@ class FocusBody extends StatelessWidget {
                     'Activa este modo para evitar distracciones. Si giras el móvil, el tiempo se detiene.',
                 child: HardcoreModeCard(state: state, service: service),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
               Showcase(
                 key: mixerKey,
-                title: 'Sonidos',
-                description: 'Ajusta tu ambiente.',
-                child: SoundMixer(state: state, service: service),
-              ),
-              const SizedBox(height: 40),
-              Showcase(
-                key: savedMixesKey,
-                title: 'Mezclas',
-                description: 'Tus favoritas.',
-                child: SavedMixPlayer(state: state, service: service),
+                title: 'Ambiente',
+                description: 'Personaliza tus sonidos de fondo.',
+                child: ExpandableSoundMixer(state: state, service: service),
               ),
               const SizedBox(height: 40),
             ],
