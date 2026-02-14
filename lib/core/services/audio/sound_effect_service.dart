@@ -1,6 +1,5 @@
 import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:audio_session/audio_session.dart';
 
 @lazySingleton
 class SoundEffectService {

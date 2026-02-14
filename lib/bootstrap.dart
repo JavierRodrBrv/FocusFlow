@@ -6,9 +6,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'app/background_service.dart';
-import 'app/injection.dart';
-import 'features/focus_mode/data/models/sound_mix_model.dart';
-import 'features/premium/data/models/premium_status.dart';
 
 /// Inicializa los sistemas críticos antes de lanzar la UI.
 Future<void> bootstrap() async {

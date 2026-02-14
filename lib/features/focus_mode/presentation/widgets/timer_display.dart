@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
@@ -24,6 +24,61 @@ class TimerDisplay extends StatelessWidget {
     return '$minutes:$seconds';
   }
 
+  void _showTimerPicker(BuildContext context) {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) => Container(
+        height: 300,
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: CupertinoColors.tertiarySystemBackground.resolveFrom(
+                  context,
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: CupertinoColors.separator.resolveFrom(context),
+                    width: 0.5,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: const Text('Cancelar'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  CupertinoButton(
+                    child: const Text('Listo'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoTimerPicker(
+                mode: CupertinoTimerPickerMode.hms,
+                initialTimerDuration: state.pomodoroDuration,
+                onTimerDurationChanged: (Duration newDuration) {
+                  if (newDuration.inSeconds >= 10) {
+                    service.invoke('sendEvent', {
+                      'event': 'updatePomodoroDuration',
+                      'durationMinutes': newDuration.inMinutes,
+                      'durationSeconds': newDuration.inSeconds % 60,
+                    });
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final canAdjust = state.pomodoroStatus == PomodoroStatus.initial;
@@ -41,37 +96,30 @@ class TimerDisplay extends StatelessWidget {
           children: [
             // -10 Min
             BouncingButton(
-              child: IconButton(
-                icon: Icon(
-                  Icons.remove_circle_outline,
-                  color: (canAdjust && !isAtMin)
-                      ? color
-                      : color.withValues(alpha: 0.2),
-                ),
-                iconSize: 32,
-                tooltip: 'Reducir 10 min',
-                onPressed: (!canAdjust || isAtMin)
-                    ? null
-                    : () => _updateDuration(
-                        state.pomodoroDuration.inMinutes - 10,
-                      ),
+              onPressed: (!canAdjust || isAtMin)
+                  ? null
+                  : () =>
+                        _updateDuration(state.pomodoroDuration.inMinutes - 10),
+              child: Icon(
+                Icons.remove_circle_outline,
+                color: (canAdjust && !isAtMin)
+                    ? color
+                    : color.withValues(alpha: 0.2),
+                size: 32,
               ),
             ),
+            const SizedBox(height: 8),
             // -5 Min
             BouncingButton(
-              child: IconButton(
-                icon: Icon(
-                  Icons.remove,
-                  color: (canAdjust && !isAtMin)
-                      ? color.withValues(alpha: 0.7)
-                      : color.withValues(alpha: 0.2),
-                ),
-                iconSize: 24,
-                tooltip: 'Reducir 5 min',
-                onPressed: (!canAdjust || isAtMin)
-                    ? null
-                    : () =>
-                          _updateDuration(state.pomodoroDuration.inMinutes - 5),
+              onPressed: (!canAdjust || isAtMin)
+                  ? null
+                  : () => _updateDuration(state.pomodoroDuration.inMinutes - 5),
+              child: Icon(
+                Icons.remove,
+                color: (canAdjust && !isAtMin)
+                    ? color.withValues(alpha: 0.7)
+                    : color.withValues(alpha: 0.2),
+                size: 24,
               ),
             ),
           ],
@@ -81,15 +129,18 @@ class TimerDisplay extends StatelessWidget {
         Flexible(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                _formatDuration(state.remainingTime),
-                style: TextStyle(
-                  fontSize: state.remainingTime.inHours > 0 ? 52 : 64,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+            child: BouncingButton(
+              onPressed: canAdjust ? () => _showTimerPicker(context) : null,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _formatDuration(state.remainingTime),
+                  style: TextStyle(
+                    fontSize: state.remainingTime.inHours > 0 ? 52 : 64,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ),
@@ -102,35 +153,28 @@ class TimerDisplay extends StatelessWidget {
           children: [
             // +10 Min
             BouncingButton(
-              child: IconButton(
-                icon: Icon(
-                  Icons.add_circle_outline,
-                  color: canAdjust ? color : color.withValues(alpha: 0.2),
-                ),
-                iconSize: 32,
-                tooltip: 'Aumentar 10 min',
-                onPressed: !canAdjust
-                    ? null
-                    : () => _updateDuration(
-                        state.pomodoroDuration.inMinutes + 10,
-                      ),
+              onPressed: !canAdjust
+                  ? null
+                  : () =>
+                        _updateDuration(state.pomodoroDuration.inMinutes + 10),
+              child: Icon(
+                Icons.add_circle_outline,
+                color: canAdjust ? color : color.withValues(alpha: 0.2),
+                size: 32,
               ),
             ),
+            const SizedBox(height: 8),
             // +5 Min
             BouncingButton(
-              child: IconButton(
-                icon: Icon(
-                  Icons.add,
-                  color: canAdjust
-                      ? color.withValues(alpha: 0.7)
-                      : color.withValues(alpha: 0.2),
-                ),
-                iconSize: 24,
-                tooltip: 'Aumentar 5 min',
-                onPressed: !canAdjust
-                    ? null
-                    : () =>
-                          _updateDuration(state.pomodoroDuration.inMinutes + 5),
+              onPressed: !canAdjust
+                  ? null
+                  : () => _updateDuration(state.pomodoroDuration.inMinutes + 5),
+              child: Icon(
+                Icons.add,
+                color: canAdjust
+                    ? color.withValues(alpha: 0.7)
+                    : color.withValues(alpha: 0.2),
+                size: 24,
               ),
             ),
           ],

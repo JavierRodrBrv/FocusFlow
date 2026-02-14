@@ -4,10 +4,12 @@ class BouncingButton extends StatefulWidget {
   final Widget child;
   final Duration duration;
   final double scaleFactor;
+  final VoidCallback? onPressed;
 
   const BouncingButton({
     super.key,
     required this.child,
+    this.onPressed,
     this.duration = const Duration(milliseconds: 100),
     this.scaleFactor = 0.9,
   });
@@ -45,10 +47,13 @@ class _BouncingButtonState extends State<BouncingButton>
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: (_) => _controller.forward(),
-      onPointerUp: (_) => _controller.reverse(),
-      onPointerCancel: (_) => _controller.reverse(),
+    return GestureDetector(
+      onTapDown: widget.onPressed != null ? (_) => _controller.forward() : null,
+      onTapUp: widget.onPressed != null ? (_) => _controller.reverse() : null,
+      onTapCancel: widget.onPressed != null
+          ? () => _controller.reverse()
+          : null,
+      onTap: widget.onPressed,
       child: AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) {

@@ -64,7 +64,7 @@ class HardcoreModeCard extends StatelessWidget {
                 onChanged: (_) {
                   service.invoke('sendEvent', {'event': 'toggleHardcore'});
                 },
-                activeColor: Colors.blueAccent,
+                activeThumbColor: Colors.blueAccent,
               ),
             ],
           ),

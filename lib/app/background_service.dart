@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 import 'dart:convert'; // Importar para jsonEncode
 import 'dart:io';
-import 'package:android_intent_plus/flag.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
@@ -13,7 +11,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-import 'package:android_intent_plus/android_intent.dart';
 
 import '../features/focus_mode/data/models/sound_mix_model.dart';
 
@@ -150,7 +147,7 @@ void onStart(ServiceInstance service) async {
       if (bloc != null) {
         // Forzamos envío al reconectar, ignorando el dirty check
         lastEncodedJson = '';
-        service.invoke('update', bloc!.state.toJson());
+        service.invoke('update', bloc.state.toJson());
       }
       return;
     }
@@ -164,7 +161,7 @@ void onStart(ServiceInstance service) async {
     if (eventName == 'requestState') {
       lastUiHeartbeat = DateTime.now(); // Consideramos esto un latido
       if (bloc != null) {
-        service.invoke('update', bloc!.state.toJson());
+        service.invoke('update', bloc.state.toJson());
       } else {
         service.invoke(
           'update',
@@ -179,22 +176,22 @@ void onStart(ServiceInstance service) async {
     try {
       switch (eventName) {
         case 'startTimer':
-          bloc!.add(StartTimer());
+          bloc.add(StartTimer());
           break;
         case 'pauseTimer':
-          bloc!.add(PauseTimer());
+          bloc.add(PauseTimer());
           break;
         case 'resetTimer':
-          bloc!.add(ResetTimer());
+          bloc.add(ResetTimer());
           break;
         case 'stopAlarm':
-          bloc!.add(StopAlarm());
+          bloc.add(StopAlarm());
           break;
         case 'toggleHardcore':
-          bloc!.add(ToggleHardcoreMode());
+          bloc.add(ToggleHardcoreMode());
           break;
         case 'toggleAlarmSound':
-          bloc!.add(ToggleAlarmSound());
+          bloc.add(ToggleAlarmSound());
           break;
         case 'updatePomodoroDuration':
           final minutes = event['durationMinutes'] ?? 0;
@@ -203,37 +200,37 @@ void onStart(ServiceInstance service) async {
             minutes: minutes is int ? minutes : (minutes as double).toInt(),
             seconds: seconds is int ? seconds : (seconds as double).toInt(),
           );
-          bloc!.add(UpdatePomodoroDuration(duration));
+          bloc.add(UpdatePomodoroDuration(duration));
           break;
         case 'updateConsentStatus':
-          bloc!.add(UpdateConsentStatus(event['canRequest']));
+          bloc.add(UpdateConsentStatus(event['canRequest']));
           break;
         case 'togglePremium':
-          bloc!.add(TogglePremiumStatus());
+          bloc.add(TogglePremiumStatus());
           break;
         case 'saveMix':
-          bloc!.add(SaveCurrentMix());
+          bloc.add(SaveCurrentMix());
           break;
         case 'playSavedMix':
-          bloc!.add(PlaySavedMix());
+          bloc.add(PlaySavedMix());
           break;
         case 'loadMix':
-          bloc!.add(LoadMix(event['mixId']));
+          bloc.add(LoadMix(event['mixId']));
           break;
         case 'resumeMix':
-          bloc!.add(ResumeMix());
+          bloc.add(ResumeMix());
           break;
         case 'pauseMix':
-          bloc!.add(PauseMix());
+          bloc.add(PauseMix());
           break;
         case 'updateRainVolume':
-          bloc!.add(UpdateRainVolume((event['volume'] as num).toDouble()));
+          bloc.add(UpdateRainVolume((event['volume'] as num).toDouble()));
           break;
         case 'updateFireVolume':
-          bloc!.add(UpdateFireVolume((event['volume'] as num).toDouble()));
+          bloc.add(UpdateFireVolume((event['volume'] as num).toDouble()));
           break;
         case 'updateBrownNoiseVolume':
-          bloc!.add(
+          bloc.add(
             UpdateBrownNoiseVolume((event['volume'] as num).toDouble()),
           );
           break;
@@ -261,15 +258,17 @@ void onStart(ServiceInstance service) async {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
 
-    if (!Hive.isAdapterRegistered(0))
+    if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(PremiumStatusAdapter());
-    if (!Hive.isAdapterRegistered(1))
+    }
+    if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(SoundMixModelAdapter());
+    }
 
     await configureDependencies();
     bloc = getIt<FocusBloc>();
 
-    bloc!.stream.listen((state) async {
+    bloc.stream.listen((state) async {
       // 1. Verificar si la UI está escuchando (Heartbeat check)
       final secondsSinceHeartbeat = DateTime.now()
           .difference(lastUiHeartbeat)
@@ -402,8 +401,8 @@ void onStart(ServiceInstance service) async {
       }
     });
 
-    bloc!.add(InitializeApp());
-    service.invoke('update', bloc!.state.toJson());
+    bloc.add(InitializeApp());
+    service.invoke('update', bloc.state.toJson());
   } catch (e, stackTrace) {
     print('[BackgroundService] FATAL ERROR: $e\n$stackTrace');
     initFailed = true;

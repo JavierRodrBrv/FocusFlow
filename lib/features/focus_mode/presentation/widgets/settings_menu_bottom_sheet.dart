@@ -75,7 +75,7 @@ class SettingsMenuBottomSheet extends StatelessWidget {
                   });
                 },
                 activeTrackColor: Colors.amber,
-                activeColor: Colors
+                activeThumbColor: Colors
                     .amberAccent, // activeColor está obsoleto para el track pero ok para thumb
               ),
 
