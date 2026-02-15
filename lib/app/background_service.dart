@@ -383,7 +383,8 @@ void onStart(ServiceInstance service) async {
 
       if (service is AndroidServiceInstance) {
         bool shouldBeForeground =
-            state.pomodoroStatus == PomodoroStatus.running;
+            state.pomodoroStatus == PomodoroStatus.running ||
+            state.pomodoroStatus == PomodoroStatus.resting;
         if (shouldBeForeground && !isForeground) {
           service.setAsForegroundService();
           isForeground = true;
