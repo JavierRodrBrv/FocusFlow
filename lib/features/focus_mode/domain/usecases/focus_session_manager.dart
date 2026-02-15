@@ -18,6 +18,7 @@ class SessionState {
   final PhoneOrientation orientation;
   final bool isHardcore;
   final bool isAlarmSoundEnabled;
+  final bool isResting;
 
   SessionState({
     required this.status,
@@ -27,6 +28,7 @@ class SessionState {
     required this.orientation,
     required this.isHardcore,
     required this.isAlarmSoundEnabled,
+    required this.isResting,
   });
 
   factory SessionState.initial() => SessionState(
@@ -37,6 +39,7 @@ class SessionState {
     orientation: PhoneOrientation.unknown,
     isHardcore: false,
     isAlarmSoundEnabled: true,
+    isResting: false,
   );
 }
 
@@ -57,11 +60,13 @@ class FocusSessionManager {
   PomodoroStatus _status = PomodoroStatus.initial;
   Duration _remainingTime = const Duration(minutes: 25);
   Duration _duration = const Duration(minutes: 25);
+  Duration? _breakDuration;
   bool _isInPenalty = false;
   PhoneOrientation _orientation = PhoneOrientation.unknown;
   bool _isHardcore = false;
   bool _isAlarmSoundEnabled = true;
   bool _hasBeenFaceDownAtLeastOnce = false;
+  PomodoroStatus? _prePauseStatus;
 
   bool get isAlarmSoundEnabled => _isAlarmSoundEnabled;
 
@@ -87,15 +92,39 @@ class FocusSessionManager {
     _timerService.tickStream.listen((remaining) {
       _remainingTime = remaining;
       if (_remainingTime.inSeconds == 0) {
-        _status = PomodoroStatus.finished;
-        _stopPenaltyEffects(); // Seguridad
-
-        // NO detenemos el KeepAlive aquí globalmente.
-        // Delegamos esa decisión a _triggerAlarm dependiendo de si suena la alarma o no.
-
-        _triggerAlarm();
+        Future.microtask(() {
+          if (_status == PomodoroStatus.running && _breakDuration != null) {
+            // Finaliza sesión de foco, inicia descanso (Focus Loop)
+            _status = PomodoroStatus.resting;
+            _remainingTime = _breakDuration!;
+            _timerService.start(startDuration: _remainingTime);
+            _notifyTransition();
+            _emitState();
+          } else if (_status == PomodoroStatus.resting) {
+            // Finaliza descanso, reinicia sesión de foco
+            _status = PomodoroStatus.running;
+            _remainingTime = _duration;
+            _timerService.start(startDuration: _remainingTime);
+            _notifyTransition();
+            _emitState();
+          } else if (_status == PomodoroStatus.running || _status == PomodoroStatus.paused) {
+            // Comportamiento normal si no hay descanso configurado
+            _status = PomodoroStatus.finished;
+            _stopPenaltyEffects(); // Seguridad
+            _triggerAlarm();
+            _emitState();
+          }
+        });
       }
       _emitState();
+    });
+  }
+
+  void _notifyTransition() {
+    // Una vibración corta para avisar del cambio de fase
+    _hapticService.startAlarmVibration();
+    Future.delayed(const Duration(seconds: 2), () {
+      _hapticService.stopAlarmVibration();
     });
   }
 
@@ -164,6 +193,10 @@ class FocusSessionManager {
     }
   }
 
+  void setBreakDuration(Duration? duration) {
+    _breakDuration = duration;
+  }
+
   void toggleAlarmSound() async {
     _isAlarmSoundEnabled = !_isAlarmSoundEnabled;
     try {
@@ -187,15 +220,16 @@ class FocusSessionManager {
   void startTimer() {
     if (_status == PomodoroStatus.paused) {
       _timerService.resume();
+      _status = _prePauseStatus ?? PomodoroStatus.running;
     } else {
       _timerService.start(startDuration: _remainingTime);
       _hasBeenFaceDownAtLeastOnce = false;
+      _status = PomodoroStatus.running;
     }
-    _status = PomodoroStatus.running;
     _isInPenalty = false;
     _audioManager.startKeepAlive();
 
-    if (_isHardcore) {
+    if (_isHardcore && _status == PomodoroStatus.running) {
       _checkHardcoreRules();
     }
 
@@ -203,7 +237,8 @@ class FocusSessionManager {
   }
 
   void pauseTimer() async {
-    if (_status == PomodoroStatus.running) {
+    if (_status == PomodoroStatus.running || _status == PomodoroStatus.resting) {
+      _prePauseStatus = _status;
       _timerService.pause();
       _status = PomodoroStatus.paused;
       _audioManager.stopKeepAlive();
@@ -217,6 +252,8 @@ class FocusSessionManager {
     _stopPenaltyEffects();
     _status = PomodoroStatus.initial;
     _remainingTime = _duration;
+    _breakDuration = null;
+    _prePauseStatus = null;
     _audioManager.stopKeepAlive();
     _hasBeenFaceDownAtLeastOnce = false;
     await stopAlarm();
@@ -281,6 +318,7 @@ class FocusSessionManager {
         orientation: _orientation,
         isHardcore: _isHardcore,
         isAlarmSoundEnabled: _isAlarmSoundEnabled,
+        isResting: _status == PomodoroStatus.resting || _prePauseStatus == PomodoroStatus.resting,
       ),
     );
   }

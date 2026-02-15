@@ -11,6 +11,49 @@ class TimerControls extends StatelessWidget {
 
   const TimerControls({super.key, required this.state, required this.service});
 
+  void _showBreakSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey.shade900,
+        title: const Text(
+          '¿Añadir descanso?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          '¿Quieres añadir un tiempo de descanso después de esta sesión?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              service.invoke('sendEvent', {'event': 'setBreakDuration', 'durationMinutes': null});
+              service.invoke('sendEvent', {'event': 'startTimer'});
+              Navigator.pop(context);
+            },
+            child: const Text('No, gracias', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              service.invoke('sendEvent', {'event': 'setBreakDuration', 'durationMinutes': 1});
+              service.invoke('sendEvent', {'event': 'startTimer'});
+              Navigator.pop(context);
+            },
+            child: const Text('5 min', style: TextStyle(color: Colors.blue)),
+          ),
+          TextButton(
+            onPressed: () {
+              service.invoke('sendEvent', {'event': 'setBreakDuration', 'durationMinutes': 10});
+              service.invoke('sendEvent', {'event': 'startTimer'});
+              Navigator.pop(context);
+            },
+            child: const Text('10 min', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = state.pomodoroStatus;
@@ -40,14 +83,21 @@ class TimerControls extends StatelessWidget {
           child: BouncingButton(
             // Key is crucial for AnimatedSwitcher to recognize change
             key: ValueKey(
-              status == PomodoroStatus.running ? 'pause_btn' : 'play_btn',
+              (status == PomodoroStatus.running || status == PomodoroStatus.resting)
+                  ? 'pause_btn'
+                  : 'play_btn',
             ),
             child: GestureDetector(
               onTap: () {
-                final event = status == PomodoroStatus.running
-                    ? 'pauseTimer'
-                    : 'startTimer';
-                service.invoke('sendEvent', {'event': event});
+                if (status == PomodoroStatus.initial) {
+                  _showBreakSelectionDialog(context);
+                } else {
+                  final event = (status == PomodoroStatus.running ||
+                          status == PomodoroStatus.resting)
+                      ? 'pauseTimer'
+                      : 'startTimer';
+                  service.invoke('sendEvent', {'event': event});
+                }
               },
               child: Container(
                 width: 72,
@@ -66,7 +116,8 @@ class TimerControls extends StatelessWidget {
                   ],
                 ),
                 child: Icon(
-                  status == PomodoroStatus.running
+                  (status == PomodoroStatus.running ||
+                          status == PomodoroStatus.resting)
                       ? Icons.pause
                       : Icons.play_arrow,
                   size: 48,

@@ -9,6 +9,9 @@ enum PomodoroStatus {
   /// The timer is paused.
   paused,
 
+  /// The timer is for a break/rest period.
+  resting,
+
   /// The timer has completed its countdown.
   finished,
 }

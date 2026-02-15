@@ -34,6 +34,7 @@ class FocusState {
   final PomodoroStatus pomodoroStatus;
   final Duration remainingTime;
   final Duration pomodoroDuration;
+  final bool isResting;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -57,6 +58,7 @@ class FocusState {
     this.remainingTime = const Duration(minutes: 25),
     this.pomodoroDuration = const Duration(minutes: 25),
     this.persistedLastMixId,
+    this.isResting = false,
   });
 
   factory FocusState.initial() => const FocusState();
@@ -83,6 +85,7 @@ class FocusState {
     PomodoroStatus? pomodoroStatus,
     Duration? remainingTime,
     Duration? pomodoroDuration,
+    bool? isResting,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -106,6 +109,7 @@ class FocusState {
       pomodoroStatus: pomodoroStatus ?? this.pomodoroStatus,
       remainingTime: remainingTime ?? this.remainingTime,
       pomodoroDuration: pomodoroDuration ?? this.pomodoroDuration,
+      isResting: isResting ?? this.isResting,
     );
   }
 
@@ -142,6 +146,7 @@ class FocusState {
       'pomodoroStatus': pomodoroStatus.index,
       'remainingTime': remainingTime.inSeconds,
       'pomodoroDuration': pomodoroDuration.inSeconds,
+      'isResting': isResting,
     };
   }
 
@@ -188,6 +193,7 @@ class FocusState {
         seconds:
             json['pomodoroDuration'] ?? const Duration(minutes: 25).inSeconds,
       ),
+      isResting: json['isResting'] ?? false,
     );
   }
 }

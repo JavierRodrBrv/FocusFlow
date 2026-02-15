@@ -53,6 +53,11 @@ class UpdatePomodoroDuration extends FocusEvent {
   UpdatePomodoroDuration(this.newDuration);
 }
 
+class SetBreakDuration extends FocusEvent {
+  final Duration? duration;
+  SetBreakDuration(this.duration);
+}
+
 class UpdateConsentStatus extends FocusEvent {
   final bool canRequestAds;
   UpdateConsentStatus(this.canRequestAds);

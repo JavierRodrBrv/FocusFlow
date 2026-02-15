@@ -202,6 +202,14 @@ void onStart(ServiceInstance service) async {
           );
           bloc.add(UpdatePomodoroDuration(duration));
           break;
+        case 'setBreakDuration':
+          final minutes = event['durationMinutes'];
+          if (minutes != null) {
+            bloc.add(SetBreakDuration(Duration(minutes: minutes)));
+          } else {
+            bloc.add(SetBreakDuration(null));
+          }
+          break;
         case 'updateConsentStatus':
           bloc.add(UpdateConsentStatus(event['canRequest']));
           break;
@@ -300,6 +308,11 @@ void onStart(ServiceInstance service) async {
       if (state.pomodoroStatus == PomodoroStatus.running) {
         title = 'FocusFlow - Enfocando';
         content = 'Tiempo restante: $timeDisplay';
+        iosLoopingNotificationTimer?.cancel();
+        iosLoopingNotificationTimer = null;
+      } else if (state.pomodoroStatus == PomodoroStatus.resting) {
+        title = 'FocusFlow - Descanso';
+        content = 'Tiempo de descanso: $timeDisplay';
         iosLoopingNotificationTimer?.cancel();
         iosLoopingNotificationTimer = null;
       } else if (state.pomodoroStatus == PomodoroStatus.paused) {

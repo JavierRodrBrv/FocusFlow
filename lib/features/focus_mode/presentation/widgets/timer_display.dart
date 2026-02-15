@@ -81,11 +81,12 @@ class TimerDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isResting = state.isResting;
     final canAdjust = state.pomodoroStatus == PomodoroStatus.initial;
     final isAtMin = state.pomodoroDuration.inMinutes <= 5;
-    final color = canAdjust
-        ? Colors.white
-        : Colors.white.withValues(alpha: 0.4);
+    final color = isResting
+        ? Colors.redAccent
+        : (canAdjust ? Colors.white : Colors.white.withValues(alpha: 0.4));
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

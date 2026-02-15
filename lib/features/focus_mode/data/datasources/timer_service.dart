@@ -17,12 +17,8 @@ class TimerService {
 
   /// Starts the countdown from the given [startDuration].
   void start({required Duration startDuration}) {
-    // Avoid creating multiple timers.
-    if (_timer?.isActive ?? false) {
-      // If called on a running timer (e.g., resume), do nothing here.
-      // If it's a new start, it should be handled by a reset first.
-      return;
-    }
+    // Cancel any existing timer before starting a new one.
+    _timer?.cancel();
 
     _currentDuration = startDuration;
     _controller.add(_currentDuration);

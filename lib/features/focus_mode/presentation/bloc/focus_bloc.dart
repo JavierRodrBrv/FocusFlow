@@ -88,6 +88,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     on<UpdatePomodoroDuration>(
       (e, emit) => _sessionManager.setDuration(e.newDuration),
     );
+    on<SetBreakDuration>((e, emit) => _sessionManager.setBreakDuration(e.duration));
     on<UpdateConsentStatus>(
       (e, emit) => emit(state.copyWith(canRequestAds: e.canRequestAds)),
     );
@@ -334,6 +335,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
           phoneOrientation: s.orientation,
           isHardcoreMode: s.isHardcore,
           isAlarmSoundEnabled: s.isAlarmSoundEnabled,
+          isResting: s.isResting,
           // Update mix state to paused
           rainVolume: 0.0,
           fireVolume: 0.0,
@@ -354,6 +356,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
           phoneOrientation: s.orientation,
           isHardcoreMode: s.isHardcore,
           isAlarmSoundEnabled: s.isAlarmSoundEnabled,
+          isResting: s.isResting,
         ),
       );
     }
