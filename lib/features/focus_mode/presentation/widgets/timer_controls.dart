@@ -16,6 +16,7 @@ class TimerControls extends StatelessWidget {
   void _showBreakSelectionDialog(BuildContext context) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey.shade900,
         title: const Text(
@@ -45,7 +46,7 @@ class TimerControls extends StatelessWidget {
             onPressed: () {
               service.invoke('sendEvent', {
                 'event': 'setBreakDuration',
-                'durationMinutes': 1,
+                'durationMinutes': 5,
               });
               service.invoke('sendEvent', {'event': 'startTimer'});
               Navigator.pop(context);
@@ -74,12 +75,14 @@ class TimerControls extends StatelessWidget {
         state.pomodoroStatus == PomodoroStatus.paused) {
       showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (context) => ResetConfirmationDialog(
           onConfirm: () {
             // Si la sesión era activa, mostramos el resumen antes de limpiar definitivamente
             if (state.penaltyCount > 0) {
               showDialog(
                 context: context,
+                barrierDismissible: false,
                 builder: (context) => SessionCompletionDialog(
                   penaltyCount: state.penaltyCount,
                   totalPenaltyTime: state.totalPenaltyTime,
