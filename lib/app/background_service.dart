@@ -276,7 +276,14 @@ void onStart(ServiceInstance service) async {
     await configureDependencies();
     bloc = getIt<FocusBloc>();
 
+    PomodoroStatus? lastStatus;
+
     bloc.stream.listen((state) async {
+      final bool statusChanged =
+          lastStatus != null && lastStatus != state.pomodoroStatus;
+      final PomodoroStatus? previousStatus = lastStatus;
+      lastStatus = state.pomodoroStatus;
+
       // 1. Verificar si la UI está escuchando (Heartbeat check)
       final secondsSinceHeartbeat = DateTime.now()
           .difference(lastUiHeartbeat)
@@ -396,16 +403,26 @@ void onStart(ServiceInstance service) async {
       } else if (Platform.isIOS &&
           state.pomodoroStatus != PomodoroStatus.finished) {
         try {
+          // Detectar transiciones que requieren notificación con sonido/vibración
+          // Específicamente: Foco -> Descanso y Descanso -> Foco
+          final isVibratingTransition = statusChanged &&
+              ((previousStatus == PomodoroStatus.running &&
+                      state.pomodoroStatus == PomodoroStatus.resting) ||
+                  (previousStatus == PomodoroStatus.resting &&
+                      state.pomodoroStatus == PomodoroStatus.running));
+
           await flutterLocalNotificationsPlugin.show(
             id: 888,
             title: title,
             body: content,
-            notificationDetails: const NotificationDetails(
+            notificationDetails: NotificationDetails(
               iOS: DarwinNotificationDetails(
                 presentAlert: true,
                 presentBanner: true,
-                presentSound: false,
-                interruptionLevel: InterruptionLevel.passive,
+                presentSound: isVibratingTransition,
+                interruptionLevel: isVibratingTransition
+                    ? InterruptionLevel.timeSensitive
+                    : InterruptionLevel.passive,
               ),
             ),
           );
