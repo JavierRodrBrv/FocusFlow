@@ -105,6 +105,8 @@ class _FocusViewState extends State<FocusView> {
   final GlobalKey _controlsKey = GlobalKey();
   final GlobalKey _premiumKey = GlobalKey();
   final GlobalKey _tutorialKey = GlobalKey();
+  final GlobalKey _mixerKey = GlobalKey();
+  final GlobalKey _focusModeKey = GlobalKey();
 
   Timer? _handshakeTimer;
   Timer? _heartbeatTimer;
@@ -209,6 +211,8 @@ class _FocusViewState extends State<FocusView> {
     ShowCaseWidget.of(context).startShowCase([
       _timerKey,
       _controlsKey,
+      _mixerKey,
+      _focusModeKey,
       _premiumKey,
       _tutorialKey,
     ]);
@@ -281,8 +285,9 @@ class _FocusViewState extends State<FocusView> {
             elevation: 0,
             leading: Showcase(
               key: _tutorialKey,
-              title: 'Menú',
-              description: 'Accede al tutorial y ajustes.',
+              title: 'Ajustes y Ayuda',
+              description:
+                  'Gestiona tus preferencias de sonido, vuelve a ver este tutorial cuando lo necesites o envíanos tus comentarios para seguir mejorando.',
               child: IconButton(
                 icon: const Icon(Icons.notes_rounded, color: Colors.white70),
                 onPressed: () async {
@@ -298,8 +303,9 @@ class _FocusViewState extends State<FocusView> {
             actions: [
               Showcase(
                 key: _premiumKey,
-                title: 'Premium',
-                description: 'Desbloquea funciones exclusivas.',
+                title: 'Experiencia Premium',
+                description:
+                    'Desbloquea todas las mezclas de sonido ambiental, elimina los anuncios y accede a funciones exclusivas para un enfoque total.',
                 child: IconButton(
                   icon: Icon(
                     state.isPremium
@@ -374,20 +380,32 @@ class _FocusViewState extends State<FocusView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _BottomAction(
-                    icon: Icons.tune_rounded,
-                    label: 'Ambiente',
-                    onTap: () => _showMixerModal(state),
+                  Showcase(
+                    key: _mixerKey,
+                    title: 'Ambiente Personalizado',
+                    description:
+                        'Crea tu atmósfera ideal combinando sonidos de lluvia, fuego o ruido marrón. Ajusta los niveles a tu gusto para aislarte de distracciones.',
+                    child: _BottomAction(
+                      icon: Icons.tune_rounded,
+                      label: 'Ambiente',
+                      onTap: () => _showMixerModal(state),
+                    ),
                   ),
                   VerticalDivider(
                     color: Colors.white.withOpacity(0.05),
                     indent: 20,
                     endIndent: 20,
                   ),
-                  _BottomAction(
-                    icon: Icons.psychology_rounded,
-                    label: 'Modo Foco',
-                    onTap: () => _showFocusModal(state),
+                  Showcase(
+                    key: _focusModeKey,
+                    title: 'Modo Foco Profundo',
+                    description:
+                        'Activa este modo para obligarte a dejar el móvil boca abajo. Si lo levantas, la sesión se pausará, ayudándote a evitar tentaciones.',
+                    child: _BottomAction(
+                      icon: Icons.psychology_rounded,
+                      label: 'Modo Foco',
+                      onTap: () => _showFocusModal(state),
+                    ),
                   ),
                 ],
               ),

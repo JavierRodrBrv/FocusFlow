@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../../../premium/presentation/widgets/ad_banner_widget.dart';
 import '../bloc/focus_bloc.dart';
@@ -42,16 +43,26 @@ class FocusBody extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TimerDisplay(
+                  Showcase(
                     key: timerKey,
-                    state: state,
-                    service: service,
+                    title: 'Temporizador',
+                    description:
+                        'Ajusta tu tiempo de enfoque. Pulsa el centro para usar el selector preciso o utiliza los botones laterales para sumar o restar minutos rápidamente.',
+                    child: TimerDisplay(
+                      state: state,
+                      service: service,
+                    ),
                   ),
                   const SizedBox(height: 48),
-                  TimerControls(
+                  Showcase(
                     key: controlsKey,
-                    state: state,
-                    service: service,
+                    title: 'Controles de Sesión',
+                    description:
+                        'Inicia, pausa o reinicia tu sesión. Al pulsar Play, podrás elegir si quieres añadir un tiempo de descanso al finalizar el foco.',
+                    child: TimerControls(
+                      state: state,
+                      service: service,
+                    ),
                   ),
                 ],
               ),
