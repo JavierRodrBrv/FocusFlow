@@ -232,10 +232,8 @@ class _FocusViewState extends State<FocusView> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => SoundMixerModal(
-        state: state,
-        service: FlutterBackgroundService(),
-      ),
+      builder: (context) =>
+          SoundMixerModal(state: state, service: FlutterBackgroundService()),
     );
   }
 
@@ -244,10 +242,8 @@ class _FocusViewState extends State<FocusView> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => FocusModeModal(
-        state: state,
-        service: FlutterBackgroundService(),
-      ),
+      builder: (context) =>
+          FocusModeModal(state: state, service: FlutterBackgroundService()),
     );
   }
 

@@ -48,10 +48,7 @@ class FocusBody extends StatelessWidget {
                     title: 'Temporizador',
                     description:
                         'Ajusta tu tiempo de enfoque. Pulsa el centro para usar el selector preciso o utiliza los botones laterales para sumar o restar minutos rápidamente.',
-                    child: TimerDisplay(
-                      state: state,
-                      service: service,
-                    ),
+                    child: TimerDisplay(state: state, service: service),
                   ),
                   const SizedBox(height: 48),
                   Showcase(
@@ -59,10 +56,7 @@ class FocusBody extends StatelessWidget {
                     title: 'Controles de Sesión',
                     description:
                         'Inicia, pausa o reinicia tu sesión. Al pulsar Play, podrás elegir si quieres añadir un tiempo de descanso al finalizar el foco.',
-                    child: TimerControls(
-                      state: state,
-                      service: service,
-                    ),
+                    child: TimerControls(state: state, service: service),
                   ),
                 ],
               ),

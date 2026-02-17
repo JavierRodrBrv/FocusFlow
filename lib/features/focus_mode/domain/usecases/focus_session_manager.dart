@@ -19,6 +19,7 @@ class SessionState {
   final bool isHardcore;
   final bool isAlarmSoundEnabled;
   final bool isResting;
+  final bool hasBreak;
 
   SessionState({
     required this.status,
@@ -29,6 +30,7 @@ class SessionState {
     required this.isHardcore,
     required this.isAlarmSoundEnabled,
     required this.isResting,
+    required this.hasBreak,
   });
 
   factory SessionState.initial() => SessionState(
@@ -40,6 +42,7 @@ class SessionState {
     isHardcore: false,
     isAlarmSoundEnabled: true,
     isResting: false,
+    hasBreak: false,
   );
 }
 
@@ -113,7 +116,7 @@ class FocusSessionManager {
             _status = PomodoroStatus.running;
             _remainingTime = _duration;
             _timerService.start(startDuration: _remainingTime);
-            
+
             // Solo vibramos al llegar a 0 (el sonido ya sonó a los 5s)
             _hapticService.startAlarmVibration();
             Future.delayed(const Duration(seconds: 2), () {
@@ -258,7 +261,8 @@ class FocusSessionManager {
   }
 
   void pauseTimer() async {
-    if (_status == PomodoroStatus.running || _status == PomodoroStatus.resting) {
+    if (_status == PomodoroStatus.running ||
+        _status == PomodoroStatus.resting) {
       _prePauseStatus = _status;
       _timerService.pause();
       _status = PomodoroStatus.paused;
@@ -333,13 +337,24 @@ class FocusSessionManager {
     _stateController.add(
       SessionState(
         status: _status,
+
         remainingTime: _remainingTime,
+
         pomodoroDuration: _duration,
+
         isInPenalty: _isInPenalty,
+
         orientation: _orientation,
+
         isHardcore: _isHardcore,
+
         isAlarmSoundEnabled: _isAlarmSoundEnabled,
-        isResting: _status == PomodoroStatus.resting || _prePauseStatus == PomodoroStatus.resting,
+
+        isResting:
+            _status == PomodoroStatus.resting ||
+            _prePauseStatus == PomodoroStatus.resting,
+
+        hasBreak: _breakDuration != null,
       ),
     );
   }

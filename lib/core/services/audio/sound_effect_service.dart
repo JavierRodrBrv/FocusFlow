@@ -96,7 +96,9 @@ class SoundEffectService {
           try {
             if (player.playing) {
               await player.stop();
-              print('[SoundEffectService] Audio stopped by timer ($stopAfter s)');
+              print(
+                '[SoundEffectService] Audio stopped by timer ($stopAfter s)',
+              );
             }
           } catch (e) {
             // Silenciar errores en el timer

@@ -238,9 +238,7 @@ void onStart(ServiceInstance service) async {
           bloc.add(UpdateFireVolume((event['volume'] as num).toDouble()));
           break;
         case 'updateBrownNoiseVolume':
-          bloc.add(
-            UpdateBrownNoiseVolume((event['volume'] as num).toDouble()),
-          );
+          bloc.add(UpdateBrownNoiseVolume((event['volume'] as num).toDouble()));
           break;
         default:
           print('[BackgroundService] Unknown event: $eventName');
@@ -405,7 +403,8 @@ void onStart(ServiceInstance service) async {
         try {
           // Detectar transiciones que requieren notificación con sonido/vibración
           // Específicamente: Foco -> Descanso y Descanso -> Foco
-          final isVibratingTransition = statusChanged &&
+          final isVibratingTransition =
+              statusChanged &&
               ((previousStatus == PomodoroStatus.running &&
                       state.pomodoroStatus == PomodoroStatus.resting) ||
                   (previousStatus == PomodoroStatus.resting &&

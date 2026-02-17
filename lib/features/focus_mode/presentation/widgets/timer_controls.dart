@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/bouncing_button.dart';
+import 'package:focus_flow/features/focus_mode/presentation/widgets/dialogs/reset_confirmation_dialog.dart';
 
 import '../bloc/focus_bloc.dart';
 
@@ -27,15 +28,24 @@ class TimerControls extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {
-              service.invoke('sendEvent', {'event': 'setBreakDuration', 'durationMinutes': null});
+              service.invoke('sendEvent', {
+                'event': 'setBreakDuration',
+                'durationMinutes': null,
+              });
               service.invoke('sendEvent', {'event': 'startTimer'});
               Navigator.pop(context);
             },
-            child: const Text('No, gracias', style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'No, gracias',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           TextButton(
             onPressed: () {
-              service.invoke('sendEvent', {'event': 'setBreakDuration', 'durationMinutes': 1});
+              service.invoke('sendEvent', {
+                'event': 'setBreakDuration',
+                'durationMinutes': 1,
+              });
               service.invoke('sendEvent', {'event': 'startTimer'});
               Navigator.pop(context);
             },
@@ -43,7 +53,10 @@ class TimerControls extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              service.invoke('sendEvent', {'event': 'setBreakDuration', 'durationMinutes': 10});
+              service.invoke('sendEvent', {
+                'event': 'setBreakDuration',
+                'durationMinutes': 10,
+              });
               service.invoke('sendEvent', {'event': 'startTimer'});
               Navigator.pop(context);
             },
@@ -52,6 +65,17 @@ class TimerControls extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _confirmReset(BuildContext context, VoidCallback onConfirm) {
+    if (state.hasBreak) {
+      showDialog(
+        context: context,
+        builder: (context) => ResetConfirmationDialog(onConfirm: onConfirm),
+      );
+    } else {
+      onConfirm();
+    }
   }
 
   @override
@@ -68,8 +92,10 @@ class TimerControls extends StatelessWidget {
             iconSize: 30,
             color: Colors.white,
             tooltip: 'Reiniciar sesión',
-            onPressed: () =>
-                service.invoke('sendEvent', {'event': 'resetTimer'}),
+            onPressed: () => _confirmReset(
+              context,
+              () => service.invoke('sendEvent', {'event': 'resetTimer'}),
+            ),
           ),
         ),
 
@@ -83,7 +109,8 @@ class TimerControls extends StatelessWidget {
           child: BouncingButton(
             // Key is crucial for AnimatedSwitcher to recognize change
             key: ValueKey(
-              (status == PomodoroStatus.running || status == PomodoroStatus.resting)
+              (status == PomodoroStatus.running ||
+                      status == PomodoroStatus.resting)
                   ? 'pause_btn'
                   : 'play_btn',
             ),
@@ -92,7 +119,8 @@ class TimerControls extends StatelessWidget {
                 if (status == PomodoroStatus.initial) {
                   _showBreakSelectionDialog(context);
                 } else {
-                  final event = (status == PomodoroStatus.running ||
+                  final event =
+                      (status == PomodoroStatus.running ||
                           status == PomodoroStatus.resting)
                       ? 'pauseTimer'
                       : 'startTimer';
@@ -137,7 +165,7 @@ class TimerControls extends StatelessWidget {
             iconSize: 30,
             color: Colors.white,
             tooltip: 'Restablecer a 20 min',
-            onPressed: () {
+            onPressed: () => _confirmReset(context, () {
               // Primero reiniciamos el estado para asegurar que se pueda cambiar el tiempo
               service.invoke('sendEvent', {'event': 'resetTimer'});
               // Luego establecemos 20 minutos
@@ -145,7 +173,7 @@ class TimerControls extends StatelessWidget {
                 'event': 'updatePomodoroDuration',
                 'durationMinutes': 20,
               });
-            },
+            }),
           ),
         ),
       ],

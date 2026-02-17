@@ -14,7 +14,10 @@ class HapticFeedbackService {
   }
 
   /// Internal method to trigger a single vibration, handling iOS background isolate limitations.
-  Future<void> _performSingleVibration({int duration = 800, int amplitude = 230}) async {
+  Future<void> _performSingleVibration({
+    int duration = 800,
+    int amplitude = 230,
+  }) async {
     try {
       if (Platform.isIOS) {
         // 1. Try custom native channel (works in Main Isolate)

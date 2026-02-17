@@ -50,9 +50,9 @@ class SoundMixerModal extends StatelessWidget {
               Text(
                 'Mezclador de Sonido',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 24),
               // Usamos una Key para asegurar que el estado interno de las animaciones se mantenga
@@ -74,11 +74,7 @@ class FocusModeModal extends StatelessWidget {
   final FocusState state;
   final FlutterBackgroundService service;
 
-  const FocusModeModal({
-    super.key,
-    required this.state,
-    required this.service,
-  });
+  const FocusModeModal({super.key, required this.state, required this.service});
 
   @override
   Widget build(BuildContext context) {
@@ -116,9 +112,9 @@ class FocusModeModal extends StatelessWidget {
               Text(
                 'Modo Foco',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 24),
               HardcoreModeCard(

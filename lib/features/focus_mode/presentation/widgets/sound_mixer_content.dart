@@ -268,9 +268,7 @@ class _SoundMixerContentState extends State<SoundMixerContent>
             BouncingButton(
               onPressed: () {
                 if (widget.state.isPremium) {
-                  widget.service.invoke('sendEvent', {
-                    'event': 'saveMix',
-                  });
+                  widget.service.invoke('sendEvent', {'event': 'saveMix'});
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Mix guardado.'),
@@ -407,12 +405,8 @@ class _MixerSliderState extends State<_MixerSlider> {
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(
               trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(
-                enabledThumbRadius: 6,
-              ),
-              overlayShape: const RoundSliderOverlayShape(
-                overlayRadius: 14,
-              ),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
             ),
             child: TweenAnimationBuilder<double>(
               duration: _isDragging
@@ -442,7 +436,9 @@ class _MixerSliderState extends State<_MixerSlider> {
           ),
         ),
         TweenAnimationBuilder<double>(
-          duration: _isDragging ? Duration.zero : const Duration(milliseconds: 300),
+          duration: _isDragging
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
           tween: Tween<double>(begin: _currentValue, end: _currentValue),
           builder: (context, animatedValue, child) {
             return SizedBox(
@@ -459,6 +455,7 @@ class _MixerSliderState extends State<_MixerSlider> {
     );
   }
 }
+
 //
 // class _MixerSlider extends StatefulWidget {
 //   final String label;

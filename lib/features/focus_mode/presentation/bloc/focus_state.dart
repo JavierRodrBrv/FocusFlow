@@ -35,6 +35,7 @@ class FocusState {
   final Duration remainingTime;
   final Duration pomodoroDuration;
   final bool isResting;
+  final bool hasBreak;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -59,6 +60,7 @@ class FocusState {
     this.pomodoroDuration = const Duration(minutes: 25),
     this.persistedLastMixId,
     this.isResting = false,
+    this.hasBreak = false,
   });
 
   factory FocusState.initial() => const FocusState();
@@ -86,6 +88,7 @@ class FocusState {
     Duration? remainingTime,
     Duration? pomodoroDuration,
     bool? isResting,
+    bool? hasBreak,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -110,6 +113,7 @@ class FocusState {
       remainingTime: remainingTime ?? this.remainingTime,
       pomodoroDuration: pomodoroDuration ?? this.pomodoroDuration,
       isResting: isResting ?? this.isResting,
+      hasBreak: hasBreak ?? this.hasBreak,
     );
   }
 
@@ -147,6 +151,7 @@ class FocusState {
       'remainingTime': remainingTime.inSeconds,
       'pomodoroDuration': pomodoroDuration.inSeconds,
       'isResting': isResting,
+      'hasBreak': hasBreak,
     };
   }
 
@@ -194,6 +199,7 @@ class FocusState {
             json['pomodoroDuration'] ?? const Duration(minutes: 25).inSeconds,
       ),
       isResting: json['isResting'] ?? false,
+      hasBreak: json['hasBreak'] ?? false,
     );
   }
 }
