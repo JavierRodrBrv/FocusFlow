@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
 import '../bloc/focus_bloc.dart';
+import 'bouncing_button.dart';
 
 class SoundMixerContent extends StatefulWidget {
   final FocusState state;
@@ -203,10 +204,7 @@ class _SoundMixerContentState extends State<SoundMixerContent>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // LOAD MIX BUTTON
-            _CircularActionButton(
-              icon: Icons.queue_music,
-              isPremium: widget.state.isPremium,
-              color: Colors.white70,
+            BouncingButton(
               onPressed: () {
                 if (widget.state.isPremium) {
                   _showSavedMixes(context);
@@ -221,18 +219,22 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                   );
                 }
               },
+              child: _CircularActionButton(
+                icon: Icons.queue_music,
+                isPremium: widget.state.isPremium,
+                color: Colors.white70,
+              ),
             ),
 
             const SizedBox(width: 24),
 
             // PLAY/PAUSE BUTTON
-            InkWell(
-              onTap: () {
+            BouncingButton(
+              onPressed: () {
                 widget.service.invoke('sendEvent', {
                   'event': isPlaying ? 'pauseMix' : 'resumeMix',
                 });
               },
-              borderRadius: BorderRadius.circular(30),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 padding: const EdgeInsets.all(16),
@@ -263,10 +265,7 @@ class _SoundMixerContentState extends State<SoundMixerContent>
             const SizedBox(width: 24),
 
             // SAVE MIX BUTTON
-            _CircularActionButton(
-              icon: Icons.save_alt,
-              isPremium: widget.state.isPremium,
-              color: Colors.blueAccent,
+            BouncingButton(
               onPressed: () {
                 if (widget.state.isPremium) {
                   widget.service.invoke('sendEvent', {
@@ -289,6 +288,11 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                   );
                 }
               },
+              child: _CircularActionButton(
+                icon: Icons.save_alt,
+                isPremium: widget.state.isPremium,
+                color: Colors.blueAccent,
+              ),
             ),
           ],
         ),
@@ -300,39 +304,33 @@ class _SoundMixerContentState extends State<SoundMixerContent>
 class _CircularActionButton extends StatelessWidget {
   final IconData icon;
   final bool isPremium;
-  final VoidCallback onPressed;
   final Color color;
 
   const _CircularActionButton({
     required this.icon,
     required this.isPremium,
-    required this.onPressed,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          shape: BoxShape.circle,
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(icon, color: isPremium ? color : Colors.white24, size: 24),
-            if (!isPremium)
-              const Positioned(
-                right: -4,
-                bottom: -4,
-                child: Icon(Icons.lock, size: 14, color: Colors.amber),
-              ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        shape: BoxShape.circle,
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(icon, color: isPremium ? color : Colors.white24, size: 24),
+          if (!isPremium)
+            const Positioned(
+              right: -4,
+              bottom: -4,
+              child: Icon(Icons.lock, size: 14, color: Colors.amber),
+            ),
+        ],
       ),
     );
   }
@@ -416,33 +414,158 @@ class _MixerSliderState extends State<_MixerSlider> {
                 overlayRadius: 14,
               ),
             ),
-            child: Slider(
-              value: _currentValue,
-              min: 0.0,
-              max: 1.0,
-              activeColor: Colors.blueAccent,
-              inactiveColor: Colors.white10,
-              onChangeStart: (_) => setState(() => _isDragging = true),
-              onChangeEnd: (val) {
-                setState(() {
-                  _isDragging = false;
-                  _lastInteractionTime = DateTime.now();
-                });
-                widget.onChanged(val);
+            child: TweenAnimationBuilder<double>(
+              duration: _isDragging
+                  ? Duration.zero
+                  : const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              tween: Tween<double>(begin: _currentValue, end: _currentValue),
+              builder: (context, animatedValue, child) {
+                return Slider(
+                  value: animatedValue,
+                  min: 0.0,
+                  max: 1.0,
+                  activeColor: Colors.blueAccent,
+                  inactiveColor: Colors.white10,
+                  onChangeStart: (_) => setState(() => _isDragging = true),
+                  onChangeEnd: (val) {
+                    setState(() {
+                      _isDragging = false;
+                      _lastInteractionTime = DateTime.now();
+                    });
+                    widget.onChanged(val);
+                  },
+                  onChanged: _handleChanged,
+                );
               },
-              onChanged: _handleChanged,
             ),
           ),
         ),
-        SizedBox(
-          width: 35,
-          child: Text(
-            '${(_currentValue * 100).toInt()}%',
-            style: const TextStyle(fontSize: 10, color: Colors.white38),
-            textAlign: TextAlign.end,
-          ),
+        TweenAnimationBuilder<double>(
+          duration: _isDragging ? Duration.zero : const Duration(milliseconds: 300),
+          tween: Tween<double>(begin: _currentValue, end: _currentValue),
+          builder: (context, animatedValue, child) {
+            return SizedBox(
+              width: 35,
+              child: Text(
+                '${(animatedValue * 100).toInt()}%',
+                style: const TextStyle(fontSize: 10, color: Colors.white38),
+                textAlign: TextAlign.end,
+              ),
+            );
+          },
         ),
       ],
     );
   }
 }
+//
+// class _MixerSlider extends StatefulWidget {
+//   final String label;
+//   final IconData icon;
+//   final double value;
+//   final ValueChanged<double> onChanged;
+//
+//   const _MixerSlider({
+//     required this.label,
+//     required this.icon,
+//     required this.value,
+//     required this.onChanged,
+//   });
+//
+//   @override
+//   State<_MixerSlider> createState() => _MixerSliderState();
+// }
+//
+//
+// class _MixerSliderState extends State<_MixerSlider> {
+//   late double _currentValue;
+//   bool _isDragging = false;
+//   DateTime _lastUpdateTime = DateTime.now();
+//   DateTime _lastInteractionTime = DateTime.now().subtract(
+//     const Duration(seconds: 1),
+//   );
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     _currentValue = widget.value;
+//   }
+//
+//   @override
+//   void didUpdateWidget(covariant _MixerSlider oldWidget) {
+//     super.didUpdateWidget(oldWidget);
+//     final timeSinceInteraction = DateTime.now().difference(
+//       _lastInteractionTime,
+//     );
+//     final isUserInteracting =
+//         _isDragging || timeSinceInteraction.inMilliseconds < 500;
+//     final isExplicitZero = widget.value == 0.0;
+//
+//     if ((!isUserInteracting || isExplicitZero) &&
+//         widget.value != _currentValue) {
+//       setState(() {
+//         _currentValue = widget.value;
+//       });
+//     }
+//   }
+//
+//   void _handleChanged(double val) {
+//     setState(() {
+//       _currentValue = val;
+//       _lastInteractionTime = DateTime.now();
+//     });
+//     final now = DateTime.now();
+//     if (now.difference(_lastUpdateTime) > const Duration(milliseconds: 16)) {
+//       widget.onChanged(val);
+//       _lastUpdateTime = now;
+//     }
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Row(
+//       children: [
+//         Icon(widget.icon, color: Colors.white70, size: 20),
+//         const SizedBox(width: 12),
+//         Expanded(
+//           child: SliderTheme(
+//             data: SliderTheme.of(context).copyWith(
+//               trackHeight: 4,
+//               thumbShape: const RoundSliderThumbShape(
+//                 enabledThumbRadius: 6,
+//               ),
+//               overlayShape: const RoundSliderOverlayShape(
+//                 overlayRadius: 14,
+//               ),
+//             ),
+//             child: Slider(
+//               value: _currentValue,
+//               min: 0.0,
+//               max: 1.0,
+//               activeColor: Colors.blueAccent,
+//               inactiveColor: Colors.white10,
+//               onChangeStart: (_) => setState(() => _isDragging = true),
+//               onChangeEnd: (val) {
+//                 setState(() {
+//                   _isDragging = false;
+//                   _lastInteractionTime = DateTime.now();
+//                 });
+//                 widget.onChanged(val);
+//               },
+//               onChanged: _handleChanged,
+//             ),
+//           ),
+//         ),
+//         SizedBox(
+//           width: 35,
+//           child: Text(
+//             '${(_currentValue * 100).toInt()}%',
+//             style: const TextStyle(fontSize: 10, color: Colors.white38),
+//             textAlign: TextAlign.end,
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }

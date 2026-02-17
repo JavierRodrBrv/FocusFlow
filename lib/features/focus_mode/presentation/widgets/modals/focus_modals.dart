@@ -25,14 +25,14 @@ class SoundMixerModal extends StatelessWidget {
           try {
             currentState = FocusState.fromJson(snapshot.data!);
           } catch (e) {
-            // Fallback to initial state
+            // Error parsing, use last known
           }
         }
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           decoration: const BoxDecoration(
-            color: Color(0xFF1E293B), // Match settings menu color
+            color: Color(0xFF1E293B),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
@@ -55,7 +55,12 @@ class SoundMixerModal extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 24),
-              SoundMixerContent(state: currentState, service: service),
+              // Usamos una Key para asegurar que el estado interno de las animaciones se mantenga
+              SoundMixerContent(
+                key: const ValueKey('sound_mixer_content'),
+                state: currentState,
+                service: service,
+              ),
               const SizedBox(height: 16),
             ],
           ),
@@ -86,14 +91,14 @@ class FocusModeModal extends StatelessWidget {
           try {
             currentState = FocusState.fromJson(snapshot.data!);
           } catch (e) {
-            // Fallback to initial state
+            // Error parsing
           }
         }
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           decoration: const BoxDecoration(
-            color: Color(0xFF1E293B), // Match settings menu color
+            color: Color(0xFF1E293B),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
@@ -116,7 +121,11 @@ class FocusModeModal extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 24),
-              HardcoreModeCard(state: currentState, service: service),
+              HardcoreModeCard(
+                key: const ValueKey('hardcore_mode_card'),
+                state: currentState,
+                service: service,
+              ),
               const SizedBox(height: 16),
             ],
           ),
