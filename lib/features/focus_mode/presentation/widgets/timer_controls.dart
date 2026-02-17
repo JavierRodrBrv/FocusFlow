@@ -35,7 +35,7 @@ class TimerControls extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              service.invoke('sendEvent', {'event': 'setBreakDuration', 'durationMinutes': 5});
+              service.invoke('sendEvent', {'event': 'setBreakDuration', 'durationMinutes': 1});
               service.invoke('sendEvent', {'event': 'startTimer'});
               Navigator.pop(context);
             },

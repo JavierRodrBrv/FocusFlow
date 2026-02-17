@@ -37,6 +37,16 @@ class UnifiedAudioManager implements IAudioManager {
   Future<void> stopAlarm() async => _effectService.stopAlarm();
 
   @override
+  Future<void> playBreakStartSound() async =>
+      _effectService.playBreakStartSound();
+
+  @override
+  Future<void> playBreakEndSound() async => _effectService.playBreakEndSound();
+
+  @override
+  Future<void> stopBreakEndSound() async => _effectService.stopBreakEndSound();
+
+  @override
   Future<void> startFailLoop() async => _effectService.startFailLoop();
 
   @override

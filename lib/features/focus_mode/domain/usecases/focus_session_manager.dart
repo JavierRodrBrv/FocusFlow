@@ -91,6 +91,14 @@ class FocusSessionManager {
     // Escuchar Timer
     _timerService.tickStream.listen((remaining) {
       _remainingTime = remaining;
+
+      // AVANCE: Sonido de fin de descanso 5 segundos antes
+      if (_status == PomodoroStatus.resting &&
+          _remainingTime.inSeconds == 5 &&
+          _isAlarmSoundEnabled) {
+        _audioManager.playBreakEndSound();
+      }
+
       if (_remainingTime.inSeconds == 0) {
         Future.microtask(() {
           if (_status == PomodoroStatus.running && _breakDuration != null) {
@@ -98,16 +106,24 @@ class FocusSessionManager {
             _status = PomodoroStatus.resting;
             _remainingTime = _breakDuration!;
             _timerService.start(startDuration: _remainingTime);
-            _notifyTransition();
+            _notifyTransition(isStartingBreak: true);
             _emitState();
           } else if (_status == PomodoroStatus.resting) {
             // Finaliza descanso, reinicia sesión de foco
             _status = PomodoroStatus.running;
             _remainingTime = _duration;
             _timerService.start(startDuration: _remainingTime);
-            _notifyTransition();
+            
+            // Solo vibramos al llegar a 0 (el sonido ya sonó a los 5s)
+            _hapticService.startAlarmVibration();
+            Future.delayed(const Duration(seconds: 2), () {
+              _hapticService.stopAlarmVibration();
+              // APAGAR EL SONIDO 2 segundos después de empezar el foco
+              _audioManager.stopBreakEndSound();
+            });
             _emitState();
-          } else if (_status == PomodoroStatus.running || _status == PomodoroStatus.paused) {
+          } else if (_status == PomodoroStatus.running ||
+              _status == PomodoroStatus.paused) {
             // Comportamiento normal si no hay descanso configurado
             _status = PomodoroStatus.finished;
             _stopPenaltyEffects(); // Seguridad
@@ -120,12 +136,17 @@ class FocusSessionManager {
     });
   }
 
-  void _notifyTransition() {
-    // Una vibración corta para avisar del cambio de fase
+  void _notifyTransition({required bool isStartingBreak}) {
+    // 1. La vibración siempre va
     _hapticService.startAlarmVibration();
     Future.delayed(const Duration(seconds: 2), () {
       _hapticService.stopAlarmVibration();
     });
+
+    // 2. El sonido solo si es el inicio del descanso (el del fin suena a los 5s)
+    if (_isAlarmSoundEnabled && isStartingBreak) {
+      _audioManager.playBreakStartSound();
+    }
   }
 
   void _triggerAlarm() async {
