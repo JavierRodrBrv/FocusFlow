@@ -122,7 +122,7 @@ class SettingsMenuBottomSheet extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.info_outline, color: Colors.white54),
                 title: const Text(
-                  'Versión 0.1.0 (Beta)',
+                  'Versión 0.2.0 (Beta)',
                   style: TextStyle(color: Colors.white54),
                 ),
                 onTap: () {},
