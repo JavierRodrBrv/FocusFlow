@@ -84,6 +84,7 @@ class FocusSessionManager {
 
   // Filtros de estabilidad
   Timer? _stabilityTimer;
+  Timer? _penaltyTicker;
   PhoneOrientation? _lastConfirmedOrientation;
   DateTime _lastPenaltyIncrementTime = DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -385,13 +386,7 @@ class FocusSessionManager {
 
     _stopPenaltyEffects();
 
-    // Si reseteamos estando en castigo, cerramos la métrica de tiempo
-
-    if (_isInPenalty && _penaltyStartTime != null) {
-      _totalPenaltyTime += DateTime.now().difference(_penaltyStartTime!);
-
-      _penaltyStartTime = null;
-    }
+    _stopPenaltyTicker();
 
     _status = PomodoroStatus.initial;
 
@@ -445,10 +440,6 @@ class FocusSessionManager {
         isConfirmedFaceUp &&
         !_isInPenalty &&
         _hasBeenFaceDownAtLeastOnce) {
-      // Solo incrementamos el contador si han pasado al menos 2 segundos desde el último castigo
-
-      // Esto evita dobles conteos por movimientos bruscos o rebotes del sensor
-
       final now = DateTime.now();
 
       if (now.difference(_lastPenaltyIncrementTime) >
@@ -464,21 +455,17 @@ class FocusSessionManager {
 
       _isInPenalty = true;
 
-      _penaltyStartTime = DateTime.now();
-
       _audioManager.stopKeepAlive();
 
       _startPenaltyEffects();
+
+      _startPenaltyTicker();
     }
     // DISPARADOR DE REGRESO AL FOCO
     else if (isPausedByPenalty && isConfirmedFaceDown) {
       _stopPenaltyEffects();
 
-      if (_penaltyStartTime != null) {
-        _totalPenaltyTime += DateTime.now().difference(_penaltyStartTime!);
-
-        _penaltyStartTime = null;
-      }
+      _stopPenaltyTicker();
 
       _timerService.resume();
 
@@ -488,6 +475,32 @@ class FocusSessionManager {
 
       _audioManager.startKeepAlive();
     }
+  }
+
+  void _startPenaltyTicker() {
+    _penaltyTicker?.cancel();
+
+    _penaltyStartTime = DateTime.now();
+
+    _penaltyTicker = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isInPenalty && _penaltyStartTime != null) {
+        // Incrementamos el tiempo perdido segundo a segundo de forma real
+
+        _totalPenaltyTime += const Duration(seconds: 1);
+
+        _emitState();
+      } else {
+        _stopPenaltyTicker();
+      }
+    });
+  }
+
+  void _stopPenaltyTicker() {
+    _penaltyTicker?.cancel();
+
+    _penaltyTicker = null;
+
+    _penaltyStartTime = null;
   }
 
   void _startPenaltyEffects() {
