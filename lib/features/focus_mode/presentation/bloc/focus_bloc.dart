@@ -339,6 +339,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
           isAlarmSoundEnabled: s.isAlarmSoundEnabled,
           isResting: s.isResting,
           hasBreak: s.hasBreak,
+          penaltyCount: s.penaltyCount,
+          totalPenaltyTime: s.totalPenaltyTime,
           // Update mix state to paused
           rainVolume: 0.0,
           fireVolume: 0.0,
@@ -361,6 +363,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
           isAlarmSoundEnabled: s.isAlarmSoundEnabled,
           isResting: s.isResting,
           hasBreak: s.hasBreak,
+          penaltyCount: s.penaltyCount,
+          totalPenaltyTime: s.totalPenaltyTime,
         ),
       );
     }

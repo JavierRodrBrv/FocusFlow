@@ -20,6 +20,8 @@ class SessionState {
   final bool isAlarmSoundEnabled;
   final bool isResting;
   final bool hasBreak;
+  final int penaltyCount;
+  final Duration totalPenaltyTime;
 
   SessionState({
     required this.status,
@@ -31,6 +33,8 @@ class SessionState {
     required this.isAlarmSoundEnabled,
     required this.isResting,
     required this.hasBreak,
+    required this.penaltyCount,
+    required this.totalPenaltyTime,
   });
 
   factory SessionState.initial() => SessionState(
@@ -43,6 +47,8 @@ class SessionState {
     isAlarmSoundEnabled: true,
     isResting: false,
     hasBreak: false,
+    penaltyCount: 0,
+    totalPenaltyTime: Duration.zero,
   );
 }
 
@@ -71,8 +77,17 @@ class FocusSessionManager {
   bool _hasBeenFaceDownAtLeastOnce = false;
   PomodoroStatus? _prePauseStatus;
 
-  bool get isAlarmSoundEnabled => _isAlarmSoundEnabled;
+  // Métricas de distracción
+  int _penaltyCount = 0;
+  Duration _totalPenaltyTime = Duration.zero;
+  DateTime? _penaltyStartTime;
 
+  // Filtros de estabilidad
+  Timer? _stabilityTimer;
+  PhoneOrientation? _lastConfirmedOrientation;
+  DateTime _lastPenaltyIncrementTime = DateTime.fromMillisecondsSinceEpoch(0);
+
+  bool get isAlarmSoundEnabled => _isAlarmSoundEnabled;
   FocusSessionManager(
     this._audioManager,
     this._sensorService,
@@ -85,17 +100,22 @@ class FocusSessionManager {
 
   void _initSubscriptions() {
     // Escuchar Sensores
+
     _sensorService.phoneOrientationStream.listen((orientation) {
       _orientation = orientation;
-      _checkHardcoreRules();
+
+      _onOrientationChanged(orientation);
+
       _emitState();
     });
 
     // Escuchar Timer
+
     _timerService.tickStream.listen((remaining) {
       _remainingTime = remaining;
 
       // AVANCE: Sonido de fin de descanso 5 segundos antes
+
       if (_status == PomodoroStatus.resting &&
           _remainingTime.inSeconds == 5 &&
           _isAlarmSoundEnabled) {
@@ -106,47 +126,94 @@ class FocusSessionManager {
         Future.microtask(() {
           if (_status == PomodoroStatus.running && _breakDuration != null) {
             // Finaliza sesión de foco, inicia descanso (Focus Loop)
+
             _status = PomodoroStatus.resting;
+
             _remainingTime = _breakDuration!;
+
             _timerService.start(startDuration: _remainingTime);
+
             _notifyTransition(isStartingBreak: true);
+
             _emitState();
           } else if (_status == PomodoroStatus.resting) {
             // Finaliza descanso, reinicia sesión de foco
+
             _status = PomodoroStatus.running;
+
             _remainingTime = _duration;
+
             _timerService.start(startDuration: _remainingTime);
 
             // Solo vibramos al llegar a 0 (el sonido ya sonó a los 5s)
+
             _hapticService.startAlarmVibration();
+
             Future.delayed(const Duration(seconds: 2), () {
               _hapticService.stopAlarmVibration();
+
               // APAGAR EL SONIDO 2 segundos después de empezar el foco
+
               _audioManager.stopBreakEndSound();
             });
+
             _emitState();
           } else if (_status == PomodoroStatus.running ||
               _status == PomodoroStatus.paused) {
             // Comportamiento normal si no hay descanso configurado
+
             _status = PomodoroStatus.finished;
+
             _stopPenaltyEffects(); // Seguridad
+
             _triggerAlarm();
+
             _emitState();
           }
         });
       }
+
       _emitState();
     });
   }
 
+  void _onOrientationChanged(PhoneOrientation newOrientation) {
+    // Cancelar cualquier timer previo para esperar a que la posición se estabilice
+
+    _stabilityTimer?.cancel();
+
+    // Si la nueva orientación es la misma que la última confirmada, no hacemos nada
+
+    if (newOrientation == _lastConfirmedOrientation) return;
+
+    // Solo activamos el filtrado de estabilidad si el cronómetro está corriendo
+
+    if (_status == PomodoroStatus.running || _isInPenalty) {
+      _stabilityTimer = Timer(const Duration(milliseconds: 600), () {
+        _lastConfirmedOrientation = newOrientation;
+
+        _checkHardcoreRules();
+
+        _emitState();
+      });
+    } else {
+      // Si el timer no corre, aceptamos el cambio instantáneo para la UI
+
+      _lastConfirmedOrientation = newOrientation;
+    }
+  }
+
   void _notifyTransition({required bool isStartingBreak}) {
     // 1. La vibración siempre va
+
     _hapticService.startAlarmVibration();
+
     Future.delayed(const Duration(seconds: 2), () {
       _hapticService.stopAlarmVibration();
     });
 
     // 2. El sonido solo si es el inicio del descanso (el del fin suena a los 5s)
+
     if (_isAlarmSoundEnabled && isStartingBreak) {
       _audioManager.playBreakStartSound();
     }
@@ -156,8 +223,10 @@ class FocusSessionManager {
     bool alarmWillPlay = false;
 
     // 1. Verificar preferencia de usuario
+
     if (_isAlarmSoundEnabled) {
       // 2. Comprobar si el modo No Molestar está activo
+
       final isDnd = await _dndService.isDndActive();
 
       if (!isDnd) {
@@ -171,39 +240,52 @@ class FocusSessionManager {
 
     if (alarmWillPlay) {
       // Si vamos a reproducir alarma, paramos el silencio (KeepAlive) para limpiar el canal
+
       // y evitar mezclas raras, ya que la alarma mantendrá la app viva.
+
       _audioManager.stopKeepAlive();
+
       _audioManager.startAlarmLoop();
     } else {
       // Si NO hay alarma (por DND o config), MANTENEMOS el KeepAlive (silence.mp3)
+
       // sonando. Esto es CRÍTICO para que el Timer de vibración siga ejecutándose en background.
+
       print(
         '[FocusSessionManager] Keeping silence audio active to support vibration.',
       );
     }
 
     // La vibración siempre va
+
     _hapticService.startAlarmVibration();
   }
 
   Future<void> init() async {
     await _audioManager.init();
+
     // Cargar preferencia guardada de forma segura
+
     try {
       _settingsBox = Hive.isBoxOpen('settings')
           ? Hive.box('settings')
           : await Hive.openBox('settings');
+
       _isAlarmSoundEnabled = _settingsBox!.get(
         'alarm_sound_enabled',
+
         defaultValue: true,
       );
+
       print(
         '[FocusSessionManager] Loaded Alarm Sound Preference: $_isAlarmSoundEnabled',
       );
     } catch (e) {
       print('[FocusSessionManager] Error loading alarm preference: $e');
+
       _isAlarmSoundEnabled = true; // Fallback
     }
+
     _emitState();
   }
 
@@ -212,7 +294,9 @@ class FocusSessionManager {
   void setDuration(Duration duration) {
     if (_status == PomodoroStatus.initial) {
       _duration = duration;
+
       _remainingTime = duration;
+
       _emitState();
     }
   }
@@ -223,6 +307,7 @@ class FocusSessionManager {
 
   void toggleAlarmSound() async {
     _isAlarmSoundEnabled = !_isAlarmSoundEnabled;
+
     try {
       if (_settingsBox != null) {
         await _settingsBox!.put('alarm_sound_enabled', _isAlarmSoundEnabled);
@@ -230,27 +315,45 @@ class FocusSessionManager {
     } catch (e) {
       print('[FocusSessionManager] Error saving alarm preference: $e');
     }
+
     _emitState();
   }
 
   void toggleHardcore() {
     _isHardcore = !_isHardcore;
+
     if (!_isHardcore && _isInPenalty) {
       _stopPenaltyEffects();
     }
+
     _emitState();
   }
 
   void startTimer() {
-    if (_status == PomodoroStatus.paused) {
+    if (_status == PomodoroStatus.paused && !_isInPenalty) {
       _timerService.resume();
+
       _status = _prePauseStatus ?? PomodoroStatus.running;
-    } else {
+    } else if (_status == PomodoroStatus.initial) {
       _timerService.start(startDuration: _remainingTime);
+
       _hasBeenFaceDownAtLeastOnce = false;
+
       _status = PomodoroStatus.running;
+
+      // Reiniciar métricas al empezar una sesión nueva desde cero
+
+      _penaltyCount = 0;
+
+      _totalPenaltyTime = Duration.zero;
+
+      _penaltyStartTime = null;
+
+      _lastConfirmedOrientation = null;
+    } else if (_status == PomodoroStatus.paused && _isInPenalty) {
+      // Si intentamos "empezar" estando en castigo, ignoramos para que el sensor mande
     }
-    _isInPenalty = false;
+
     _audioManager.startKeepAlive();
 
     if (_isHardcore && _status == PomodoroStatus.running) {
@@ -264,30 +367,56 @@ class FocusSessionManager {
     if (_status == PomodoroStatus.running ||
         _status == PomodoroStatus.resting) {
       _prePauseStatus = _status;
+
       _timerService.pause();
+
       _status = PomodoroStatus.paused;
+
       _audioManager.stopKeepAlive();
+
       await stopAlarm();
+
       _emitState();
     }
   }
 
   void resetTimer() async {
     _timerService.pause();
+
     _stopPenaltyEffects();
+
+    // Si reseteamos estando en castigo, cerramos la métrica de tiempo
+
+    if (_isInPenalty && _penaltyStartTime != null) {
+      _totalPenaltyTime += DateTime.now().difference(_penaltyStartTime!);
+
+      _penaltyStartTime = null;
+    }
+
     _status = PomodoroStatus.initial;
+
     _remainingTime = _duration;
+
     _breakDuration = null;
+
     _prePauseStatus = null;
+
     _audioManager.stopKeepAlive();
+
     _hasBeenFaceDownAtLeastOnce = false;
+
+    _lastConfirmedOrientation = null;
+
     await stopAlarm();
+
     _emitState();
   }
 
   Future<void> stopAlarm() async {
     print('[FocusSessionManager] Stopping Alarm and Vibration...');
+
     await _audioManager.stopAlarm();
+
     await _hapticService.stopAlarmVibration();
   }
 
@@ -297,27 +426,66 @@ class FocusSessionManager {
     if (!_isHardcore) return;
 
     final isRunning = _status == PomodoroStatus.running;
-    final isPausedByPenalty = _status == PomodoroStatus.paused && _isInPenalty;
-    final isFaceUp = _orientation == PhoneOrientation.faceUp;
-    final isFaceDown = _orientation == PhoneOrientation.faceDown;
 
-    if (isFaceDown && !isPausedByPenalty) {
+    final isPausedByPenalty = _status == PomodoroStatus.paused && _isInPenalty;
+
+    final isConfirmedFaceUp =
+        _lastConfirmedOrientation == PhoneOrientation.faceUp;
+
+    final isConfirmedFaceDown =
+        _lastConfirmedOrientation == PhoneOrientation.faceDown;
+
+    if (isConfirmedFaceDown && !isPausedByPenalty) {
       _hasBeenFaceDownAtLeastOnce = true;
     }
 
-    if (isRunning && isFaceUp && !_isInPenalty && _hasBeenFaceDownAtLeastOnce) {
-      // ENTRAR EN CASTIGO
+    // DISPARADOR DE CASTIGO
+
+    if (isRunning &&
+        isConfirmedFaceUp &&
+        !_isInPenalty &&
+        _hasBeenFaceDownAtLeastOnce) {
+      // Solo incrementamos el contador si han pasado al menos 2 segundos desde el último castigo
+
+      // Esto evita dobles conteos por movimientos bruscos o rebotes del sensor
+
+      final now = DateTime.now();
+
+      if (now.difference(_lastPenaltyIncrementTime) >
+          const Duration(seconds: 2)) {
+        _penaltyCount++;
+
+        _lastPenaltyIncrementTime = now;
+      }
+
       _timerService.pause();
+
       _status = PomodoroStatus.paused;
+
       _isInPenalty = true;
+
+      _penaltyStartTime = DateTime.now();
+
       _audioManager.stopKeepAlive();
+
       _startPenaltyEffects();
-    } else if (isPausedByPenalty && isFaceDown) {
-      // SALIR DE CASTIGO
+    }
+    // DISPARADOR DE REGRESO AL FOCO
+    else if (isPausedByPenalty && isConfirmedFaceDown) {
       _stopPenaltyEffects();
+
+      if (_penaltyStartTime != null) {
+        _totalPenaltyTime += DateTime.now().difference(_penaltyStartTime!);
+
+        _penaltyStartTime = null;
+      }
+
       _timerService.resume();
+
       _status = PomodoroStatus.running;
+
       _isInPenalty = false;
+
       _audioManager.startKeepAlive();
     }
   }
@@ -355,6 +523,10 @@ class FocusSessionManager {
             _prePauseStatus == PomodoroStatus.resting,
 
         hasBreak: _breakDuration != null,
+
+        penaltyCount: _penaltyCount,
+
+        totalPenaltyTime: _totalPenaltyTime,
       ),
     );
   }

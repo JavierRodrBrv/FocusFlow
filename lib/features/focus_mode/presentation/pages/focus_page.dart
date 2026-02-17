@@ -179,7 +179,10 @@ class _FocusViewState extends State<FocusView> {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => const SessionCompletionDialog(),
+              builder: (context) => SessionCompletionDialog(
+                penaltyCount: state.penaltyCount,
+                totalPenaltyTime: state.totalPenaltyTime,
+              ),
             );
           });
         }

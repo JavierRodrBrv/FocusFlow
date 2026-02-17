@@ -5,6 +5,7 @@ import 'package:focus_flow/features/focus_mode/presentation/widgets/bouncing_but
 import 'package:focus_flow/features/focus_mode/presentation/widgets/dialogs/reset_confirmation_dialog.dart';
 
 import '../bloc/focus_bloc.dart';
+import 'dialogs/session_completion_dialog.dart';
 
 class TimerControls extends StatelessWidget {
   final FocusState state;
@@ -68,10 +69,26 @@ class TimerControls extends StatelessWidget {
   }
 
   void _confirmReset(BuildContext context, VoidCallback onConfirm) {
-    if (state.hasBreak) {
+    if (state.hasBreak ||
+        state.pomodoroStatus == PomodoroStatus.running ||
+        state.pomodoroStatus == PomodoroStatus.paused) {
       showDialog(
         context: context,
-        builder: (context) => ResetConfirmationDialog(onConfirm: onConfirm),
+        builder: (context) => ResetConfirmationDialog(
+          onConfirm: () {
+            // Si la sesión era activa, mostramos el resumen antes de limpiar definitivamente
+            if (state.penaltyCount > 0) {
+              showDialog(
+                context: context,
+                builder: (context) => SessionCompletionDialog(
+                  penaltyCount: state.penaltyCount,
+                  totalPenaltyTime: state.totalPenaltyTime,
+                ),
+              );
+            }
+            onConfirm();
+          },
+        ),
       );
     } else {
       onConfirm();
