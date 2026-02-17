@@ -16,6 +16,7 @@ import '../widgets/settings_menu_bottom_sheet.dart';
 import '../widgets/dialogs/dev_version_dialog.dart';
 import '../widgets/dialogs/session_completion_dialog.dart';
 import '../widgets/focus_body.dart';
+import '../widgets/modals/focus_modals.dart';
 
 class FocusPage extends StatefulWidget {
   const FocusPage({super.key});
@@ -45,11 +46,8 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _pauseTime = DateTime.now();
-      // Notificamos al servicio que la UI se ha ido para que corte el grifo
       FlutterBackgroundService().invoke('sendEvent', {'event': 'ui_paused'});
     } else if (state == AppLifecycleState.resumed) {
-      print('[FocusPage] App Resumed: Stabilizing UI...');
-
       bool shouldReset = false;
       if (_pauseTime != null) {
         final inactiveDuration = DateTime.now().difference(_pauseTime!);
@@ -59,13 +57,11 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
       }
 
       if (shouldReset) {
-        print('[FocusPage] Hard Reset triggered by inactivity.');
         setState(() {
           _viewKey = UniqueKey();
           _pauseTime = null;
         });
       } else {
-        // Si no hay reset, simplemente avisamos que hemos vuelto
         FlutterBackgroundService().invoke('sendEvent', {'event': 'ui_resumed'});
       }
     }
@@ -92,38 +88,6 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
     return ShowCaseWidget(
       onFinish: _handleTutorialCompletion,
       onDismiss: (_) => _handleTutorialCompletion(),
-      globalFloatingActionWidget: (context) => FloatingActionWidget(
-        top: 80,
-        right: 20,
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blue.shade900,
-                blurRadius: 12,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.blue.shade900,
-            shape: const CircleBorder(),
-            child: InkWell(
-              onTap: () => ShowCaseWidget.of(context).dismiss(),
-              customBorder: const CircleBorder(),
-              child: const Padding(
-                padding: EdgeInsets.all(10.0),
-                child: Icon(
-                  Icons.skip_next,
-                  color: Colors.white,
-                  size: 26,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
       builder: (context) => FocusView(key: _viewKey),
     );
   }
@@ -139,9 +103,6 @@ class FocusView extends StatefulWidget {
 class _FocusViewState extends State<FocusView> {
   final GlobalKey _timerKey = GlobalKey();
   final GlobalKey _controlsKey = GlobalKey();
-  final GlobalKey _mixerKey = GlobalKey();
-  final GlobalKey _savedMixesKey = GlobalKey();
-  final GlobalKey _hardcoreKey = GlobalKey();
   final GlobalKey _premiumKey = GlobalKey();
   final GlobalKey _tutorialKey = GlobalKey();
 
@@ -174,7 +135,6 @@ class _FocusViewState extends State<FocusView> {
     _checkConsent();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkTutorial());
 
-    // Si acabamos de ser creados, marcamos un breve periodo de estabilización
     _isResuming = true;
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() => _isResuming = false);
@@ -233,20 +193,12 @@ class _FocusViewState extends State<FocusView> {
     try {
       var box = await Hive.openBox('settings');
       bool seen = box.get('tutorial_seen', defaultValue: false);
-      bool devNoticeSeen = box.get('dev_notice_seen', defaultValue: false);
-
       if (!seen) {
         await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
           _startShowcase();
           box.put('tutorial_seen', true);
         }
-      } else if (F.appFlavor == Flavor.dev && !devNoticeSeen && mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => const DevVersionDialog(),
-        );
-        box.put('dev_notice_seen', true);
       }
     } catch (e) {
       print("Error checking tutorial: $e");
@@ -257,9 +209,6 @@ class _FocusViewState extends State<FocusView> {
     ShowCaseWidget.of(context).startShowCase([
       _timerKey,
       _controlsKey,
-      _hardcoreKey,
-      _mixerKey,
-      _savedMixesKey,
       _premiumKey,
       _tutorialKey,
     ]);
@@ -272,6 +221,30 @@ class _FocusViewState extends State<FocusView> {
       'event': 'updateConsentStatus',
       'canRequest': canRequest,
     });
+  }
+
+  void _showMixerModal(FocusState state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SoundMixerModal(
+        state: state,
+        service: FlutterBackgroundService(),
+      ),
+    );
+  }
+
+  void _showFocusModal(FocusState state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FocusModeModal(
+        state: state,
+        service: FlutterBackgroundService(),
+      ),
+    );
   }
 
   @override
@@ -295,35 +268,13 @@ class _FocusViewState extends State<FocusView> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('FocusFlow'),
-                if (state.status == AppStatus.loading ||
-                    state.status == AppStatus.error) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: state.status == AppStatus.error
-                          ? Colors.red
-                          : Colors.amber,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ] else ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Colors.greenAccent,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ],
+            title: const Text(
+              'FocusFlow',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+                fontSize: 20,
+              ),
             ),
             backgroundColor: Colors.transparent,
             centerTitle: true,
@@ -331,9 +282,9 @@ class _FocusViewState extends State<FocusView> {
             leading: Showcase(
               key: _tutorialKey,
               title: 'Menú',
-              description: 'Accede al tutorial, ajustes y feedback aquí.',
+              description: 'Accede al tutorial y ajustes.',
               child: IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white70),
+                icon: const Icon(Icons.notes_rounded, color: Colors.white70),
                 onPressed: () async {
                   final result = await showModalBottomSheet(
                     context: context,
@@ -348,8 +299,7 @@ class _FocusViewState extends State<FocusView> {
               Showcase(
                 key: _premiumKey,
                 title: 'Premium',
-                description:
-                    'Desbloquea funciones exclusivas y elimina anuncios.',
+                description: 'Desbloquea funciones exclusivas.',
                 child: IconButton(
                   icon: Icon(
                     state.isPremium
@@ -384,9 +334,6 @@ class _FocusViewState extends State<FocusView> {
                 service: FlutterBackgroundService(),
                 timerKey: _timerKey,
                 controlsKey: _controlsKey,
-                mixerKey: _mixerKey,
-                savedMixesKey: _savedMixesKey,
-                hardcoreKey: _hardcoreKey,
               ),
               Align(
                 alignment: Alignment.topCenter,
@@ -409,27 +356,83 @@ class _FocusViewState extends State<FocusView> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              FlutterBackgroundService().invoke('sendEvent', {
-                'event': 'updatePomodoroDuration',
-                'durationSeconds': 10,
-              });
-              FlutterBackgroundService().invoke('sendEvent', {
-                'event': 'resetTimer',
-              });
-            },
-            backgroundColor: Colors.redAccent,
-            child: const Text(
-              '10s',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+          bottomNavigationBar: SafeArea(
+            child: Container(
+              height: 80,
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _BottomAction(
+                    icon: Icons.tune_rounded,
+                    label: 'Ambiente',
+                    onTap: () => _showMixerModal(state),
+                  ),
+                  VerticalDivider(
+                    color: Colors.white.withOpacity(0.05),
+                    indent: 20,
+                    endIndent: 20,
+                  ),
+                  _BottomAction(
+                    icon: Icons.psychology_rounded,
+                    label: 'Modo Foco',
+                    onTap: () => _showFocusModal(state),
+                  ),
+                ],
               ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _BottomAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _BottomAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.blueAccent, size: 28),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

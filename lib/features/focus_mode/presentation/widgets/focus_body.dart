@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 import '../../../premium/presentation/widgets/ad_banner_widget.dart';
 import '../bloc/focus_bloc.dart';
 import 'timer_display.dart';
 import 'timer_controls.dart';
-import 'expandable_sound_mixer.dart';
-import 'hardcore_mode_card.dart';
 
 class FocusBody extends StatelessWidget {
   final FocusState state;
   final FlutterBackgroundService service;
   final GlobalKey timerKey;
   final GlobalKey controlsKey;
-  final GlobalKey mixerKey;
-  final GlobalKey savedMixesKey;
-  final GlobalKey hardcoreKey;
 
   const FocusBody({
     super.key,
@@ -24,9 +18,6 @@ class FocusBody extends StatelessWidget {
     required this.service,
     required this.timerKey,
     required this.controlsKey,
-    required this.mixerKey,
-    required this.savedMixesKey,
-    required this.hardcoreKey,
   });
 
   @override
@@ -42,43 +33,29 @@ class FocusBody extends StatelessWidget {
     return Column(
       children: [
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 16.0,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TimerDisplay(
+                    key: timerKey,
+                    state: state,
+                    service: service,
+                  ),
+                  const SizedBox(height: 48),
+                  TimerControls(
+                    key: controlsKey,
+                    state: state,
+                    service: service,
+                  ),
+                ],
+              ),
             ),
-            children: [
-              const SizedBox(height: 20),
-              Showcase(
-                key: timerKey,
-                title: 'Temporizador',
-                description: 'Tiempo restante.',
-                child: TimerDisplay(state: state, service: service),
-              ),
-              const SizedBox(height: 30),
-              Showcase(
-                key: controlsKey,
-                title: 'Controles',
-                description: 'Inicia, pausa o reinicia.',
-                child: TimerControls(state: state, service: service),
-              ),
-              const SizedBox(height: 24),
-              Showcase(
-                key: hardcoreKey,
-                title: 'Modo Focus',
-                description:
-                    'Activa este modo para evitar distracciones. Si giras el móvil, el tiempo se detiene.',
-                child: HardcoreModeCard(state: state, service: service),
-              ),
-              const SizedBox(height: 32),
-              Showcase(
-                key: mixerKey,
-                title: 'Ambiente',
-                description: 'Personaliza tus sonidos de fondo.',
-                child: ExpandableSoundMixer(state: state, service: service),
-              ),
-              const SizedBox(height: 40),
-            ],
           ),
         ),
         if (!state.isPremium && state.canRequestAds)
