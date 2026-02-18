@@ -183,6 +183,8 @@ class _FocusViewState extends State<FocusView> {
                 penaltyCount: state.penaltyCount,
                 totalPenaltyTime: state.totalPenaltyTime,
                 isHardcoreMode: state.isHardcoreMode,
+                isPremium: state.isPremium,
+                canRequestAds: state.canRequestAds,
               ),
             );
           });

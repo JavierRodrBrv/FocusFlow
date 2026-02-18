@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -7,12 +9,16 @@ class SessionCompletionDialog extends StatefulWidget {
   final int penaltyCount;
   final Duration totalPenaltyTime;
   final bool isHardcoreMode;
+  final bool isPremium;
+  final bool canRequestAds;
 
   const SessionCompletionDialog({
     super.key,
     required this.penaltyCount,
     required this.totalPenaltyTime,
     required this.isHardcoreMode,
+    this.isPremium = false,
+    this.canRequestAds = false,
   });
 
   @override
@@ -26,6 +32,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   bool _isStatsExpanded = false;
   InterstitialAd? _interstitialAd;
   bool _isAdLoaded = false;
+  bool _isAdLoading = false;
   late final String _randomJoyImage;
   late final String _randomDogPhrase;
 
@@ -52,7 +59,9 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   @override
   void initState() {
     super.initState();
-    _loadInterstitialAd();
+    if (!widget.isPremium && !kIsWeb) {
+      _loadInterstitialAd();
+    }
     _randomJoyImage = _joyImages[math.Random().nextInt(_joyImages.length)];
     _randomDogPhrase = _dogPhrases[math.Random().nextInt(_dogPhrases.length)];
 
@@ -74,8 +83,18 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   }
 
   void _loadInterstitialAd() {
+    if (_isAdLoading || kIsWeb) return;
+
+    setState(() {
+      _isAdLoading = true;
+    });
+
+    final String adUnitId = Platform.isAndroid
+        ? 'ca-app-pub-3940256099942544/1033173712'
+        : 'ca-app-pub-3940256099942544/4411468910';
+
     InterstitialAd.load(
-      adUnitId: 'ca-app-pub-3940256099942544/1033173712', // Test ID
+      adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
@@ -89,21 +108,46 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
               _dismissDialog();
             },
           );
-          _interstitialAd = ad;
-          _isAdLoaded = true;
+          if (mounted) {
+            setState(() {
+              _interstitialAd = ad;
+              _isAdLoaded = true;
+              _isAdLoading = false;
+            });
+          }
         },
         onAdFailedToLoad: (err) {
           debugPrint('InterstitialAd failed to load: $err');
+          if (mounted) {
+            setState(() {
+              _isAdLoading = false;
+              _isAdLoaded = false;
+            });
+          }
         },
       ),
     );
   }
 
   void _showAd() {
+    if (widget.isPremium || kIsWeb) {
+      _dismissDialog();
+      return;
+    }
+
     if (_isAdLoaded && _interstitialAd != null) {
       _interstitialAd!.show();
     } else {
-      _dismissDialog();
+      if (_isAdLoading) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Preparando anuncio... Inténtalo en un momento.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        _dismissDialog();
+      }
     }
   }
 
