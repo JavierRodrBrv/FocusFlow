@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
-import 'package:focus_flow/features/focus_mode/presentation/widgets/feedback_bottom_sheet.dart';
+import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/feedback_bottom_sheet.dart';
 
 class SettingsMenuBottomSheet extends StatelessWidget {
   final FocusState initialState;

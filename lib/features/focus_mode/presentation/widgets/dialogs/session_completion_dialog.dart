@@ -160,8 +160,10 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
       return 'Has mantenido el foco con éxito. ¡Gran trabajo!';
     }
     final seconds = widget.totalPenaltyTime.inSeconds;
-    if (seconds <= 30) return '¡Casi perfecto! Un pequeño desliz, pero lo has logrado.';
-    if (seconds <= 60) return 'No ha estado mal, pero necesitas un poco más de disciplina.';
+    if (seconds <= 30)
+      return '¡Casi perfecto! Un pequeño desliz, pero lo has logrado.';
+    if (seconds <= 60)
+      return 'No ha estado mal, pero necesitas un poco más de disciplina.';
     return '¿Necesitas una brújula? Tienes menos concentración que un mosquito. ¡A la próxima mejor!';
   }
 
@@ -199,11 +201,17 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     return Column(
       children: [
         GestureDetector(
-          onTap: (!widget.isHardcoreMode || widget.totalPenaltyTime.inSeconds == 0)
+          onTap:
+              (!widget.isHardcoreMode || widget.totalPenaltyTime.inSeconds == 0)
               ? null
               : () => setState(() => _isStatsExpanded = !_isStatsExpanded),
           child: AnimatedRotation(
-            turns: (_isStatsExpanded && widget.isHardcoreMode && widget.totalPenaltyTime.inSeconds > 0) ? 0.05 : 0,
+            turns:
+                (_isStatsExpanded &&
+                    widget.isHardcoreMode &&
+                    widget.totalPenaltyTime.inSeconds > 0)
+                ? 0.05
+                : 0,
             duration: const Duration(milliseconds: 300),
             child: const Icon(Icons.celebration, color: Colors.amber, size: 60),
           ),
@@ -211,7 +219,11 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
         const SizedBox(height: 20),
         const Text(
           '¡Sesión Completada!',
-          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -222,7 +234,9 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     return AnimatedSize(
       duration: const Duration(milliseconds: 400),
       curve: Curves.fastOutSlowIn,
-      child: (widget.isHardcoreMode && (_isStatsExpanded || widget.totalPenaltyTime.inSeconds == 0))
+      child:
+          (widget.isHardcoreMode &&
+              (_isStatsExpanded || widget.totalPenaltyTime.inSeconds == 0))
           ? Container(
               margin: const EdgeInsets.only(top: 24),
               padding: const EdgeInsets.all(16),
@@ -237,14 +251,21 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                     icon: Icons.phone_android_rounded,
                     label: 'Veces levantado',
                     value: '${widget.penaltyCount}',
-                    color: widget.penaltyCount == 0 ? Colors.greenAccent : Colors.orangeAccent,
+                    color: widget.penaltyCount == 0
+                        ? Colors.greenAccent
+                        : Colors.orangeAccent,
                   ),
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(color: Colors.white10)),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(color: Colors.white10),
+                  ),
                   StatRow(
                     icon: Icons.timer_outlined,
                     label: 'Tiempo perdido',
                     value: widget.totalPenaltyTime.toShortPrettyString(),
-                    color: widget.totalPenaltyTime.inSeconds == 0 ? Colors.greenAccent : Colors.redAccent,
+                    color: widget.totalPenaltyTime.inSeconds == 0
+                        ? Colors.greenAccent
+                        : Colors.redAccent,
                   ),
                 ],
               ),
@@ -287,9 +308,14 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
           backgroundColor: Colors.blueAccent,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        child: const Text('Terminar sesión', style: TextStyle(fontWeight: FontWeight.bold)),
+        child: const Text(
+          'Terminar sesión',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       );
     }
 
@@ -297,7 +323,11 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
       children: [
         const Text(
           '¿Realmente valoras tu tiempo?',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -317,7 +347,10 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                 _showMoneyFlow = true;
                 _isStatsExpanded = false;
               }),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Sí, lo valoro'),
             ),
           ],

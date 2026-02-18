@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
-import '../bloc/focus_bloc.dart';
+import '../../bloc/focus_bloc.dart';
 
 class ExpandableSoundMixer extends StatefulWidget {
   final FocusState state;

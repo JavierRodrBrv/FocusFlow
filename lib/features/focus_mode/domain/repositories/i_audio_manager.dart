@@ -1,6 +1,3 @@
-import 'package:focus_flow/core/domain/result.dart';
-import 'package:focus_flow/core/error/failures.dart';
-
 abstract class IAudioManager {
   Future<void> init();
   Future<void> setRainVolume(double volume);

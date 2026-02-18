@@ -28,7 +28,7 @@ class MoneyFlowView extends StatelessWidget {
             errorBuilder: (context, error, stackTrace) => Container(
               height: 120,
               width: 280,
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               child: const Icon(Icons.broken_image, color: Colors.white24),
             ),
           ),
@@ -60,7 +60,10 @@ class MoneyFlowView extends StatelessWidget {
           children: [
             TextButton(
               onPressed: onBack,
-              child: const Text('No, gracias', style: TextStyle(color: Colors.white54)),
+              child: const Text(
+                'No, gracias',
+                style: TextStyle(color: Colors.white54),
+              ),
             ),
             ElevatedButton(
               onPressed: onDonate,
@@ -104,8 +107,12 @@ class DonationPromptView extends StatelessWidget {
             errorBuilder: (context, error, stackTrace) => Container(
               height: 260,
               width: 280,
-              color: Colors.white.withOpacity(0.05),
-              child: const Icon(Icons.favorite_border, color: Colors.pink, size: 60),
+              color: Colors.white.withValues(alpha: 0.05),
+              child: const Icon(
+                Icons.favorite_border,
+                color: Colors.pink,
+                size: 60,
+              ),
             ),
           ),
         ),

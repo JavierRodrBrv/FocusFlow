@@ -3,7 +3,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 
-import '../bloc/focus_bloc.dart';
+import '../../bloc/focus_bloc.dart';
 
 class HardcoreModeCard extends StatelessWidget {
   final FocusState state;

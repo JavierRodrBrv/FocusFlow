@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:showcaseview/showcaseview.dart';
 
-import '../../../premium/presentation/widgets/ad_banner_widget.dart';
-import '../bloc/focus_bloc.dart';
+import 'package:focus_flow/features/premium/presentation/widgets/ad_banner_widget.dart';
+import '../../bloc/focus_bloc.dart';
 import 'timer_display.dart';
 import 'timer_controls.dart';
 
