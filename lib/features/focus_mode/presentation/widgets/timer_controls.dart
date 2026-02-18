@@ -86,6 +86,7 @@ class TimerControls extends StatelessWidget {
                 builder: (context) => SessionCompletionDialog(
                   penaltyCount: state.penaltyCount,
                   totalPenaltyTime: state.totalPenaltyTime,
+                  isHardcoreMode: state.isHardcoreMode,
                 ),
               );
             }

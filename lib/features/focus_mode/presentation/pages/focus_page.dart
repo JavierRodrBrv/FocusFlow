@@ -182,6 +182,7 @@ class _FocusViewState extends State<FocusView> {
               builder: (context) => SessionCompletionDialog(
                 penaltyCount: state.penaltyCount,
                 totalPenaltyTime: state.totalPenaltyTime,
+                isHardcoreMode: state.isHardcoreMode,
               ),
             );
           });
