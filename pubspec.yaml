@@ -55,6 +55,7 @@ dependencies:
   flutter_native_splash: ^2.4.7
   confetti: ^0.8.0
   android_intent_plus: ^6.0.0
+  flutter_shaders: ^0.1.3
 
 dev_dependencies:
   flutter_test:
@@ -90,6 +91,9 @@ flutter:
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
+
+  shaders:
+    - shaders/gradient_flow.frag
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package

@@ -15,6 +15,7 @@ import 'components/confetti_overlay.dart';
 import 'layout/focus_app_bar.dart';
 import 'layout/focus_bottom_bar.dart';
 import 'modals/focus_modals.dart';
+import 'components/timer_shader_background.dart';
 
 class FocusView extends StatefulWidget {
   const FocusView({super.key});
@@ -188,6 +189,7 @@ class _FocusViewState extends State<FocusView> {
           ),
           body: Stack(
             children: [
+              TimerShaderBackground(state: state),
               FocusBody(
                 state: state,
                 service: FlutterBackgroundService(),
