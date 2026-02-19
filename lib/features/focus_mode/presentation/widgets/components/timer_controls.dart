@@ -102,101 +102,88 @@ class TimerControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = state.pomodoroStatus;
+    final isActive =
+        status == PomodoroStatus.running || status == PomodoroStatus.resting;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Reset Button
+        // Reset Button - Acción secundaria
         BouncingButton(
-          child: IconButton(
-            icon: const Icon(Icons.replay),
-            iconSize: 30,
-            color: Colors.white,
-            tooltip: 'Reiniciar sesión',
-            onPressed: () => _confirmReset(
-              context,
-              () => service.invoke('sendEvent', {'event': 'resetTimer'}),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.05),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
+            child: Icon(
+              Icons.replay,
+              size: 28,
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
+          onPressed: () => _confirmReset(
+            context,
+            () => service.invoke('sendEvent', {'event': 'resetTimer'}),
           ),
         ),
 
-        const SizedBox(width: 20),
+        const SizedBox(width: 32),
 
-        // Play/Pause Button
+        // Play/Pause Button - Acción principal rediseñada
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 300),
           transitionBuilder: (child, animation) =>
               ScaleTransition(scale: animation, child: child),
           child: BouncingButton(
-            // Key is crucial for AnimatedSwitcher to recognize change
-            key: ValueKey(
-              (status == PomodoroStatus.running ||
-                      status == PomodoroStatus.resting)
-                  ? 'pause_btn'
-                  : 'play_btn',
-            ),
+            key: ValueKey(isActive ? 'pause_btn' : 'play_btn'),
             child: GestureDetector(
               onTap: () {
                 if (status == PomodoroStatus.initial) {
                   _showBreakSelectionDialog(context);
                 } else {
-                  final event =
-                      (status == PomodoroStatus.running ||
-                          status == PomodoroStatus.resting)
-                      ? 'pauseTimer'
-                      : 'startTimer';
+                  final event = isActive ? 'pauseTimer' : 'startTimer';
                   service.invoke('sendEvent', {'event': event});
                 }
               },
               child: Container(
-                width: 72,
-                height: 72,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ],
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Theme.of(
                         context,
                       ).colorScheme.primary.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      blurRadius: 25,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: Icon(
-                  (status == PomodoroStatus.running ||
-                          status == PomodoroStatus.resting)
-                      ? Icons.pause
-                      : Icons.play_arrow,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.onPrimary,
+                  isActive ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  size: 52,
+                  color: Colors.white,
                 ),
               ),
             ),
           ),
         ),
 
-        const SizedBox(width: 20),
-
-        // Set to Default (20 min) Button
-        BouncingButton(
-          child: IconButton(
-            icon: const Icon(Icons.restore),
-            iconSize: 30,
-            color: Colors.white,
-            tooltip: 'Restablecer a 20 min',
-            onPressed: () => _confirmReset(context, () {
-              // Primero reiniciamos el estado para asegurar que se pueda cambiar el tiempo
-              service.invoke('sendEvent', {'event': 'resetTimer'});
-              // Luego establecemos 20 minutos
-              service.invoke('sendEvent', {
-                'event': 'updatePomodoroDuration',
-                'durationMinutes': 20,
-              });
-            }),
-          ),
-        ),
+        // Espaciadores para mantener el Play centrado perfectamente
+        const SizedBox(width: 32),
+        const SizedBox(width: 52),
       ],
     );
   }

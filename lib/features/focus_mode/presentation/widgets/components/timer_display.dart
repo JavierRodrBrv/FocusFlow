@@ -82,104 +82,62 @@ class TimerDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     final isResting = state.isResting;
     final canAdjust = state.pomodoroStatus == PomodoroStatus.initial;
-    final isAtMin = state.pomodoroDuration.inMinutes <= 5;
     final color = isResting
         ? Colors.redAccent
         : (canAdjust ? Colors.white : Colors.white.withValues(alpha: 0.4));
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Left Controls (Decrement)
-        Column(
+    return Center(
+      child: BouncingButton(
+        onPressed: canAdjust ? () => _showTimerPicker(context) : null,
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // -10 Min
-            BouncingButton(
-              onPressed: (!canAdjust || isAtMin)
-                  ? null
-                  : () =>
-                        _updateDuration(state.pomodoroDuration.inMinutes - 10),
-              child: Icon(
-                Icons.remove_circle_outline,
-                color: (canAdjust && !isAtMin)
-                    ? color
-                    : color.withValues(alpha: 0.2),
-                size: 32,
-              ),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                if (canAdjust)
+                  Container(
+                    width: 220,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: color.withValues(alpha: 0.1),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _formatDuration(state.remainingTime),
+                    style: TextStyle(
+                      fontSize: state.remainingTime.inHours > 0 ? 64 : 82,
+                      fontWeight: FontWeight.w200,
+                      color: color,
+                      letterSpacing: -2,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            // -5 Min
-            BouncingButton(
-              onPressed: (!canAdjust || isAtMin)
-                  ? null
-                  : () => _updateDuration(state.pomodoroDuration.inMinutes - 5),
-              child: Icon(
-                Icons.remove,
-                color: (canAdjust && !isAtMin)
-                    ? color.withValues(alpha: 0.7)
-                    : color.withValues(alpha: 0.2),
-                size: 24,
-              ),
-            ),
-          ],
-        ),
-
-        // Time Display
-        Flexible(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: BouncingButton(
-              onPressed: canAdjust ? () => _showTimerPicker(context) : null,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
+            if (canAdjust)
+              Padding(
+                padding: const EdgeInsets.only(top: 12.0),
                 child: Text(
-                  _formatDuration(state.remainingTime),
+                  "TOCA PARA AJUSTAR",
                   style: TextStyle(
-                    fontSize: state.remainingTime.inHours > 0 ? 52 : 64,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                    color: color.withValues(alpha: 0.3),
                   ),
                 ),
               ),
-            ),
-          ),
-        ),
-
-        // Right Controls (Increment)
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // +10 Min
-            BouncingButton(
-              onPressed: !canAdjust
-                  ? null
-                  : () =>
-                        _updateDuration(state.pomodoroDuration.inMinutes + 10),
-              child: Icon(
-                Icons.add_circle_outline,
-                color: canAdjust ? color : color.withValues(alpha: 0.2),
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 8),
-            // +5 Min
-            BouncingButton(
-              onPressed: !canAdjust
-                  ? null
-                  : () => _updateDuration(state.pomodoroDuration.inMinutes + 5),
-              child: Icon(
-                Icons.add,
-                color: canAdjust
-                    ? color.withValues(alpha: 0.7)
-                    : color.withValues(alpha: 0.2),
-                size: 24,
-              ),
-            ),
           ],
         ),
-      ],
+      ),
     );
   }
 

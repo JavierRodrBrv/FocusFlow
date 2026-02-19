@@ -47,7 +47,7 @@ class FocusBody extends StatelessWidget {
                     key: timerKey,
                     title: 'Temporizador',
                     description:
-                        'Ajusta tu tiempo de enfoque. Pulsa el centro para usar el selector preciso o utiliza los botones laterales para sumar o restar minutos rápidamente.',
+                        'Ajusta tu tiempo de enfoque. Pulsa el centro para usar el selector preciso de tiempo.',
                     child: TimerDisplay(state: state, service: service),
                   ),
                   const SizedBox(height: 48),
