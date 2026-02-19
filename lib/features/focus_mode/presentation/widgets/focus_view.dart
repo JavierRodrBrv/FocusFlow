@@ -178,34 +178,39 @@ class _FocusViewState extends State<FocusView> {
               _lastKnownState ?? const FocusState(status: AppStatus.loading);
         }
 
-        return Scaffold(
-          appBar: FocusAppBar(
-            state: state,
-            tutorialKey: _tutorialKey,
-            premiumKey: _premiumKey,
-            onTutorialResult: (result) {
-              if (result == 'tutorial') _startShowcase();
-            },
-          ),
-          body: Stack(
-            children: [
-              TimerShaderBackground(state: state),
-              FocusBody(
+        return Stack(
+          children: [
+            TimerShaderBackground(state: state),
+            Scaffold(
+              backgroundColor: Colors.transparent,
+              appBar: FocusAppBar(
                 state: state,
-                service: FlutterBackgroundService(),
-                timerKey: _timerKey,
-                controlsKey: _controlsKey,
+                tutorialKey: _tutorialKey,
+                premiumKey: _premiumKey,
+                onTutorialResult: (result) {
+                  if (result == 'tutorial') _startShowcase();
+                },
               ),
-              ConfettiOverlay(controller: _confettiController),
-            ],
-          ),
-          bottomNavigationBar: FocusBottomBar(
-            state: state,
-            mixerKey: _mixerKey,
-            focusModeKey: _focusModeKey,
-            onMixerTap: () => _showMixerModal(state),
-            onFocusModeTap: () => _showFocusModal(state),
-          ),
+              body: Stack(
+                children: [
+                  FocusBody(
+                    state: state,
+                    service: FlutterBackgroundService(),
+                    timerKey: _timerKey,
+                    controlsKey: _controlsKey,
+                  ),
+                  ConfettiOverlay(controller: _confettiController),
+                ],
+              ),
+              bottomNavigationBar: FocusBottomBar(
+                state: state,
+                mixerKey: _mixerKey,
+                focusModeKey: _focusModeKey,
+                onMixerTap: () => _showMixerModal(state),
+                onFocusModeTap: () => _showFocusModal(state),
+              ),
+            ),
+          ],
         );
       },
     );

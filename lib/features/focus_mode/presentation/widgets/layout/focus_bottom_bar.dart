@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/bottom_action_item.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -19,6 +21,10 @@ class FocusBottomBar extends StatelessWidget {
     required this.onFocusModeTap,
   });
 
+  bool get _shouldShowEffect {
+    return state.pomodoroStatus != PomodoroStatus.initial;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -26,7 +32,6 @@ class FocusBottomBar extends StatelessWidget {
         height: 80,
         margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
@@ -36,39 +41,67 @@ class FocusBottomBar extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Showcase(
-              key: mixerKey,
-              title: 'Ambiente Personalizado',
-              description:
-                  'Crea tu atmósfera ideal combinando sonidos de lluvia, fuego o ruido marrón. Ajusta los niveles a tu gusto para aislarte de distracciones.',
-              child: BottomActionItem(
-                icon: Icons.tune_rounded,
-                label: 'Ambiente',
-                onTap: onMixerTap,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: AnimatedSwitcher(
+                  duration: const Duration(seconds: 2),
+                  child: _shouldShowEffect
+                      ? BackdropFilter(
+                          key: const ValueKey('bottom_bar_blur'),
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            color: Colors.black.withValues(alpha: 0.1),
+                          ),
+                        )
+                      : Container(
+                          key: const ValueKey('bottom_bar_solid'),
+                          color: const Color(0xFF1E293B),
+                        ),
+                ),
               ),
-            ),
-            VerticalDivider(
-              color: Colors.white.withValues(alpha: 0.05),
-              indent: 20,
-              endIndent: 20,
-            ),
-            Showcase(
-              key: focusModeKey,
-              title: 'Modo Foco Profundo',
-              description:
-                  'Activa este modo para obligarte a dejar el móvil boca abajo. Si lo levantas, la sesión se pausará, ayudándote a evitar tentaciones.',
-              child: BottomActionItem(
-                icon: Icons.psychology_rounded,
-                label: 'Modo Foco',
-                onTap: onFocusModeTap,
-              ),
-            ),
-          ],
+              _buildContent(),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Showcase(
+          key: mixerKey,
+          title: 'Ambiente Personalizado',
+          description:
+              'Crea tu atmósfera ideal combinando sonidos de lluvia, fuego o ruido marrón. Ajusta los niveles a tu gusto para aislarte de distracciones.',
+          child: BottomActionItem(
+            icon: Icons.tune_rounded,
+            label: 'Ambiente',
+            onTap: onMixerTap,
+          ),
+        ),
+        VerticalDivider(
+          color: Colors.white.withValues(alpha: 0.05),
+          indent: 20,
+          endIndent: 20,
+        ),
+        Showcase(
+          key: focusModeKey,
+          title: 'Modo Foco Profundo',
+          description:
+              'Activa este modo para obligarte a dejar el móvil boca abajo. Si lo levantas, la sesión se pausará, ayudándote a evitar tentaciones.',
+          child: BottomActionItem(
+            icon: Icons.psychology_rounded,
+            label: 'Modo Foco',
+            onTap: onFocusModeTap,
+          ),
+        ),
+      ],
     );
   }
 }
