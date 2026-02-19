@@ -82,6 +82,12 @@ class TimerDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     final isResting = state.isResting;
     final canAdjust = state.pomodoroStatus == PomodoroStatus.initial;
+
+    // Calcular el progreso del anillo (de 1.0 a 0.0)
+    final double progress = state.pomodoroDuration.inSeconds > 0
+        ? state.remainingTime.inSeconds / state.pomodoroDuration.inSeconds
+        : 0.0;
+
     final color = isResting
         ? Colors.redAccent
         : (canAdjust ? Colors.white : Colors.white.withValues(alpha: 0.4));
@@ -95,18 +101,19 @@ class TimerDisplay extends StatelessWidget {
             Stack(
               alignment: Alignment.center,
               children: [
-                if (canAdjust)
-                  Container(
-                    width: 220,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: color.withValues(alpha: 0.1),
-                        width: 1.5,
-                      ),
+                // Anillo de progreso dinámico
+                SizedBox(
+                  width: 220,
+                  height: 220,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 1.5,
+                    backgroundColor: color.withValues(alpha: 0.05),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      color.withValues(alpha: canAdjust ? 0.15 : 0.4),
                     ),
                   ),
+                ),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
