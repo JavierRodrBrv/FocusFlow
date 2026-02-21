@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
@@ -46,6 +47,13 @@ Future<void> bootstrap() async {
 
   // 6. Servicio en Segundo Plano
   await initializeService();
+
+  // RELAY: Recibir eventos del isolate de la notificación (u otros) y enviarlos al servicio de fondo
+  FlutterBackgroundService().on('sendEvent').listen((event) {
+    if (event != null) {
+      FlutterBackgroundService().invoke('sendEvent', event);
+    }
+  });
 
   print('[Bootstrap] System initialized successfully.');
 }
