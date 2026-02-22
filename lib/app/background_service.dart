@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
 import 'dart:isolate';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -12,50 +12,14 @@ import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import '../features/focus_mode/data/models/sound_mix_model.dart';
 
-import 'dart:developer' as dev;
-
 //--- CONFIGURACIÓN GLOBAL ---
 const String notificationChannelId = 'focus_flow_channel';
 const int notificationId = 888;
 const String _controlPortName = 'focus_flow_control_port';
-
-@pragma('vm:entry-point')
-void notificationTapBackground(NotificationResponse notificationResponse) {
-  // 1. Log immediato (uso print para asegurar visibilidad en consola de fondo)
-  print('[BackgroundService] Action detected: ${notificationResponse.actionId}');
-
-  if (notificationResponse.actionId == null) return;
-
-  // 2. Comunicación via IsolateNameServer (Tradicional)
-  final SendPort? port = IsolateNameServer.lookupPortByName(_controlPortName);
-  if (port != null) {
-    port.send(notificationResponse.actionId);
-  }
-
-  // 3. Comunicación via FlutterBackgroundService (Relay backup)
-  // Esto enviará el evento a cualquier isolate que esté escuchando 'sendEvent'
-  String? eventName;
-  if (notificationResponse.actionId == 'pause_action') eventName = 'pauseTimer';
-  if (notificationResponse.actionId == 'play_action') eventName = 'startTimer';
-
-  if (eventName != null) {
-    FlutterBackgroundService().invoke('sendEvent', {'event': eventName});
-  }
-}
+const MethodChannel _notificationChannel = MethodChannel('com.example.focus_flow/notification');
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
-
-  //--- REGISTRO INICIAL DE NOTIFICACIONES ---
-  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  
-  // Es importante que esto se llame antes de configurar el servicio
-  await flutterLocalNotificationsPlugin.initialize(
-    settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/launcher_icon')),
-    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
-    onDidReceiveNotificationResponse: notificationTapBackground,
-  );
 
   await service.configure(
     androidConfiguration: AndroidConfiguration(
@@ -78,31 +42,33 @@ void onStart(ServiceInstance service) async {
 
   print('[BackgroundService] onStart isolate initialized');
 
+  FocusBloc? bloc;
+
+  // Manejador del canal de notificaciones (recibir acciones del lado nativo)
+  _notificationChannel.setMethodCallHandler((call) async {
+    if (call.method == 'onNotificationAction') {
+      final action = call.arguments as String;
+      print('[BackgroundService] Native action received: $action');
+      if (bloc == null) return;
+      
+      final currentStatus = bloc.state.pomodoroStatus;
+      if (action == 'PAUSE_ACTION') {
+        bloc.add(PauseTimer());
+      } else if (action == 'PLAY_ACTION') {
+        if (currentStatus == PomodoroStatus.paused) {
+          bloc.add(StartTimer());
+        }
+      }
+    }
+  });
+
   //--- 1. PUERTO DE ESCUCHA (PUERTO DIRECTO) ---
   final ReceivePort receivePort = ReceivePort();
   IsolateNameServer.removePortNameMapping(_controlPortName);
   IsolateNameServer.registerPortWithName(receivePort.sendPort, _controlPortName);
 
-  FocusBloc? bloc;
-
-  // Escucha del puerto de IsolateNameServer (Acciones de botones de notificación)
   receivePort.listen((message) {
-    print('[BackgroundService] Direct port received: $message');
-    if (bloc == null) return;
-    
-    final currentStatus = bloc.state.pomodoroStatus;
-
-    if (message == 'pause_action') {
-      bloc.add(PauseTimer());
-    } else if (message == 'play_action') {
-      // RESTRICCIÓN: Solo permitimos reanudar si ya estaba en pausa.
-      // Si es 'initial', ignoramos para forzar el inicio desde la App (como pidió el usuario).
-      if (currentStatus == PomodoroStatus.paused) {
-        bloc.add(StartTimer());
-      } else {
-        print('[BackgroundService] Play action ignored: Status is $currentStatus');
-      }
-    }
+    print('[BackgroundService] Direct port message (Legacy): $message');
   });
 
   //--- 2. INICIALIZACIÓN DE DATOS ---
@@ -119,20 +85,12 @@ void onStart(ServiceInstance service) async {
     print('[BackgroundService] Fatal init error: $e');
   }
 
-  // Escucha de eventos del Service (UI y relay de notificaciones)
   service.on('sendEvent').listen((event) {
     if (event == null || bloc == null) return;
     final name = event['event'];
     print('[BackgroundService] Service event received: $name');
     
-    final currentStatus = bloc.state.pomodoroStatus;
-
     if (name == 'startTimer') {
-      // Distinguir si viene de la notificación o de la UI
-      // Si el evento viene de la UI, lo procesamos siempre. 
-      // Pero si viene del relay de 'play_action', aplicamos la misma restricción.
-      // Por simplicidad y seguridad, permitimos 'startTimer' general aquí ya que la UI lo necesita.
-      // La restricción principal ya está en el puerto directo y en la UI (que ya maneja sus diálogos).
       bloc.add(StartTimer());
     } else if (name == 'pauseTimer') {
       bloc.add(PauseTimer());
@@ -146,64 +104,25 @@ void onStart(ServiceInstance service) async {
     }
   });
 
-  // Re-inicializar notificaciones en este isolate para asegurar el manejo de callbacks
-  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  await flutterLocalNotificationsPlugin.initialize(
-    settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/launcher_icon')),
-    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
-    onDidReceiveNotificationResponse: notificationTapBackground,
-  );
-
+  // Escucha del stream del bloc para actualizar la notificación NATIVA
   bloc?.stream.listen((state) async {
     final time = '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
     
-    // El temporizador se está moviendo en focus o break
     bool isCountingDown = state.pomodoroStatus == PomodoroStatus.running || state.pomodoroStatus == PomodoroStatus.resting;
     bool isPaused = state.pomodoroStatus == PomodoroStatus.paused;
     bool isInitial = state.pomodoroStatus == PomodoroStatus.initial;
 
-    // Título dinámico
-    String title;
-    if (isCountingDown) {
-      title = '<font color="#FF0000">$time</font>';
-    } else if (isPaused) {
-      title = 'Pausado • $time';
-    } else if (isInitial) {
-      title = 'FocusFlow • Listo';
-    } else {
-      title = 'Sesión terminada';
-    }
-    
-    List<AndroidNotificationAction> actions = [];
-    if (isCountingDown) {
-      actions.add(const AndroidNotificationAction('pause_action', 'Pausar', 
-          icon: DrawableResourceAndroidBitmap('ic_pause'), showsUserInterface: false));
-    } else if (isPaused) {
-      actions.add(const AndroidNotificationAction('play_action', 'Reanudar', 
-          icon: DrawableResourceAndroidBitmap('ic_play'), showsUserInterface: false));
-    }
+    final statusStr = isCountingDown ? 'running' : (isPaused ? 'paused' : 'initial');
 
-    // Solo mostramos la notificación si no es el estado inicial o si el usuario quiere visibilidad
-    // flutter_background_service requiere que siempre haya una notificación si está en modo foreground.
-    await flutterLocalNotificationsPlugin.show(
-      id: notificationId,
-      title: title,
-      body: isInitial ? 'Abre la app para empezar la sesión' : '',
-      notificationDetails: NotificationDetails(
-        android: AndroidNotificationDetails(
-          notificationChannelId,
-          'Temporizador',
-          importance: Importance.low,
-          priority: Priority.low,
-          showWhen: false,
-          ongoing: isCountingDown,
-          actions: actions,
-          category: AndroidNotificationCategory.transport,
-          styleInformation: const MediaStyleInformation(htmlFormatTitle: true),
-        ),
-      ),
-    );
+    try {
+      // Llamada al canal nativo para actualizar la notificación con RemoteViews
+      await _notificationChannel.invokeMethod('updateNotification', {
+        'time': isInitial ? 'A la espera de comenzar la nueva sesión' : time,
+        'status': statusStr,
+      });
+    } catch (e) {
+      print('[BackgroundService] Error updating native notification: $e');
+    }
 
     service.invoke('update', state.toJson());
   });

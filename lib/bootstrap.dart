@@ -8,25 +8,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'app/background_service.dart';
 
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'app/background_service.dart'; // Importar para acceder a notificationTapBackground
-
 /// Inicializa los sistemas críticos antes de lanzar la UI.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. REGISTRO CRÍTICO DE NOTIFICACIONES (MAIN ISOLATE)
-  // Esto asegura que Android sepa a quién llamar cuando se pulsa un botón
-  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/launcher_icon');
-  await flutterLocalNotificationsPlugin.initialize(
-    settings: const InitializationSettings(android: initializationSettingsAndroid),
-    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
-    onDidReceiveNotificationResponse: notificationTapBackground,
-  );
-
-  // 2. Configuración de UI
+  // 1. Configuración de UI
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // 2. Permisos (Android 13+)
@@ -38,9 +24,6 @@ Future<void> bootstrap() async {
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
-    // Adapters y Dependencies solo necesarios en el servicio de fondo (Isolate secundario)
-    // Hive.registerAdapter(PremiumStatusAdapter());
-    // Hive.registerAdapter(SoundMixModelAdapter());
     print('[Bootstrap] Hive Initialized (UI Isolate).');
   } catch (e) {
     print('[Bootstrap] Hive Error: $e');
@@ -54,12 +37,7 @@ Future<void> bootstrap() async {
     print('[Bootstrap] Mobile Ads Error: $e');
   }
 
-  // 5. Inyección de Dependencias
-  // OMITIDO EN MAIN ISOLATE: Evita conflictos de bloqueo con Hive en el Background Service.
-  // La UI no necesita los Repositories/Bloc directamente, solo habla con el servicio.
-  // await configureDependencies();
-
-  // 6. Servicio en Segundo Plano
+  // 5. Servicio en Segundo Plano
   await initializeService();
 
   // RELAY: Recibir eventos del isolate de la notificación (u otros) y enviarlos al servicio de fondo
