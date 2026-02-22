@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:focus_flow/core/domain/result.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 import 'package:focus_flow/core/error/failures.dart';
@@ -79,12 +79,31 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
       );
     });
 
-    on<ToggleHardcoreMode>((e, emit) => _sessionManager.toggleHardcore());
-    on<ToggleAlarmSound>((e, emit) => _sessionManager.toggleAlarmSound());
-    on<StartTimer>((e, emit) => _sessionManager.startTimer());
-    on<PauseTimer>((e, emit) => _sessionManager.pauseTimer());
-    on<ResetTimer>((e, emit) => _sessionManager.resetTimer());
-    on<StopAlarm>((e, emit) => _sessionManager.stopAlarm());
+    on<ToggleHardcoreMode>((e, emit) {
+      _sessionManager.toggleHardcore();
+      add(_SessionStateChanged(_sessionManager.currentState));
+    });
+    on<ToggleAlarmSound>((e, emit) {
+      _sessionManager.toggleAlarmSound();
+      add(_SessionStateChanged(_sessionManager.currentState));
+    });
+    on<StartTimer>((e, emit) {
+      _sessionManager.startTimer();
+      add(_SessionStateChanged(_sessionManager.currentState));
+    });
+    on<PauseTimer>((e, emit) async {
+      await _sessionManager.pauseTimer();
+
+      add(_SessionStateChanged(_sessionManager.currentState));
+    });
+    on<ResetTimer>((e, emit) async {
+      await _sessionManager.resetTimer();
+      add(_SessionStateChanged(_sessionManager.currentState));
+    });
+    on<StopAlarm>((e, emit) async {
+      await _sessionManager.stopAlarm();
+      add(_SessionStateChanged(_sessionManager.currentState));
+    });
     on<UpdatePomodoroDuration>(
       (e, emit) => _sessionManager.setDuration(e.newDuration),
     );

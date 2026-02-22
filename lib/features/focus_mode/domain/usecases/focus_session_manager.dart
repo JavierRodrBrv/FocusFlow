@@ -89,6 +89,23 @@ class FocusSessionManager {
   DateTime _lastPenaltyIncrementTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   bool get isAlarmSoundEnabled => _isAlarmSoundEnabled;
+
+  SessionState get currentState => SessionState(
+        status: _status,
+        remainingTime: _remainingTime,
+        pomodoroDuration: _duration,
+        isInPenalty: _isInPenalty,
+        orientation: _orientation,
+        isHardcore: _isHardcore,
+        isAlarmSoundEnabled: _isAlarmSoundEnabled,
+        isResting:
+            _status == PomodoroStatus.resting ||
+            _prePauseStatus == PomodoroStatus.resting,
+        hasBreak: _breakDuration != null,
+        penaltyCount: _penaltyCount,
+        totalPenaltyTime: _totalPenaltyTime,
+      );
+
   FocusSessionManager(
     this._audioManager,
     this._sensorService,
@@ -364,7 +381,7 @@ class FocusSessionManager {
     _emitState();
   }
 
-  void pauseTimer() async {
+  Future<void> pauseTimer() async {
     if (_status == PomodoroStatus.running ||
         _status == PomodoroStatus.resting) {
       _prePauseStatus = _status;
@@ -381,7 +398,7 @@ class FocusSessionManager {
     }
   }
 
-  void resetTimer() async {
+  Future<void> resetTimer() async {
     _timerService.pause();
 
     _stopPenaltyEffects();

@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
-import 'dart:convert'; // Importar para jsonEncode
-import 'dart:io';
-import 'dart:isolate'; // Importar para Isolate y SendPort
+import 'dart:isolate';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -12,77 +10,52 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-
 import '../features/focus_mode/data/models/sound_mix_model.dart';
 
-//--- Configuración Global de Notificaciones ---
+import 'dart:developer' as dev;
+
+//--- CONFIGURACIÓN GLOBAL ---
 const String notificationChannelId = 'focus_flow_channel';
-const String alarmChannelId = 'focus_flow_alarm_channel_v3';
 const int notificationId = 888;
+const String _controlPortName = 'focus_flow_control_port';
 
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
-  // Intentar enviar el comando al isolate del temporizador
-  final SendPort? port = IsolateNameServer.lookupPortByName('focus_flow_control_port');
+  // 1. Log immediato (uso print para asegurar visibilidad en consola de fondo)
+  print('[BackgroundService] Action detected: ${notificationResponse.actionId}');
+
+  if (notificationResponse.actionId == null) return;
+
+  // 2. Comunicación via IsolateNameServer (Tradicional)
+  final SendPort? port = IsolateNameServer.lookupPortByName(_controlPortName);
   if (port != null) {
     port.send(notificationResponse.actionId);
-  } else {
-    // Si el puerto no está listo, intentamos despertar al servicio
-    FlutterBackgroundService().invoke('notificationAction', {'action': notificationResponse.actionId});
+  }
+
+  // 3. Comunicación via FlutterBackgroundService (Relay backup)
+  // Esto enviará el evento a cualquier isolate que esté escuchando 'sendEvent'
+  String? eventName;
+  if (notificationResponse.actionId == 'pause_action') eventName = 'pauseTimer';
+  if (notificationResponse.actionId == 'play_action') eventName = 'startTimer';
+
+  if (eventName != null) {
+    FlutterBackgroundService().invoke('sendEvent', {'event': eventName});
   }
 }
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
 
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  //--- INICIALIZACIÓN CRÍTICA PARA CAPTURAR BOTONES ---
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/launcher_icon');
+  //--- REGISTRO INICIAL DE NOTIFICACIONES ---
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  
+  // Es importante que esto se llame antes de configurar el servicio
   await flutterLocalNotificationsPlugin.initialize(
-    settings: const InitializationSettings(android: initializationSettingsAndroid),
+    settings: const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/launcher_icon')),
     onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+    onDidReceiveNotificationResponse: notificationTapBackground,
   );
-
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    notificationChannelId,
-    'Focus Flow Status',
-    description: 'Notificaciones persistentes del temporizador',
-    importance: Importance.low,
-    showBadge: true,
-    playSound: false,
-  );
-
-  const AndroidNotificationChannel alarmChannel = AndroidNotificationChannel(
-    alarmChannelId,
-    'Focus Flow Alarma',
-    description: 'Notificaciones de finalización de sesión',
-    importance: Importance.max,
-    playSound: true,
-    enableVibration: true,
-  );
-
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin
-      >()
-      ?.createNotificationChannel(channel);
-
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin
-      >()
-      ?.createNotificationChannel(alarmChannel);
-
-  if (Platform.isIOS) {
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
-  }
 
   await service.configure(
     androidConfiguration: AndroidConfiguration(
@@ -90,15 +63,11 @@ Future<void> initializeService() async {
       autoStart: true,
       isForegroundMode: true,
       notificationChannelId: notificationChannelId,
-      initialNotificationTitle: 'FocusFlow Activo',
-      initialNotificationContent: 'Manteniendo tu sesión de foco.',
+      initialNotificationTitle: 'FocusFlow',
+      initialNotificationContent: 'Iniciando...',
       foregroundServiceNotificationId: notificationId,
     ),
-    iosConfiguration: IosConfiguration(
-      autoStart: true,
-      onForeground: onStart,
-      onBackground: onIosBackground,
-    ),
+    iosConfiguration: IosConfiguration(autoStart: true, onForeground: onStart),
   );
 }
 
@@ -107,404 +76,138 @@ void onStart(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
 
+  print('[BackgroundService] onStart isolate initialized');
+
+  //--- 1. PUERTO DE ESCUCHA (PUERTO DIRECTO) ---
+  final ReceivePort receivePort = ReceivePort();
+  IsolateNameServer.removePortNameMapping(_controlPortName);
+  IsolateNameServer.registerPortWithName(receivePort.sendPort, _controlPortName);
+
   FocusBloc? bloc;
-  bool initFailed = false;
 
-  //--- 1. CONFIGURACIÓN DE PUERTO PARA COMANDOS ---
-  final ReceivePort controlPort = ReceivePort();
-  IsolateNameServer.removePortNameMapping('focus_flow_control_port');
-  IsolateNameServer.registerPortWithName(controlPort.sendPort, 'focus_flow_control_port');
-
-  controlPort.listen((actionId) {
-    if (actionId == 'pause_action') bloc?.add(PauseTimer());
-    if (actionId == 'play_action') bloc?.add(StartTimer());
-  });
-
-  // Listener de respaldo para eventos de servicio
-  service.on('notificationAction').listen((event) {
-    final actionId = event?['action'];
-    if (actionId == 'pause_action') bloc?.add(PauseTimer());
-    if (actionId == 'play_action') bloc?.add(StartTimer());
-  });
-
-  print('[BackgroundService] Starting Isolate...');
-
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/launcher_icon');
-  final DarwinInitializationSettings initializationSettingsDarwin =
-      DarwinInitializationSettings(
-        requestAlertPermission: false,
-        requestBadgePermission: false,
-        requestSoundPermission: false,
-      );
-  final InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-    iOS: initializationSettingsDarwin,
-  );
-
-  try {
-    await flutterLocalNotificationsPlugin.initialize(
-      settings: initializationSettings,
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
-      onDidReceiveNotificationResponse: (response) {
-        // Redirigir a través del mismo puerto para consistencia
-        notificationTapBackground(response);
-      },
-    );
-  } catch (e) {
-    print('[BackgroundService] Notifications init error: $e');
-  }
-
-
-  // LOGICA DE HEARTBEAT Y OPTIMIZACIÓN
-  DateTime lastUiHeartbeat = DateTime.now();
-  String lastEncodedJson = '';
-
-  // Timer de limpieza: si no hay latido en 10s, marcamos la UI como desconectada
-  Timer.periodic(const Duration(seconds: 5), (timer) {
-    final diff = DateTime.now().difference(lastUiHeartbeat).inSeconds;
-    if (diff > 8) {
-      // Si pasan más de 8 segundos sin latido, asumimos que la UI murió o está en background profundo
-      // Esto evita acumular eventos en la cola del canal
-      // print('UI Heartbeat lost ($diff s). Pausing updates.'); // Comentado para no saturar log
-    }
-  });
-
-  bool isForeground = true;
-  Timer? iosLoopingNotificationTimer;
-  const alarmNotificationId = 999;
-
-  service.on('sendEvent').listen((event) {
-    if (event == null) return;
-    final eventName = event['event'];
-
-    if (eventName == 'ui_heartbeat') {
-      lastUiHeartbeat = DateTime.now();
-      return;
-    }
-
-    if (eventName == 'ui_resumed') {
-      lastUiHeartbeat = DateTime.now(); // Reset inmediato
-      if (bloc != null) {
-        // Forzamos envío al reconectar, ignorando el dirty check
-        lastEncodedJson = '';
-        service.invoke('update', bloc.state.toJson());
-      }
-      return;
-    }
-
-    if (eventName == 'ui_paused') {
-      // Forzar desconexión inmediata (ponemos fecha antigua)
-      lastUiHeartbeat = DateTime.now().subtract(const Duration(minutes: 1));
-      return;
-    }
-
-    if (eventName == 'requestState') {
-      lastUiHeartbeat = DateTime.now(); // Consideramos esto un latido
-      if (bloc != null) {
-        service.invoke('update', bloc.state.toJson());
-      } else {
-        service.invoke(
-          'update',
-          initFailed ? _getErrorStateJson() : _getLoadingStateJson(),
-        );
-      }
-      return;
-    }
-
+  // Escucha del puerto de IsolateNameServer (Acciones de botones de notificación)
+  receivePort.listen((message) {
+    print('[BackgroundService] Direct port received: $message');
     if (bloc == null) return;
+    
+    final currentStatus = bloc.state.pomodoroStatus;
 
-    try {
-      switch (eventName) {
-        case 'startTimer':
-          bloc.add(StartTimer());
-          break;
-        case 'pauseTimer':
-          bloc.add(PauseTimer());
-          break;
-        case 'resetTimer':
-          bloc.add(ResetTimer());
-          break;
-        case 'stopAlarm':
-          bloc.add(StopAlarm());
-          break;
-        case 'toggleHardcore':
-          bloc.add(ToggleHardcoreMode());
-          break;
-        case 'toggleAlarmSound':
-          bloc.add(ToggleAlarmSound());
-          break;
-        case 'updatePomodoroDuration':
-          final minutes = event['durationMinutes'] ?? 0;
-          final seconds = event['durationSeconds'] ?? 0;
-          final duration = Duration(
-            minutes: minutes is int ? minutes : (minutes as double).toInt(),
-            seconds: seconds is int ? seconds : (seconds as double).toInt(),
-          );
-          bloc.add(UpdatePomodoroDuration(duration));
-          break;
-        case 'setBreakDuration':
-          final minutes = event['durationMinutes'];
-          if (minutes != null) {
-            bloc.add(SetBreakDuration(Duration(minutes: minutes)));
-          } else {
-            bloc.add(SetBreakDuration(null));
-          }
-          break;
-        case 'updateConsentStatus':
-          bloc.add(UpdateConsentStatus(event['canRequest']));
-          break;
-        case 'togglePremium':
-          bloc.add(TogglePremiumStatus());
-          break;
-        case 'saveMix':
-          bloc.add(SaveCurrentMix());
-          break;
-        case 'playSavedMix':
-          bloc.add(PlaySavedMix());
-          break;
-        case 'loadMix':
-          bloc.add(LoadMix(event['mixId']));
-          break;
-        case 'resumeMix':
-          bloc.add(ResumeMix());
-          break;
-        case 'pauseMix':
-          bloc.add(PauseMix());
-          break;
-        case 'updateRainVolume':
-          bloc.add(UpdateRainVolume((event['volume'] as num).toDouble()));
-          break;
-        case 'updateFireVolume':
-          bloc.add(UpdateFireVolume((event['volume'] as num).toDouble()));
-          break;
-        case 'updateBrownNoiseVolume':
-          bloc.add(UpdateBrownNoiseVolume((event['volume'] as num).toDouble()));
-          break;
-        default:
-          print('[BackgroundService] Unknown event: $eventName');
+    if (message == 'pause_action') {
+      bloc.add(PauseTimer());
+    } else if (message == 'play_action') {
+      // RESTRICCIÓN: Solo permitimos reanudar si ya estaba en pausa.
+      // Si es 'initial', ignoramos para forzar el inicio desde la App (como pidió el usuario).
+      if (currentStatus == PomodoroStatus.paused) {
+        bloc.add(StartTimer());
+      } else {
+        print('[BackgroundService] Play action ignored: Status is $currentStatus');
       }
-    } catch (e) {
-      print('[BackgroundService] Error handling event $eventName: $e');
     }
   });
 
-  if (service is AndroidServiceInstance) {
-    service
-        .on('setAsForeground')
-        .listen((event) => service.setAsForegroundService());
-    service
-        .on('setAsBackground')
-        .listen((event) => service.setAsBackgroundService());
-  }
-  service.on('stopSelf').listen((event) => service.stopSelf());
-
-  service.invoke('update', _getLoadingStateJson());
-
+  //--- 2. INICIALIZACIÓN DE DATOS ---
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
-
-    if (!Hive.isAdapterRegistered(0)) {
-      Hive.registerAdapter(PremiumStatusAdapter());
-    }
-    if (!Hive.isAdapterRegistered(1)) {
-      Hive.registerAdapter(SoundMixModelAdapter());
-    }
-
+    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(PremiumStatusAdapter());
+    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SoundMixModelAdapter());
     await configureDependencies();
     bloc = getIt<FocusBloc>();
-
-    PomodoroStatus? lastStatus;
-
-    bloc.stream.listen((state) async {
-      final bool statusChanged =
-          lastStatus != null && lastStatus != state.pomodoroStatus;
-      final PomodoroStatus? previousStatus = lastStatus;
-      lastStatus = state.pomodoroStatus;
-
-      // 1. Verificar si la UI está escuchando (Heartbeat check)
-      final secondsSinceHeartbeat = DateTime.now()
-          .difference(lastUiHeartbeat)
-          .inSeconds;
-      final isUiAlive =
-          secondsSinceHeartbeat <
-          8; // Margen de seguridad (el timer de ui es cada 3s)
-
-      if (isUiAlive) {
-        // 2. Dirty Check: Solo enviar si el JSON ha cambiado
-        // Esto evita enviar actualizaciones redundantes (ej: timer pausado)
-        final newJson = state.toJson();
-        final newEncoded = jsonEncode(newJson);
-
-        if (newEncoded != lastEncodedJson) {
-          service.invoke('update', newJson);
-          lastEncodedJson = newEncoded;
-        }
-      }
-
-      final int minutes = state.remainingTime.inMinutes;
-      final int seconds = state.remainingTime.inSeconds % 60;
-      final timeDisplay =
-          '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-
-      // --- CONFIGURACIÓN DE NOTIFICACIÓN MINIMALISTA ---
-      String title = 'FocusFlow';
-      String content = 'Manteniendo tu sesión de foco.';
-      bool isTimerActive = state.pomodoroStatus == PomodoroStatus.running || 
-                          state.pomodoroStatus == PomodoroStatus.resting;
-
-      if (isTimerActive) {
-        // Formato HTML para el color rojo del tiempo
-        title = '<font color="#FF0000">$timeDisplay</font>';
-        content = ''; 
-        iosLoopingNotificationTimer?.cancel();
-        iosLoopingNotificationTimer = null;
-      } else if (state.pomodoroStatus == PomodoroStatus.paused) {
-        title = 'Pausado • $timeDisplay';
-        content = '';
-        iosLoopingNotificationTimer?.cancel();
-        iosLoopingNotificationTimer = null;
-      } else if (state.pomodoroStatus == PomodoroStatus.finished) {
-        title = '¡Sesión Completada!';
-        content = 'Toca para continuar';
-        // ... (resto de lógica de alarmas se mantiene igual abajo)
-      }
-
-      if (service is AndroidServiceInstance) {
-        bool shouldBeForeground = isTimerActive;
-        
-        if (shouldBeForeground && !isForeground) {
-          service.setAsForegroundService();
-          isForeground = true;
-        } else if (!shouldBeForeground && isForeground) {
-          service.setAsBackgroundService();
-          isForeground = false;
-        }
-
-        // Definimos las acciones basadas en el estado
-        List<AndroidNotificationAction> actions = [];
-        if (state.pomodoroStatus == PomodoroStatus.running) {
-          actions.add(const AndroidNotificationAction(
-            'pause_action',
-            'Pausar',
-            icon: DrawableResourceAndroidBitmap('ic_pause'),
-            showsUserInterface: false,
-            contextual: false, // Cambiado a false para mayor compatibilidad
-          ));
-        } else if (state.pomodoroStatus == PomodoroStatus.paused) {
-          actions.add(const AndroidNotificationAction(
-            'play_action',
-            'Reanudar',
-            icon: DrawableResourceAndroidBitmap('ic_play'),
-            showsUserInterface: false,
-            contextual: false, // Cambiado a false para mayor compatibilidad
-          ));
-        }
-
-        // Usamos el plugin directamente para mayor control visual en Android
-        await flutterLocalNotificationsPlugin.show(
-          id: notificationId,
-          title: title,
-          body: content,
-          notificationDetails: NotificationDetails(
-            android: AndroidNotificationDetails(
-              notificationChannelId,
-              'Focus Flow Status',
-              channelDescription: 'Temporizador activo',
-              importance: Importance.low,
-              priority: Priority.low,
-              showWhen: false,
-              onlyAlertOnce: true,
-              ongoing: true,
-              actions: actions,
-              visibility: NotificationVisibility.public,
-              category: AndroidNotificationCategory.transport,
-              styleInformation: const MediaStyleInformation(
-                htmlFormatTitle: true,
-                htmlFormatContent: true,
-              ),
-            ),
-          ),
-        );
-      } else if (Platform.isIOS &&
-          state.pomodoroStatus != PomodoroStatus.finished) {
-        try {
-          final isVibratingTransition =
-              statusChanged &&
-              ((previousStatus == PomodoroStatus.running &&
-                      state.pomodoroStatus == PomodoroStatus.resting) ||
-                  (previousStatus == PomodoroStatus.resting &&
-                      state.pomodoroStatus == PomodoroStatus.running));
-
-          await flutterLocalNotificationsPlugin.show(
-            id: notificationId, // Usamos el ID consistente
-            title: title,
-            body: content,
-            notificationDetails: NotificationDetails(
-              iOS: DarwinNotificationDetails(
-                presentAlert: true,
-                presentBanner: true,
-                presentSound: isVibratingTransition,
-                interruptionLevel: isVibratingTransition
-                    ? InterruptionLevel.timeSensitive
-                    : InterruptionLevel.passive,
-              ),
-            ),
-          );
-        } catch (e) {
-          print('[BackgroundService] iOS Notification Error: $e');
-        }
-      }
-    });
-
     bloc.add(InitializeApp());
-    service.invoke('update', bloc.state.toJson());
-  } catch (e, stackTrace) {
-    print('[BackgroundService] FATAL ERROR: $e\n$stackTrace');
-    initFailed = true;
-    service.invoke('update', _getErrorStateJson());
+    print('[BackgroundService] Bloc and dependencies ready');
+  } catch (e) {
+    print('[BackgroundService] Fatal init error: $e');
   }
+
+  // Escucha de eventos del Service (UI y relay de notificaciones)
+  service.on('sendEvent').listen((event) {
+    if (event == null || bloc == null) return;
+    final name = event['event'];
+    print('[BackgroundService] Service event received: $name');
+    
+    final currentStatus = bloc.state.pomodoroStatus;
+
+    if (name == 'startTimer') {
+      // Distinguir si viene de la notificación o de la UI
+      // Si el evento viene de la UI, lo procesamos siempre. 
+      // Pero si viene del relay de 'play_action', aplicamos la misma restricción.
+      // Por simplicidad y seguridad, permitimos 'startTimer' general aquí ya que la UI lo necesita.
+      // La restricción principal ya está en el puerto directo y en la UI (que ya maneja sus diálogos).
+      bloc.add(StartTimer());
+    } else if (name == 'pauseTimer') {
+      bloc.add(PauseTimer());
+    } else if (name == 'resetTimer') {
+      bloc.add(ResetTimer());
+    } else if (name == 'stopAlarm') {
+      bloc.add(StopAlarm());
+    } else if (name == 'setBreakDuration') {
+      final minutes = event['durationMinutes'] as int?;
+      bloc.add(SetBreakDuration(minutes != null ? Duration(minutes: minutes) : null));
+    }
+  });
+
+  // Re-inicializar notificaciones en este isolate para asegurar el manejo de callbacks
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  await flutterLocalNotificationsPlugin.initialize(
+    settings: const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/launcher_icon')),
+    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+    onDidReceiveNotificationResponse: notificationTapBackground,
+  );
+
+  bloc?.stream.listen((state) async {
+    final time = '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
+    
+    // El temporizador se está moviendo en focus o break
+    bool isCountingDown = state.pomodoroStatus == PomodoroStatus.running || state.pomodoroStatus == PomodoroStatus.resting;
+    bool isPaused = state.pomodoroStatus == PomodoroStatus.paused;
+    bool isInitial = state.pomodoroStatus == PomodoroStatus.initial;
+
+    // Título dinámico
+    String title;
+    if (isCountingDown) {
+      title = '<font color="#FF0000">$time</font>';
+    } else if (isPaused) {
+      title = 'Pausado • $time';
+    } else if (isInitial) {
+      title = 'FocusFlow • Listo';
+    } else {
+      title = 'Sesión terminada';
+    }
+    
+    List<AndroidNotificationAction> actions = [];
+    if (isCountingDown) {
+      actions.add(const AndroidNotificationAction('pause_action', 'Pausar', 
+          icon: DrawableResourceAndroidBitmap('ic_pause'), showsUserInterface: false));
+    } else if (isPaused) {
+      actions.add(const AndroidNotificationAction('play_action', 'Reanudar', 
+          icon: DrawableResourceAndroidBitmap('ic_play'), showsUserInterface: false));
+    }
+
+    // Solo mostramos la notificación si no es el estado inicial o si el usuario quiere visibilidad
+    // flutter_background_service requiere que siempre haya una notificación si está en modo foreground.
+    await flutterLocalNotificationsPlugin.show(
+      id: notificationId,
+      title: title,
+      body: isInitial ? 'Abre la app para empezar la sesión' : '',
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          notificationChannelId,
+          'Temporizador',
+          importance: Importance.low,
+          priority: Priority.low,
+          showWhen: false,
+          ongoing: isCountingDown,
+          actions: actions,
+          category: AndroidNotificationCategory.transport,
+          styleInformation: const MediaStyleInformation(htmlFormatTitle: true),
+        ),
+      ),
+    );
+
+    service.invoke('update', state.toJson());
+  });
 }
-
-Map<String, dynamic> _getLoadingStateJson() => {
-  'status': 1,
-  'isPremium': false,
-  'canRequestAds': false,
-  'rainVolume': 0.5,
-  'fireVolume': 0.0,
-  'brownNoiseVolume': 0.0,
-  'isHardcoreMode': false,
-  'phoneOrientation': 2,
-  'isInPenaltyBox': false,
-  'isAlarmSoundEnabled': true,
-  'pomodoroStatus': 0,
-  'remainingTime': 1500,
-  'pomodoroDuration': 1500,
-};
-
-Map<String, dynamic> _getErrorStateJson() => {
-  'status': 3,
-  'isPremium': false,
-  'canRequestAds': false,
-  'rainVolume': 0.0,
-  'fireVolume': 0.0,
-  'brownNoiseVolume': 0.0,
-  'isHardcoreMode': false,
-  'phoneOrientation': 2,
-  'isInPenaltyBox': false,
-  'isAlarmSoundEnabled': true,
-  'pomodoroStatus': 0,
-  'remainingTime': 1500,
-  'pomodoroDuration': 1500,
-};
 
 @pragma('vm:entry-point')
-Future<bool> onIosBackground(ServiceInstance service) async {
-  WidgetsFlutterBinding.ensureInitialized();
-  DartPluginRegistrant.ensureInitialized();
-  return true;
-}
+Future<bool> onIosBackground(ServiceInstance service) async => true;

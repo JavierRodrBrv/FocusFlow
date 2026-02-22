@@ -8,11 +8,25 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'app/background_service.dart';
 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'app/background_service.dart'; // Importar para acceder a notificationTapBackground
+
 /// Inicializa los sistemas críticos antes de lanzar la UI.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Configuración de UI
+  // 1. REGISTRO CRÍTICO DE NOTIFICACIONES (MAIN ISOLATE)
+  // Esto asegura que Android sepa a quién llamar cuando se pulsa un botón
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/launcher_icon');
+  await flutterLocalNotificationsPlugin.initialize(
+    settings: const InitializationSettings(android: initializationSettingsAndroid),
+    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+    onDidReceiveNotificationResponse: notificationTapBackground,
+  );
+
+  // 2. Configuración de UI
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // 2. Permisos (Android 13+)
