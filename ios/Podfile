@@ -34,7 +34,7 @@ target 'Runner' do
 end
 
 # --- TARGET PARA EL WIDGET DE LA DYNAMIC ISLAND ---
-target 'FocusFlowWidget' do
+target 'FocusFlowWidgetExtension' do
   use_frameworks!
 end
 
@@ -45,7 +45,7 @@ post_install do |installer|
     
     # Forzamos la versión de iOS según el target
     target.build_configurations.each do |config|
-      if target.name == 'FocusFlowWidget'
+      if target.name == 'FocusFlowWidgetExtension'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
       else
         # Aseguramos que el resto mantenga un mínimo compatible (o el de tu app)
