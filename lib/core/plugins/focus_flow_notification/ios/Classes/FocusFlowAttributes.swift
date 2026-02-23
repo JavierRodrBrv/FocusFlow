@@ -1,17 +1,30 @@
 import ActivityKit
 import Foundation
 
-struct FocusFlowAttributes: ActivityAttributes {
+public struct FocusFlowAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        // Dynamic state updated frequently
-        var targetEndDate: Date
-        var isPaused: Bool
-        var pausedTime: Date? // Used to show static time when paused
-        var totalDuration: Double
-        var progress: Double
-        var status: String // "focus", "break", "finished"
+        // Estado dinámico que se actualiza frecuentemente
+        public var targetEndDate: Date
+        public var isPaused: Bool
+        public var pausedTime: Date? // Para mostrar el tiempo estático si se pausa
+        public var totalDuration: Double
+        public var progress: Double
+        public var status: String // "focus", "break", "finished"
+        
+        public init(targetEndDate: Date, isPaused: Bool, pausedTime: Date? = nil, totalDuration: Double, progress: Double, status: String) {
+            self.targetEndDate = targetEndDate
+            self.isPaused = isPaused
+            self.pausedTime = pausedTime
+            self.totalDuration = totalDuration
+            self.progress = progress
+            self.status = status
+        }
     }
 
-    // Fixed non-changing properties about the activity
-    var name: String
+    // Propiedades fijas que no cambian
+    public var name: String
+    
+    public init(name: String) {
+        self.name = name
+    }
 }
