@@ -10,3 +10,5 @@ flutter:
       android:
         package: com.example.focus_flow_notification
         pluginClass: FocusFlowNotificationPlugin
+      ios:
+        pluginClass: FocusFlowNotificationPlugin
