@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'dart:isolate';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -10,6 +11,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
+import 'package:focus_flow_notification/focus_flow_notification.dart';
 import '../features/focus_mode/data/models/sound_mix_model.dart';
 
 //--- CONFIGURACIÓN GLOBAL ---
@@ -139,36 +141,67 @@ void onStart(ServiceInstance service) async {
 
     String displayTime;
     String statusStr;
+    String liveStatus = 'focus';
 
     if (isFinished) {
       displayTime = '¡Sesión completada!';
       statusStr = 'finished';
+      liveStatus = 'finished';
     } else if (isPaused) {
       if (state.isResting) {
         displayTime = 'Descanso • $time';
         statusStr = 'paused_break';
+        liveStatus = 'break';
       } else {
         displayTime = '$time';
         statusStr = 'paused';
+        liveStatus = 'focus';
       }
     } else if (isResting) {
       displayTime = 'Descanso • $time';
       statusStr = 'resting';
+      liveStatus = 'break';
     } else if (isInitial) {
       displayTime = 'A la espera de comenzar la nueva sesión';
       statusStr = 'initial';
+      liveStatus = 'initial';
     } else {
       displayTime = time;
       statusStr = 'running';
+      liveStatus = 'focus';
     }
 
     try {
+      // 1. Notificación Estándar
       await _notificationChannel.invokeMethod('updateNotification', {
         'time': displayTime,
         'status': statusStr,
       });
+
+      // 2. Live Activities (iOS)
+      if (Platform.isIOS) {
+        if (isInitial || isFinished) {
+          await _notificationChannel.invokeMethod('endLiveActivity');
+        } else {
+          final targetEndTime = DateTime.now().add(state.remainingTime);
+          final totalSecs = state.pomodoroDuration.inSeconds;
+          final remainingSecs = state.remainingTime.inSeconds;
+          final progress = totalSecs > 0 ? (totalSecs - remainingSecs) / totalSecs : 0.0;
+
+          await _notificationChannel.invokeMethod(
+            isPaused ? 'updateLiveActivity' : 'startLiveActivity',
+            {
+              'targetEndTime': targetEndTime.millisecondsSinceEpoch,
+              'totalDuration': totalSecs,
+              'status': liveStatus,
+              'isPaused': isPaused,
+              'progress': progress,
+            },
+          );
+        }
+      }
     } catch (e) {
-      print('[BackgroundService] Error updating native notification: $e');
+      print('[BackgroundService] Error updating notifications: $e');
     }
 
     service.invoke('update', state.toJson());
