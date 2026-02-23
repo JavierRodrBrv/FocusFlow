@@ -6,9 +6,13 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
   private static var channel: FlutterMethodChannel?
   private static var lastStatus: String = ""
   
-  // Hold the current activity
+  // Singleton reference to the current activity
   @available(iOS 16.1, *)
-  private static var currentActivity: Activity<FocusFlowAttributes>?
+  private static var currentActivity: Activity<FocusFlowAttributes>? {
+    get {
+        return Activity<FocusFlowAttributes>.activities.first
+    }
+  }
   
   public static func register(with registrar: FlutterPluginRegistrar) {
     let messenger = registrar.messenger()
@@ -77,6 +81,12 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           return
       }
 
+      // If an activity is already running, just update it instead of creating a new one
+      if let activity = FocusFlowNotificationPlugin.currentActivity {
+          updateLiveActivity(args: args)
+          return
+      }
+
       let targetEndTime = args["targetEndTime"] as? Int ?? 0
       let totalDuration = args["totalDuration"] as? Int ?? 0
       let status = args["status"] as? String ?? "focus"
@@ -87,20 +97,19 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       let state = FocusFlowAttributes.ContentState(
           targetEndDate: Date(timeIntervalSince1970: TimeInterval(targetEndTime) / 1000),
           isPaused: isPaused,
-          pausedTime: Date(), // Current time if paused
+          pausedTime: Date(),
           totalDuration: Double(totalDuration),
           progress: progress,
           status: status
       )
       
       do {
-          let activity = try Activity<FocusFlowAttributes>.request(
+          _ = try Activity<FocusFlowAttributes>.request(
               attributes: attributes,
               contentState: state,
               pushType: nil
           )
-          FocusFlowNotificationPlugin.currentActivity = activity
-          print("[FocusFlowNotification] Started Live Activity: \(activity.id)")
+          print("[FocusFlowNotification] Started Live Activity")
       } catch {
           print("[FocusFlowNotification] Error starting Live Activity: \(error.localizedDescription)")
       }
@@ -108,7 +117,12 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
 
   @available(iOS 16.1, *)
   private func updateLiveActivity(args: [String: Any]) {
-      guard let activity = FocusFlowNotificationPlugin.currentActivity else { return }
+      // Find the existing activity
+      guard let activity = FocusFlowNotificationPlugin.currentActivity else {
+          // If not found, try to start it
+          startLiveActivity(args: args)
+          return
+      }
       
       let targetEndTime = args["targetEndTime"] as? Int ?? 0
       let totalDuration = args["totalDuration"] as? Int ?? 0
@@ -127,16 +141,18 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       
       Task {
           await activity.update(using: state)
+          print("[FocusFlowNotification] Updated Live Activity")
       }
   }
 
   @available(iOS 16.1, *)
   private func endLiveActivity() {
-      guard let activity = FocusFlowNotificationPlugin.currentActivity else { return }
-      
-      Task {
-          await activity.end(dismissalPolicy: .immediate)
-          FocusFlowNotificationPlugin.currentActivity = nil
+      // End ALL active activities to be sure
+      for activity in Activity<FocusFlowAttributes>.activities {
+          Task {
+              await activity.end(dismissalPolicy: .immediate)
+              print("[FocusFlowNotification] Ended Live Activity: \(activity.id)")
+          }
       }
   }
 
@@ -207,7 +223,6 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       completionHandler([.alert, .badge, .sound])
   }
   
-  // Handle application opening from URL (Deep Links)
   public func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
       let urlString = url.absoluteString
       if urlString.contains("focusflow://pause") {

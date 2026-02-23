@@ -100,6 +100,10 @@ void onStart(ServiceInstance service) async {
       bloc.add(ResetTimer());
     } else if (name == 'stopAlarm') {
       bloc.add(StopAlarm());
+    } else if (name == 'togglePremium') {
+      bloc.add(TogglePremiumStatus());
+    } else if (name == 'requestState') {
+      service.invoke('update', bloc.state.toJson());
     } else if (name == 'setBreakDuration') {
       final minutes = event['durationMinutes'] as int?;
       bloc.add(SetBreakDuration(minutes != null ? Duration(minutes: minutes) : null));
@@ -188,6 +192,7 @@ void onStart(ServiceInstance service) async {
           await _notificationChannel.invokeMethod('endLiveActivity');
         } else {
           // Solo actualizamos si cambia el estado o el tiempo cambia significativamente (para evitar spam)
+          // Y nos aseguramos de que el plugin no cree múltiples actividades
           if (statusChanged || (_lastRemaining != null && (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2)) {
             final targetEndTime = DateTime.now().add(state.remainingTime);
             final totalSecs = state.pomodoroDuration.inSeconds;
