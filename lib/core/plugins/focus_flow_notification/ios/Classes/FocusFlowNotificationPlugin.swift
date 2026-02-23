@@ -19,16 +19,14 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     
     UNUserNotificationCenter.current().delegate = instance
     
-    // --- ESCUCHAR SEÑALES DE LOS BOTONES DEL WIDGET (SIN ABRIR APP) ---
+    // --- ESCUCHAR SEÑALES DE LOS BOTONES ---
     let center = CFNotificationCenterGetDarwinNotifyCenter()
     
-    let pauseObserver = UnsafeRawPointer(Unmanaged.passUnretained(instance).toOpaque())
-    CFNotificationCenterAddObserver(center, pauseObserver, { (_, observer, _, _, _) in
+    CFNotificationCenterAddObserver(center, nil, { (_, _, _, _, _) in
         FocusFlowNotificationPlugin.channel?.invokeMethod("onNotificationAction", arguments: "PAUSE_ACTION")
     }, "com.andaluzcode.focusflow.pause" as CFString, nil, .deliverImmediately)
     
-    let playObserver = UnsafeRawPointer(Unmanaged.passUnretained(instance).toOpaque())
-    CFNotificationCenterAddObserver(center, playObserver, { (_, observer, _, _, _) in
+    CFNotificationCenterAddObserver(center, nil, { (_, _, _, _, _) in
         FocusFlowNotificationPlugin.channel?.invokeMethod("onNotificationAction", arguments: "PLAY_ACTION")
     }, "com.andaluzcode.focusflow.play" as CFString, nil, .deliverImmediately)
   }
@@ -42,7 +40,12 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       }
     case "endLiveActivity":
       if #available(iOS 16.1, *) {
-        Activity<FocusFlowAttributes>.activities.forEach { $0.end(dismissalPolicy: .immediate) }
+        // CORRECCIÓN: Usar Task para llamadas asíncronas
+        Task {
+            for activity in Activity<FocusFlowAttributes>.activities {
+                await activity.end(dismissalPolicy: .immediate)
+            }
+        }
         result(nil)
       }
     default:
