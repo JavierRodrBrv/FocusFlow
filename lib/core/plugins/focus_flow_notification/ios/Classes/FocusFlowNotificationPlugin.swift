@@ -4,14 +4,10 @@ import ActivityKit
 
 public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotificationCenterDelegate {
   private static var channel: FlutterMethodChannel?
-  private static var lastStatus: String = ""
   
-  // Singleton reference to the current activity
   @available(iOS 16.1, *)
   private static var currentActivity: Activity<FocusFlowAttributes>? {
-    get {
-        return Activity<FocusFlowAttributes>.activities.first
-    }
+    return Activity<FocusFlowAttributes>.activities.first
   }
   
   public static func register(with registrar: FlutterPluginRegistrar) {
@@ -22,216 +18,66 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     registrar.addApplicationDelegate(instance)
     
     UNUserNotificationCenter.current().delegate = instance
-    instance.setupCategories()
     
-    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-        if let error = error {
-            print("[FocusFlowNotification] Permission error: \(error)")
-        }
-    }
+    // --- ESCUCHAR SEÑALES DE LOS BOTONES DEL WIDGET (SIN ABRIR APP) ---
+    let center = CFNotificationCenterGetDarwinNotifyCenter()
+    
+    let pauseObserver = UnsafeRawPointer(Unmanaged.passUnretained(instance).toOpaque())
+    CFNotificationCenterAddObserver(center, pauseObserver, { (_, observer, _, _, _) in
+        FocusFlowNotificationPlugin.channel?.invokeMethod("onNotificationAction", arguments: "PAUSE_ACTION")
+    }, "com.andaluzcode.focusflow.pause" as CFString, nil, .deliverImmediately)
+    
+    let playObserver = UnsafeRawPointer(Unmanaged.passUnretained(instance).toOpaque())
+    CFNotificationCenterAddObserver(center, playObserver, { (_, observer, _, _, _) in
+        FocusFlowNotificationPlugin.channel?.invokeMethod("onNotificationAction", arguments: "PLAY_ACTION")
+    }, "com.andaluzcode.focusflow.play" as CFString, nil, .deliverImmediately)
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
-    case "updateNotification":
-      if let args = call.arguments as? [String: Any],
-         let time = args["time"] as? String,
-         let status = args["status"] as? String {
-        updateNotification(time: time, status: status)
+    case "startLiveActivity", "updateLiveActivity":
+      if #available(iOS 16.1, *), let args = call.arguments as? [String: Any] {
+        manageActivity(args: args)
         result(nil)
       }
-      
-    case "startLiveActivity":
-      if #available(iOS 16.1, *),
-         let args = call.arguments as? [String: Any] {
-        startLiveActivity(args: args)
-        result(nil)
-      } else {
-        result(FlutterMethodNotImplemented)
-      }
-
-    case "updateLiveActivity":
-      if #available(iOS 16.1, *),
-         let args = call.arguments as? [String: Any] {
-        updateLiveActivity(args: args)
-        result(nil)
-      } else {
-        result(FlutterMethodNotImplemented)
-      }
-
     case "endLiveActivity":
       if #available(iOS 16.1, *) {
-        endLiveActivity()
+        Activity<FocusFlowAttributes>.activities.forEach { $0.end(dismissalPolicy: .immediate) }
         result(nil)
-      } else {
-        result(FlutterMethodNotImplemented)
       }
-
     default:
       result(FlutterMethodNotImplemented)
     }
   }
 
-  // MARK: - Live Activities (iOS 16.1+)
-
   @available(iOS 16.1, *)
-  private func startLiveActivity(args: [String: Any]) {
-      guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-          print("[FocusFlowNotification] Live Activities are disabled")
-          return
-      }
-
-      // If an activity is already running, just update it instead of creating a new one
+  private func manageActivity(args: [String: Any]) {
+      let targetEndTime = args["targetEndTime"] as? Int ?? 0
+      let totalDuration = args["totalDuration"] as? Int ?? 0
+      let status = args["status"] as? String ?? "focus"
+      let isPaused = args["isPaused"] as? Bool ?? false
+      let progress = args["progress"] as? Double ?? 0.0
+      let remainingSeconds = args["remainingSeconds"] as? Int ?? 0
+      
+      let state = FocusFlowAttributes.ContentState(
+          targetEndDate: Date(timeIntervalSince1970: TimeInterval(targetEndTime) / 1000),
+          isPaused: isPaused,
+          totalDuration: Double(totalDuration),
+          progress: progress,
+          status: status,
+          remainingSeconds: remainingSeconds
+      )
+      
       if let activity = FocusFlowNotificationPlugin.currentActivity {
-          updateLiveActivity(args: args)
-          return
+          Task { await activity.update(using: state) }
+      } else {
+          do {
+              _ = try Activity<FocusFlowAttributes>.request(
+                  attributes: FocusFlowAttributes(name: "Focus Timer"),
+                  contentState: state,
+                  pushType: nil
+              )
+          } catch { print(error) }
       }
-
-      let targetEndTime = args["targetEndTime"] as? Int ?? 0
-      let totalDuration = args["totalDuration"] as? Int ?? 0
-      let status = args["status"] as? String ?? "focus"
-      let isPaused = args["isPaused"] as? Bool ?? false
-      let progress = args["progress"] as? Double ?? 0.0
-      
-      let attributes = FocusFlowAttributes(name: "Focus Timer")
-      let state = FocusFlowAttributes.ContentState(
-          targetEndDate: Date(timeIntervalSince1970: TimeInterval(targetEndTime) / 1000),
-          isPaused: isPaused,
-          pausedTime: Date(),
-          totalDuration: Double(totalDuration),
-          progress: progress,
-          status: status
-      )
-      
-      do {
-          _ = try Activity<FocusFlowAttributes>.request(
-              attributes: attributes,
-              contentState: state,
-              pushType: nil
-          )
-          print("[FocusFlowNotification] Started Live Activity")
-      } catch {
-          print("[FocusFlowNotification] Error starting Live Activity: \(error.localizedDescription)")
-      }
-  }
-
-  @available(iOS 16.1, *)
-  private func updateLiveActivity(args: [String: Any]) {
-      // Find the existing activity
-      guard let activity = FocusFlowNotificationPlugin.currentActivity else {
-          // If not found, try to start it
-          startLiveActivity(args: args)
-          return
-      }
-      
-      let targetEndTime = args["targetEndTime"] as? Int ?? 0
-      let totalDuration = args["totalDuration"] as? Int ?? 0
-      let status = args["status"] as? String ?? "focus"
-      let isPaused = args["isPaused"] as? Bool ?? false
-      let progress = args["progress"] as? Double ?? 0.0
-      
-      let state = FocusFlowAttributes.ContentState(
-          targetEndDate: Date(timeIntervalSince1970: TimeInterval(targetEndTime) / 1000),
-          isPaused: isPaused,
-          pausedTime: Date(),
-          totalDuration: Double(totalDuration),
-          progress: progress,
-          status: status
-      )
-      
-      Task {
-          await activity.update(using: state)
-          print("[FocusFlowNotification] Updated Live Activity")
-      }
-  }
-
-  @available(iOS 16.1, *)
-  private func endLiveActivity() {
-      // End ALL active activities to be sure
-      for activity in Activity<FocusFlowAttributes>.activities {
-          Task {
-              await activity.end(dismissalPolicy: .immediate)
-              print("[FocusFlowNotification] Ended Live Activity: \(activity.id)")
-          }
-      }
-  }
-
-  // MARK: - Standard Notifications
-
-  private func updateNotification(time: String, status: String) {
-    let center = UNUserNotificationCenter.current()
-    let content = UNMutableNotificationContent()
-    
-    content.title = "FocusFlow"
-    
-    if status == "resting" || status == "paused_break" {
-        content.body = "☕ Descanso • \(time)"
-    } else if status == "finished" {
-        content.body = "🎯 ¡SESIÓN COMPLETADA!"
-        content.sound = UNNotificationSound.default
-    } else if status == "initial" {
-        content.body = "A la espera de comenzar..."
-    } else {
-        content.body = "⏱️ Focus: \(time)"
-    }
-    
-    if status != "initial" && status != "finished" {
-        content.categoryIdentifier = (status == "running" || status == "resting") ? "POMODORO_RUNNING" : "POMODORO_PAUSED"
-    } else {
-        content.categoryIdentifier = "POMODORO_NONE"
-    }
-
-    if #available(iOS 15.0, *) {
-        if status == FocusFlowNotificationPlugin.lastStatus && status != "finished" {
-            content.interruptionLevel = .passive
-        } else {
-            content.interruptionLevel = .timeSensitive
-        }
-    }
-    
-    FocusFlowNotificationPlugin.lastStatus = status
-
-    let request = UNNotificationRequest(identifier: "pomodoro_timer", content: content, trigger: nil)
-    center.add(request) { error in
-        if let error = error {
-            print("[FocusFlowNotification] Error: \(error)")
-        }
-    }
-  }
-  
-  private func setupCategories() {
-      let center = UNUserNotificationCenter.current()
-      let playAction = UNNotificationAction(identifier: "PLAY_ACTION", title: "Reproducir", options: [])
-      let pauseAction = UNNotificationAction(identifier: "PAUSE_ACTION", title: "Pausar", options: [])
-      
-      let runningCategory = UNNotificationCategory(identifier: "POMODORO_RUNNING", actions: [pauseAction], intentIdentifiers: [], options: [.customDismissAction])
-      let pausedCategory = UNNotificationCategory(identifier: "POMODORO_PAUSED", actions: [playAction], intentIdentifiers: [], options: [.customDismissAction])
-      let noneCategory = UNNotificationCategory(identifier: "POMODORO_NONE", actions: [], intentIdentifiers: [], options: [])
-      
-      center.setNotificationCategories([runningCategory, pausedCategory, noneCategory])
-  }
-  
-  public func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-      let action = response.actionIdentifier
-      if action == "PLAY_ACTION" || action == "PAUSE_ACTION" {
-          FocusFlowNotificationPlugin.channel?.invokeMethod("onNotificationAction", arguments: action)
-      }
-      completionHandler()
-  }
-
-  public func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-      completionHandler([.alert, .badge, .sound])
-  }
-  
-  public func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-      let urlString = url.absoluteString
-      if urlString.contains("focusflow://pause") {
-          FocusFlowNotificationPlugin.channel?.invokeMethod("onNotificationAction", arguments: "PAUSE_ACTION")
-      } else if urlString.contains("focusflow://resume") {
-          FocusFlowNotificationPlugin.channel?.invokeMethod("onNotificationAction", arguments: "PLAY_ACTION")
-      } else if urlString.contains("focusflow://stop") {
-          FocusFlowNotificationPlugin.channel?.invokeMethod("onNotificationAction", arguments: "STOP_ACTION")
-      }
-      return true
   }
 }

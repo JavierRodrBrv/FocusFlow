@@ -210,6 +210,7 @@ void onStart(ServiceInstance service) async {
                 'status': liveStatus,
                 'isPaused': isPaused,
                 'progress': progress,
+                'remainingSeconds': state.remainingTime.inSeconds,
               },
             );
           }
