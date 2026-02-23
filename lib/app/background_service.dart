@@ -171,33 +171,48 @@ void onStart(ServiceInstance service) async {
       liveStatus = 'focus';
     }
 
+    // Variables para evitar actualizaciones redundantes
+    PomodoroStatus? lastStatus;
+    Duration? lastRemaining;
+
     try {
-      // 1. Notificación Estándar
+      // 1. Notificación Estándar (siempre se actualiza para Android)
       await _notificationChannel.invokeMethod('updateNotification', {
         'time': displayTime,
         'status': statusStr,
       });
 
-      // 2. Live Activities (iOS)
+      // 2. Live Activities (iOS) - SOLO ACTUALIZAR SI CAMBIA EL ESTADO
       if (Platform.isIOS) {
-        if (isInitial || isFinished) {
-          await _notificationChannel.invokeMethod('endLiveActivity');
-        } else {
-          final targetEndTime = DateTime.now().add(state.remainingTime);
-          final totalSecs = state.pomodoroDuration.inSeconds;
-          final remainingSecs = state.remainingTime.inSeconds;
-          final progress = totalSecs > 0 ? (totalSecs - remainingSecs) / totalSecs : 0.0;
+        bool statusChanged = lastStatus != status;
+        // Solo actualizamos si cambia el estado o si pasan más de 5 segundos (por seguridad)
+        if (statusChanged || (lastRemaining != null && (lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 5)) {
+          
+          if (isInitial || isFinished) {
+            await _notificationChannel.invokeMethod('endLiveActivity');
+          } else {
+            final targetEndTime = DateTime.now().add(state.remainingTime);
+            final totalSecs = state.pomodoroDuration.inSeconds;
+            final progress = totalSecs > 0 ? (totalSecs - state.remainingTime.inSeconds) / totalSecs : 0.0;
 
-          await _notificationChannel.invokeMethod(
-            isPaused ? 'updateLiveActivity' : 'startLiveActivity',
-            {
-              'targetEndTime': targetEndTime.millisecondsSinceEpoch,
-              'totalDuration': totalSecs,
-              'status': liveStatus,
-              'isPaused': isPaused,
-              'progress': progress,
-            },
-          );
+            // Si el estado cambió de "no correr" a "correr", iniciamos. Si no, actualizamos.
+            final method = (lastStatus == null || lastStatus == PomodoroStatus.initial || statusChanged) 
+                ? 'startLiveActivity' 
+                : 'updateLiveActivity';
+
+            await _notificationChannel.invokeMethod(
+              method,
+              {
+                'targetEndTime': targetEndTime.millisecondsSinceEpoch,
+                'totalDuration': totalSecs,
+                'status': liveStatus,
+                'isPaused': isPaused,
+                'progress': progress,
+              },
+            );
+          }
+          lastStatus = status;
+          lastRemaining = state.remainingTime;
         }
       }
     } catch (e) {
