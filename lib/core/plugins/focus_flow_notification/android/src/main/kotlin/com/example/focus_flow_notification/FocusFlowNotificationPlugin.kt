@@ -11,6 +11,9 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import android.graphics.Color
+import android.util.TypedValue
+import android.content.res.Configuration
 
 class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
     private lateinit var channel: MethodChannel
@@ -43,41 +46,52 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
         }
     }
 
+    private fun isDarkMode(): Boolean {
+        return (context.resources.configuration.uiMode and 
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    }
+
     private fun updateCustomNotification(time: String, status: String) {
         val notificationId = 888 
         val channelId = "focus_flow_channel"
-
-        // Usamos el nombre del paquete del host para encontrar los recursos
         val hostPackageName = context.packageName
+
         val layoutId = context.resources.getIdentifier("custom_pomodoro_notification", "layout", hostPackageName)
-        
-        if (layoutId == 0) {
-            println("[FocusFlowNotification] Layout NOT FOUND")
-            return
-        }
+        if (layoutId == 0) return
 
         val remoteViews = RemoteViews(hostPackageName, layoutId)
-        
         val tvTimeId = context.resources.getIdentifier("tv_time", "id", hostPackageName)
-        remoteViews.setTextViewText(tvTimeId, time)
-
         val btnActionId = context.resources.getIdentifier("btn_action", "id", hostPackageName)
 
-        if (status == "initial") {
+        val darkMode = isDarkMode()
+        val adaptiveColor = if (darkMode) Color.WHITE else Color.BLACK
+
+        // 1. Set the Text
+        remoteViews.setTextViewText(tvTimeId, time)
+
+        // 2. Logic for visibility, colors and sizes based on status
+        if (status == "initial" || status == "finished") {
             remoteViews.setViewVisibility(btnActionId, android.view.View.GONE)
-            // Color normal y tamaño normal para el mensaje de espera
-            remoteViews.setTextColor(tvTimeId, android.graphics.Color.parseColor("#FFFFFF"))
-            remoteViews.setTextViewTextSize(tvTimeId, android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
+            remoteViews.setTextColor(tvTimeId, adaptiveColor)
+            remoteViews.setTextViewTextSize(tvTimeId, TypedValue.COMPLEX_UNIT_SP, 16f)
         } else {
             remoteViews.setViewVisibility(btnActionId, android.view.View.VISIBLE)
-            // Color rojo y tamaño grande para el contador
-            remoteViews.setTextColor(tvTimeId, android.graphics.Color.parseColor("#FF5252"))
-            remoteViews.setTextViewTextSize(tvTimeId, android.util.TypedValue.COMPLEX_UNIT_SP, 38f)
+            
+            // Text color logic: Red if running/resting, Adaptive if paused
+            if (status == "running" || status == "resting") {
+                remoteViews.setTextColor(tvTimeId, Color.parseColor("#FF5252"))
+            } else {
+                remoteViews.setTextColor(tvTimeId, adaptiveColor)
+            }
+            
+            // Adjust text size based on sub-state
+            val isBreakState = status == "resting" || status == "paused_break"
+            val textSize = if (isBreakState) 22f else 32f
+            remoteViews.setTextViewTextSize(tvTimeId, TypedValue.COMPLEX_UNIT_SP, textSize)
             
             val icPauseId = context.resources.getIdentifier("ic_pause", "drawable", hostPackageName)
             val icPlayId = context.resources.getIdentifier("ic_play", "drawable", hostPackageName)
             
-            // Acción del botón
             val actionIntent = if (status == "running" || status == "resting") {
                 remoteViews.setImageViewResource(btnActionId, icPauseId)
                 Intent("PAUSE_ACTION")
@@ -85,41 +99,37 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
                 remoteViews.setImageViewResource(btnActionId, icPlayId)
                 Intent("PLAY_ACTION")
             }
-
-            // Para que funcione con un Receiver local
             actionIntent.setPackage(hostPackageName)
-
-            // Forzar color blanco para que se vea bien en fondo oscuro
-            remoteViews.setInt(btnActionId, "setColorFilter", android.graphics.Color.WHITE)
+            
+            // Adaptive button tint
+            remoteViews.setInt(btnActionId, "setColorFilter", adaptiveColor)
 
             val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                0,
-                actionIntent,
+                context, 0, actionIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             remoteViews.setOnClickPendingIntent(btnActionId, pendingIntent)
         }
 
-        // Intent para abrir la app al pulsar la notificación
+        // 3. App Launch Intent
         val mainIntent = context.packageManager.getLaunchIntentForPackage(hostPackageName)
         val mainPendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            mainIntent,
+            context, 0, mainIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // 4. Build Notification
         val launcherIconId = context.resources.getIdentifier("launcher_icon", "mipmap", hostPackageName)
 
         val notificationBuilder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(launcherIconId)
             .setCustomContentView(remoteViews)
             .setCustomBigContentView(remoteViews)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setOngoing(status == "running" || status == "resting")
             .setOnlyAlertOnce(true)
             .setContentIntent(mainPendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -127,9 +137,7 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        if (instance == this) {
-            instance = null
-        }
+        if (instance == this) instance = null
         channel.setMethodCallHandler(null)
     }
 }

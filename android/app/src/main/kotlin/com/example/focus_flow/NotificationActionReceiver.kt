@@ -9,7 +9,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         
-        // Simplemente enviar la acción de vuelta al plugin, que hablará con el MethodChannel
+        // Enviar la acción de vuelta al plugin local, que hablará con el MethodChannel en Dart
         FocusFlowNotificationPlugin.sendActionToDart(action)
     }
 }

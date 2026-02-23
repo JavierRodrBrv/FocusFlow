@@ -62,13 +62,13 @@ void onStart(ServiceInstance service) async {
     }
   });
 
-  //--- 1. PUERTO DE ESCUCHA (PUERTO DIRECTO) ---
+  //--- 1. PUERTO DE ESCUCHA (PUERTO DIRECTO - BACKUP) ---
   final ReceivePort receivePort = ReceivePort();
   IsolateNameServer.removePortNameMapping(_controlPortName);
   IsolateNameServer.registerPortWithName(receivePort.sendPort, _controlPortName);
 
   receivePort.listen((message) {
-    print('[BackgroundService] Direct port message (Legacy): $message');
+    print('[BackgroundService] Direct port message: $message');
   });
 
   //--- 2. INICIALIZACIÓN DE DATOS ---
@@ -88,7 +88,6 @@ void onStart(ServiceInstance service) async {
   service.on('sendEvent').listen((event) {
     if (event == null || bloc == null) return;
     final name = event['event'];
-    print('[BackgroundService] Service event received: $name');
     
     if (name == 'startTimer') {
       bloc.add(StartTimer());
@@ -101,6 +100,30 @@ void onStart(ServiceInstance service) async {
     } else if (name == 'setBreakDuration') {
       final minutes = event['durationMinutes'] as int?;
       bloc.add(SetBreakDuration(minutes != null ? Duration(minutes: minutes) : null));
+    } else if (name == 'updatePomodoroDuration') {
+      final minutes = event['durationMinutes'] as int? ?? 25;
+      final seconds = event['durationSeconds'] as int? ?? 0;
+      bloc.add(UpdatePomodoroDuration(Duration(minutes: minutes, seconds: seconds)));
+    } else if (name == 'updateRainVolume') {
+      bloc.add(UpdateRainVolume(event['volume']?.toDouble() ?? 0.0));
+    } else if (name == 'updateFireVolume') {
+      bloc.add(UpdateFireVolume(event['volume']?.toDouble() ?? 0.0));
+    } else if (name == 'updateBrownNoiseVolume') {
+      bloc.add(UpdateBrownNoiseVolume(event['volume']?.toDouble() ?? 0.0));
+    } else if (name == 'loadMix') {
+      bloc.add(LoadMix(event['mixId']));
+    } else if (name == 'pauseMix') {
+      bloc.add(PauseMix());
+    } else if (name == 'resumeMix') {
+      bloc.add(ResumeMix());
+    } else if (name == 'saveMix') {
+      bloc.add(SaveCurrentMix());
+    } else if (name == 'toggleHardcore') {
+      bloc.add(ToggleHardcoreMode());
+    } else if (name == 'toggleAlarmSound') {
+      bloc.add(ToggleAlarmSound());
+    } else if (name == 'updateConsentStatus') {
+      bloc.add(UpdateConsentStatus(event['canRequest'] ?? false));
     }
   });
 
@@ -108,16 +131,40 @@ void onStart(ServiceInstance service) async {
   bloc?.stream.listen((state) async {
     final time = '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
     
-    bool isCountingDown = state.pomodoroStatus == PomodoroStatus.running || state.pomodoroStatus == PomodoroStatus.resting;
-    bool isPaused = state.pomodoroStatus == PomodoroStatus.paused;
-    bool isInitial = state.pomodoroStatus == PomodoroStatus.initial;
+    final status = state.pomodoroStatus;
+    bool isInitial = status == PomodoroStatus.initial;
+    bool isResting = status == PomodoroStatus.resting;
+    bool isFinished = status == PomodoroStatus.finished;
+    bool isPaused = status == PomodoroStatus.paused;
 
-    final statusStr = isCountingDown ? 'running' : (isPaused ? 'paused' : 'initial');
+    String displayTime;
+    String statusStr;
+
+    if (isFinished) {
+      displayTime = '¡Sesión completada!';
+      statusStr = 'finished';
+    } else if (isPaused) {
+      if (state.isResting) {
+        displayTime = 'Descanso • $time';
+        statusStr = 'paused_break';
+      } else {
+        displayTime = '$time';
+        statusStr = 'paused';
+      }
+    } else if (isResting) {
+      displayTime = 'Descanso • $time';
+      statusStr = 'resting';
+    } else if (isInitial) {
+      displayTime = 'A la espera de comenzar la nueva sesión';
+      statusStr = 'initial';
+    } else {
+      displayTime = time;
+      statusStr = 'running';
+    }
 
     try {
-      // Llamada al canal nativo para actualizar la notificación con RemoteViews
       await _notificationChannel.invokeMethod('updateNotification', {
-        'time': isInitial ? 'A la espera de comenzar la nueva sesión' : time,
+        'time': displayTime,
         'status': statusStr,
       });
     } catch (e) {
