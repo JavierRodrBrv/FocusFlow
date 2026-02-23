@@ -20,6 +20,10 @@ const int notificationId = 888;
 const String _controlPortName = 'focus_flow_control_port';
 const MethodChannel _notificationChannel = MethodChannel('com.example.focus_flow/notification');
 
+// Variables para evitar actualizaciones redundantes fuera del listener
+PomodoroStatus? _lastStatus;
+Duration? _lastRemaining;
+
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
 
@@ -46,7 +50,6 @@ void onStart(ServiceInstance service) async {
 
   FocusBloc? bloc;
 
-  // Manejador del canal de notificaciones (recibir acciones del lado nativo)
   _notificationChannel.setMethodCallHandler((call) async {
     if (call.method == 'onNotificationAction') {
       final action = call.arguments as String;
@@ -64,7 +67,6 @@ void onStart(ServiceInstance service) async {
     }
   });
 
-  //--- 1. PUERTO DE ESCUCHA (PUERTO DIRECTO - BACKUP) ---
   final ReceivePort receivePort = ReceivePort();
   IsolateNameServer.removePortNameMapping(_controlPortName);
   IsolateNameServer.registerPortWithName(receivePort.sendPort, _controlPortName);
@@ -73,7 +75,6 @@ void onStart(ServiceInstance service) async {
     print('[BackgroundService] Direct port message: $message');
   });
 
-  //--- 2. INICIALIZACIÓN DE DATOS ---
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
@@ -129,7 +130,6 @@ void onStart(ServiceInstance service) async {
     }
   });
 
-  // Escucha del stream del bloc para actualizar la notificación NATIVA
   bloc?.stream.listen((state) async {
     final time = '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
     
@@ -171,32 +171,29 @@ void onStart(ServiceInstance service) async {
       liveStatus = 'focus';
     }
 
-    // Variables para evitar actualizaciones redundantes
-    PomodoroStatus? lastStatus;
-    Duration? lastRemaining;
-
     try {
-      // 1. Notificación Estándar (siempre se actualiza para Android)
-      await _notificationChannel.invokeMethod('updateNotification', {
-        'time': displayTime,
-        'status': statusStr,
-      });
+      // 1. Notificación Estándar (SOLO ANDROID)
+      if (Platform.isAndroid) {
+        await _notificationChannel.invokeMethod('updateNotification', {
+          'time': displayTime,
+          'status': statusStr,
+        });
+      }
 
-      // 2. Live Activities (iOS) - SOLO ACTUALIZAR SI CAMBIA EL ESTADO
+      // 2. Live Activities (SOLO IOS)
       if (Platform.isIOS) {
-        bool statusChanged = lastStatus != status;
-        // Solo actualizamos si cambia el estado o si pasan más de 5 segundos (por seguridad)
-        if (statusChanged || (lastRemaining != null && (lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 5)) {
-          
-          if (isInitial || isFinished) {
-            await _notificationChannel.invokeMethod('endLiveActivity');
-          } else {
+        bool statusChanged = _lastStatus != status;
+        
+        if (isInitial || isFinished) {
+          await _notificationChannel.invokeMethod('endLiveActivity');
+        } else {
+          // Solo actualizamos si cambia el estado o el tiempo cambia significativamente (para evitar spam)
+          if (statusChanged || (_lastRemaining != null && (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2)) {
             final targetEndTime = DateTime.now().add(state.remainingTime);
             final totalSecs = state.pomodoroDuration.inSeconds;
             final progress = totalSecs > 0 ? (totalSecs - state.remainingTime.inSeconds) / totalSecs : 0.0;
 
-            // Si el estado cambió de "no correr" a "correr", iniciamos. Si no, actualizamos.
-            final method = (lastStatus == null || lastStatus == PomodoroStatus.initial || statusChanged) 
+            final method = (_lastStatus == null || _lastStatus == PomodoroStatus.initial || statusChanged) 
                 ? 'startLiveActivity' 
                 : 'updateLiveActivity';
 
@@ -211,9 +208,9 @@ void onStart(ServiceInstance service) async {
               },
             );
           }
-          lastStatus = status;
-          lastRemaining = state.remainingTime;
         }
+        _lastStatus = status;
+        _lastRemaining = state.remainingTime;
       }
     } catch (e) {
       print('[BackgroundService] Error updating notifications: $e');

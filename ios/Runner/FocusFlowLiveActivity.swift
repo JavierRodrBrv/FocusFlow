@@ -5,114 +5,96 @@ import SwiftUI
 struct FocusFlowLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: FocusFlowAttributes.self) { context in
-            // --- LOCK SCREEN / NOTIFICATION BANNER ---
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Label(context.state.status == "focus" ? "Focus Session" : "Break Time", 
-                          systemImage: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                        .font(.headline)
-                        .foregroundColor(.white)
+            // --- LOCK SCREEN (La tarjeta negra) ---
+            HStack(spacing: 15) {
+                ZStack {
+                    Circle()
+                        .stroke(Color.white.opacity(0.1), lineWidth: 4)
+                        .frame(width: 45, height: 45)
+                    Circle()
+                        .trim(from: 0, to: context.state.progress)
+                        .stroke(context.state.status == "focus" ? Color.purple : Color.green, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .frame(width: 45, height: 45)
+                        .rotationEffect(.degrees(-90))
                     
-                    if context.state.isPaused {
-                        Text("Session Paused")
-                            .font(.subheadline)
-                            .foregroundColor(.yellow)
-                    } else {
-                        Text("Keep going!")
-                            .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.7))
-                    }
+                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(context.state.status == "focus" ? "Focus" : "Break")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                    Text(context.state.isPaused ? "Paused" : "Running")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.6))
                 }
                 
                 Spacer()
                 
-                VStack(alignment: .trailing) {
-                    if context.state.isPaused {
-                        Text("PAUSED")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(.yellow)
-                    } else {
-                        Text(context.state.targetEndDate, style: .timer)
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                            .monospacedDigit()
-                            .frame(width: 90)
-                    }
-                }
-            }
-            .padding()
-            .activityBackgroundTint(Color(red: 0.1, green: 0.1, blue: 0.2))
-            
-        } dynamicIsland: { context in
-            DynamicIsland {
-                // --- EXPANDED VIEW (Mantener pulsada la isla) ---
-                DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                        .font(.title)
-                        .foregroundColor(.purple)
-                        .padding(.leading, 8)
-                }
-                
-                DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing) {
-                        Text(context.state.status.capitalized)
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.6))
-                        
-                        Text(context.state.targetEndDate, style: .timer)
-                            .font(.title2)
-                            .monospacedDigit()
-                            .foregroundColor(.purple)
-                    }
-                    .padding(.trailing, 8)
-                }
-                
-                DynamicIslandExpandedRegion(.bottom) {
-                    // Botones de acción (Deep Links)
-                    HStack(spacing: 20) {
-                        Link(destination: URL(string: "focusflow://pause")!) {
-                            Label("Pause", systemImage: "pause.fill")
-                                .padding(10)
-                                .background(Color.yellow.opacity(0.2))
-                                .cornerRadius(20)
-                        }
-                        Link(destination: URL(string: "focusflow://resume")!) {
-                            Label("Resume", systemImage: "play.fill")
-                                .padding(10)
-                                .background(Color.green.opacity(0.2))
-                                .cornerRadius(20)
-                        }
-                        Link(destination: URL(string: "focusflow://stop")!) {
-                            Label("Stop", systemImage: "xmark")
-                                .padding(10)
-                                .background(Color.red.opacity(0.2))
-                                .cornerRadius(20)
-                        }
-                    }
-                    .padding(.top, 10)
-                }
-                
-            } compactLeading: {
-                // --- COMPACT LEFT (El icono en la isla cerrada) ---
-                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                    .foregroundColor(.purple)
-            } compactTrailing: {
-                // --- COMPACT RIGHT (El tiempo en la isla cerrada) ---
                 if context.state.isPaused {
-                    Image(systemName: "pause.fill")
+                    Text("PAUSED")
+                        .font(.system(size: 24, weight: .black, design: .rounded))
                         .foregroundColor(.yellow)
                 } else {
                     Text(context.state.targetEndDate, style: .timer)
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(.white)
+                        .frame(width: 85)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 15)
+            .activityBackgroundTint(Color(red: 0.05, green: 0.07, blue: 0.12))
+            
+        } dynamicIsland: { context in
+            DynamicIsland {
+                // --- EXPANDED ---
+                DynamicIslandExpandedRegion(.leading) {
+                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
+                        .font(.title2)
+                        .foregroundColor(.purple)
+                        .padding(.leading, 10)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    Text(context.state.targetEndDate, style: .timer)
+                        .font(.title2)
                         .monospacedDigit()
                         .foregroundColor(.purple)
-                        .font(.system(size: 14, weight: .semibold))
+                        .padding(.trailing, 10)
                 }
-            } minimal: {
-                // --- MINIMAL (Cuando hay otra actividad en la isla) ---
-                Image(systemName: "timer")
+                DynamicIslandExpandedRegion(.bottom) {
+                    HStack(spacing: 25) {
+                        Link(destination: URL(string: "focusflow://pause")!) {
+                            Image(systemName: "pause.fill").font(.title3).padding(12).background(Color.white.opacity(0.1)).clipShape(Circle())
+                        }
+                        Link(destination: URL(string: "focusflow://resume")!) {
+                            Image(systemName: "play.fill").font(.title3).padding(12).background(Color.white.opacity(0.1)).clipShape(Circle())
+                        }
+                        Link(destination: URL(string: "focusflow://stop")!) {
+                            Image(systemName: "xmark").font(.title3).padding(12).background(Color.red.opacity(0.2)).clipShape(Circle())
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .padding(.bottom, 10)
+                }
+            } compactLeading: {
+                // --- COMPACTO IZQUIERDA (Más estrecho) ---
+                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
+                    .imageScale(.small)
                     .foregroundColor(.purple)
+            } compactTrailing: {
+                // --- COMPACTO DERECHA (Más estrecho) ---
+                Text(context.state.targetEndDate, style: .timer)
+                    .monospacedDigit()
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.purple)
+                    .frame(width: 38)
+            } minimal: {
+                Image(systemName: "timer").foregroundColor(.purple)
             }
-            .widgetURL(URL(string: "focusflow://open"))
         }
     }
 }
