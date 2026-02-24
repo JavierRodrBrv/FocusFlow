@@ -52,12 +52,18 @@ struct FocusFlowLiveActivity: Widget {
                         Circle().stroke(Color.white.opacity(0.1), lineWidth: 3).frame(width: 36, height: 36)
                     } else {
                         ProgressView(timerInterval: context.state.startDate...context.state.targetEndDate, countsDown: true, label: { EmptyView() }, currentValueLabel: { EmptyView() })
-                            .progressViewStyle(.circular).tint(context.state.status == "focus" ? .purple : .green).scaleEffect(1.1)
+                            .progressViewStyle(.circular)
+                            .tint(context.state.status == "focus" ? Color.purple : Color.green)
+                            .scaleEffect(1.1)
                     }
                     Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill").font(.system(size: 12)).foregroundColor(.white)
                 }
                 VStack(alignment: .leading, spacing: -2) {
-                    Text(context.state.status.uppercased()).font(.system(size: 11, weight: .black)).letterSpacing(1).foregroundColor(context.state.status == "focus" ? .purple : .green)
+                    Text(context.state.status.uppercased())
+                        .font(.system(size: 11, weight: .black))
+                        .kerning(1)
+                        .foregroundColor(context.state.status == "focus" ? Color.purple : Color.green)
+                    
                     if context.state.isPaused {
                         Text(formatTime(context.state.remainingSeconds)).font(.system(size: 24, weight: .bold, design: .rounded)).foregroundColor(.yellow)
                     } else {
@@ -66,20 +72,20 @@ struct FocusFlowLiveActivity: Widget {
                 }
                 Spacer()
                 Button(intent: TimerToggleIntent(action: context.state.isPaused ? "play" : "pause")) {
-                    Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill").font(.system(size: 18)).foregroundColor(context.state.isPaused ? .green : .white).frame(width: 44, height: 44).background(Color.white.opacity(0.1)).clipShape(Circle())
+                    Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill").font(.system(size: 18)).foregroundColor(context.state.isPaused ? Color.green : Color.white).frame(width: 44, height: 44).background(Color.white.opacity(0.1)).clipShape(Circle())
                 }.buttonStyle(.plain)
             }.padding(.horizontal, 20).padding(.vertical, 10).activityBackgroundTint(Color(red: 0.05, green: 0.07, blue: 0.12))
             
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill").foregroundColor(.purple).padding(.leading, 10).padding(.top, 10)
+                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill").foregroundColor(Color.purple).padding(.leading, 10).padding(.top, 10)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     if context.state.isPaused {
                         Text(formatTime(context.state.remainingSeconds)).font(.title3).bold().monospacedDigit().foregroundColor(.yellow).padding(.trailing, 10).padding(.top, 10)
                     } else {
-                        Text(context.state.targetEndDate, style: .timer).font(.title3).bold().monospacedDigit().foregroundColor(.purple).frame(width: 60).padding(.trailing, 10).padding(.top, 10)
+                        Text(context.state.targetEndDate, style: .timer).font(.title3).bold().monospacedDigit().foregroundColor(Color.purple).frame(width: 60).padding(.trailing, 10).padding(.top, 10)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
@@ -88,15 +94,15 @@ struct FocusFlowLiveActivity: Widget {
                     }.buttonStyle(.plain).padding(.bottom, 8)
                 }
             } compactLeading: {
-                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill").imageScale(.small).foregroundColor(.purple).padding(.leading, 4)
+                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill").imageScale(.small).foregroundColor(Color.purple).padding(.leading, 4)
             } compactTrailing: {
                 if context.state.isPaused {
-                    Image(systemName: "pause.fill").foregroundColor(.yellow).font(.system(size: 12)) // Icono más grande
+                    Image(systemName: "pause.fill").foregroundColor(.yellow).font(.system(size: 10))
                 } else {
-                    Text(context.state.targetEndDate, style: .timer).monospacedDigit().font(.system(size: 14, weight: .bold)).foregroundColor(.purple).frame(width: 42, alignment: .center).padding(.trailing, 2)
+                    Text(context.state.targetEndDate, style: .timer).monospacedDigit().font(.system(size: 14, weight: .bold)).foregroundColor(Color.purple).frame(width: 42, alignment: .center).padding(.trailing, 2)
                 }
             } minimal: {
-                Image(systemName: "timer").foregroundColor(.purple)
+                Image(systemName: "timer").foregroundColor(Color.purple)
             }
             .widgetURL(URL(string: "focusflow://open"))
         }
