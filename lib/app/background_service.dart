@@ -14,19 +14,16 @@ import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.d
 import 'package:focus_flow_notification/focus_flow_notification.dart';
 import '../features/focus_mode/data/models/sound_mix_model.dart';
 
-//--- CONFIGURACIÓN GLOBAL ---
 const String notificationChannelId = 'focus_flow_channel';
 const int notificationId = 888;
 const String _controlPortName = 'focus_flow_control_port';
 const MethodChannel _notificationChannel = MethodChannel('com.example.focus_flow/notification');
 
-// Variables para evitar actualizaciones redundantes fuera del listener
 PomodoroStatus? _lastStatus;
 Duration? _lastRemaining;
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
-
   await service.configure(
     androidConfiguration: AndroidConfiguration(
       onStart: onStart,
@@ -46,33 +43,15 @@ void onStart(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
 
-  print('[BackgroundService] onStart isolate initialized');
-
   FocusBloc? bloc;
 
   _notificationChannel.setMethodCallHandler((call) async {
     if (call.method == 'onNotificationAction') {
       final action = call.arguments as String;
-      print('[BackgroundService] Native action received: $action');
       if (bloc == null) return;
-      
-      final currentStatus = bloc.state.pomodoroStatus;
-      if (action == 'PAUSE_ACTION') {
-        bloc.add(PauseTimer());
-      } else if (action == 'PLAY_ACTION') {
-        if (currentStatus == PomodoroStatus.paused) {
-          bloc.add(StartTimer());
-        }
-      }
+      if (action == 'PAUSE_ACTION') bloc.add(PauseTimer());
+      else if (action == 'PLAY_ACTION') bloc.add(StartTimer());
     }
-  });
-
-  final ReceivePort receivePort = ReceivePort();
-  IsolateNameServer.removePortNameMapping(_controlPortName);
-  IsolateNameServer.registerPortWithName(receivePort.sendPort, _controlPortName);
-
-  receivePort.listen((message) {
-    print('[BackgroundService] Direct port message: $message');
   });
 
   try {
@@ -83,7 +62,6 @@ void onStart(ServiceInstance service) async {
     await configureDependencies();
     bloc = getIt<FocusBloc>();
     bloc.add(InitializeApp());
-    print('[BackgroundService] Bloc and dependencies ready');
   } catch (e) {
     print('[BackgroundService] Fatal init error: $e');
   }
@@ -91,137 +69,64 @@ void onStart(ServiceInstance service) async {
   service.on('sendEvent').listen((event) {
     if (event == null || bloc == null) return;
     final name = event['event'];
-    
-    if (name == 'startTimer') {
-      bloc.add(StartTimer());
-    } else if (name == 'pauseTimer') {
-      bloc.add(PauseTimer());
-    } else if (name == 'resetTimer') {
-      bloc.add(ResetTimer());
-    } else if (name == 'stopAlarm') {
-      bloc.add(StopAlarm());
-    } else if (name == 'togglePremium') {
-      bloc.add(TogglePremiumStatus());
-    } else if (name == 'requestState') {
-      service.invoke('update', bloc.state.toJson());
-    } else if (name == 'setBreakDuration') {
-      final minutes = event['durationMinutes'] as int?;
-      bloc.add(SetBreakDuration(minutes != null ? Duration(minutes: minutes) : null));
-    } else if (name == 'updatePomodoroDuration') {
-      final minutes = event['durationMinutes'] as int? ?? 25;
-      final seconds = event['durationSeconds'] as int? ?? 0;
-      bloc.add(UpdatePomodoroDuration(Duration(minutes: minutes, seconds: seconds)));
-    } else if (name == 'updateRainVolume') {
-      bloc.add(UpdateRainVolume(event['volume']?.toDouble() ?? 0.0));
-    } else if (name == 'updateFireVolume') {
-      bloc.add(UpdateFireVolume(event['volume']?.toDouble() ?? 0.0));
-    } else if (name == 'updateBrownNoiseVolume') {
-      bloc.add(UpdateBrownNoiseVolume(event['volume']?.toDouble() ?? 0.0));
-    } else if (name == 'loadMix') {
-      bloc.add(LoadMix(event['mixId']));
-    } else if (name == 'pauseMix') {
-      bloc.add(PauseMix());
-    } else if (name == 'resumeMix') {
-      bloc.add(ResumeMix());
-    } else if (name == 'saveMix') {
-      bloc.add(SaveCurrentMix());
-    } else if (name == 'toggleHardcore') {
-      bloc.add(ToggleHardcoreMode());
-    } else if (name == 'toggleAlarmSound') {
-      bloc.add(ToggleAlarmSound());
-    } else if (name == 'updateConsentStatus') {
-      bloc.add(UpdateConsentStatus(event['canRequest'] ?? false));
-    }
+    if (name == 'startTimer') bloc.add(StartTimer());
+    else if (name == 'pauseTimer') bloc.add(PauseTimer());
+    else if (name == 'resetTimer') bloc.add(ResetTimer());
+    else if (name == 'stopAlarm') bloc.add(StopAlarm());
+    else if (name == 'togglePremium') bloc.add(TogglePremiumStatus());
+    else if (name == 'requestState') service.invoke('update', bloc.state.toJson());
   });
 
   bloc?.stream.listen((state) async {
     final time = '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
-    
     final status = state.pomodoroStatus;
-    bool isInitial = status == PomodoroStatus.initial;
-    bool isResting = status == PomodoroStatus.resting;
     bool isFinished = status == PomodoroStatus.finished;
     bool isPaused = status == PomodoroStatus.paused;
 
-    String displayTime;
-    String statusStr;
-    String liveStatus = 'focus';
+    // 1. Siempre avisar a la UI (Isolate Principal) para el modal y el timer de la app
+    service.invoke('update', state.toJson());
 
-    if (isFinished) {
-      displayTime = '¡Sesión completada!';
-      statusStr = 'finished';
-      liveStatus = 'finished';
-    } else if (isPaused) {
-      if (state.isResting) {
-        displayTime = 'Descanso • $time';
-        statusStr = 'paused_break';
-        liveStatus = 'break';
-      } else {
-        displayTime = '$time';
-        statusStr = 'paused';
-        liveStatus = 'focus';
-      }
-    } else if (isResting) {
-      displayTime = 'Descanso • $time';
-      statusStr = 'resting';
-      liveStatus = 'break';
-    } else if (isInitial) {
-      displayTime = 'A la espera de comenzar la nueva sesión';
-      statusStr = 'initial';
-      liveStatus = 'initial';
-    } else {
-      displayTime = time;
-      statusStr = 'running';
-      liveStatus = 'focus';
-    }
+    // 2. Sincronización Nativa (Isolate de Background)
+    // Solo actualizamos el estado nativo si cambia el status o hay un salto grande de tiempo
+    if (_lastStatus != status || (_lastRemaining != null && (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2)) {
+      
+      try {
+        if (Platform.isAndroid || (Platform.isIOS && isFinished)) {
+          await _notificationChannel.invokeMethod('updateNotification', {
+            'time': isFinished ? '¡Completado!' : time,
+            'status': isFinished ? 'finished' : (isPaused ? 'paused' : 'running'),
+          });
+        }
 
-    try {
-      // 1. Notificación Estándar (SOLO ANDROID o FIN SESIÓN EN IOS)
-      if (Platform.isAndroid || (Platform.isIOS && isFinished)) {
-        await _notificationChannel.invokeMethod('updateNotification', {
-          'time': isFinished ? '¡Completado!' : displayTime,
-          'status': isFinished ? 'finished' : statusStr,
-        });
-      }
+        if (Platform.isIOS) {
+          if (status == PomodoroStatus.initial || isFinished) {
+            // Delay para que el modal aparezca en la app antes de matar la isla
+            if (isFinished) await Future.delayed(const Duration(milliseconds: 800));
+            await _notificationChannel.invokeMethod('endLiveActivity');
+          } else {
+            final now = DateTime.now();
+            final targetEndTime = now.add(state.remainingTime);
+            // El inicio virtual es el tiempo final menos la duración total
+            final startDate = targetEndTime.subtract(state.pomodoroDuration);
 
-      // 2. Live Activities (SOLO IOS)
-      if (Platform.isIOS) {
-        bool statusChanged = _lastStatus != status;
-        
-        if (isInitial || isFinished) {
-          await _notificationChannel.invokeMethod('endLiveActivity');
-        } else {
-          // Solo actualizamos si cambia el estado o el tiempo cambia significativamente (para evitar spam)
-          if (statusChanged || (_lastRemaining != null && (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2)) {
-            final targetEndTime = DateTime.now().add(state.remainingTime);
-            final totalSecs = state.pomodoroDuration.inSeconds;
-            final progress = totalSecs > 0 ? (totalSecs - state.remainingTime.inSeconds) / totalSecs : 0.0;
-
-            final method = (_lastStatus == null || _lastStatus == PomodoroStatus.initial || statusChanged) 
-                ? 'startLiveActivity' 
-                : 'updateLiveActivity';
-
-            await _notificationChannel.invokeMethod(
-              method,
-              {
-                'targetEndTime': targetEndTime.millisecondsSinceEpoch,
-                'totalDuration': totalSecs,
-                'status': liveStatus,
-                'isPaused': isPaused,
-                'progress': progress,
-                'remainingSeconds': state.remainingTime.inSeconds,
-              },
-            );
+            await _notificationChannel.invokeMethod('updateLiveActivity', {
+              'startDate': startDate.millisecondsSinceEpoch,
+              'targetEndTime': targetEndTime.millisecondsSinceEpoch,
+              'totalDuration': state.pomodoroDuration.inSeconds,
+              'status': state.isResting ? 'break' : 'focus',
+              'isPaused': isPaused,
+              'progress': state.pomodoroDuration.inSeconds > 0 ? (state.pomodoroDuration.inSeconds - state.remainingTime.inSeconds) / state.pomodoroDuration.inSeconds : 0.0,
+              'remainingSeconds': state.remainingTime.inSeconds,
+            });
           }
         }
-        _lastStatus = status;
-        _lastRemaining = state.remainingTime;
+      } catch (e) {
+        print('[BackgroundService] Sync Error: $e');
       }
-    } catch (e) {
-      print('[BackgroundService] Error updating notifications: $e');
+      
+      _lastStatus = status;
+      _lastRemaining = state.remainingTime;
     }
-
-    service.invoke('update', state.toJson());
   });
 }
 

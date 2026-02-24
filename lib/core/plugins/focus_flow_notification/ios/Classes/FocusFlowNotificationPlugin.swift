@@ -19,9 +19,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     
     UNUserNotificationCenter.current().delegate = instance
     
-    // --- ESCUCHAR SEÑALES DE LOS BOTONES ---
     let center = CFNotificationCenterGetDarwinNotifyCenter()
-    
     CFNotificationCenterAddObserver(center, nil, { (_, _, _, _, _) in
         FocusFlowNotificationPlugin.channel?.invokeMethod("onNotificationAction", arguments: "PAUSE_ACTION")
     }, "com.andaluzcode.focusflow.pause" as CFString, nil, .deliverImmediately)
@@ -40,7 +38,6 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       }
     case "endLiveActivity":
       if #available(iOS 16.1, *) {
-        // CORRECCIÓN: Usar Task para llamadas asíncronas
         Task {
             for activity in Activity<FocusFlowAttributes>.activities {
                 await activity.end(dismissalPolicy: .immediate)
@@ -55,7 +52,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
 
   @available(iOS 16.1, *)
   private func manageActivity(args: [String: Any]) {
-      let targetEndTime = args["targetEndTime"] as? Int ?? 0
+      let startDateMillis = args["startDate"] as? Int ?? Int(Date().timeIntervalSince1970 * 1000)
+      let targetEndTimeMillis = args["targetEndTime"] as? Int ?? 0
       let totalDuration = args["totalDuration"] as? Int ?? 0
       let status = args["status"] as? String ?? "focus"
       let isPaused = args["isPaused"] as? Bool ?? false
@@ -63,7 +61,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       let remainingSeconds = args["remainingSeconds"] as? Int ?? 0
       
       let state = FocusFlowAttributes.ContentState(
-          targetEndDate: Date(timeIntervalSince1970: TimeInterval(targetEndTime) / 1000),
+          startDate: Date(timeIntervalSince1970: TimeInterval(startDateMillis) / 1000),
+          targetEndDate: Date(timeIntervalSince1970: TimeInterval(targetEndTimeMillis) / 1000),
           isPaused: isPaused,
           totalDuration: Double(totalDuration),
           progress: progress,
@@ -80,7 +79,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
                   contentState: state,
                   pushType: nil
               )
-          } catch { print(error) }
+          } catch { print("[FocusFlow] Error: \(error)") }
       }
   }
 }

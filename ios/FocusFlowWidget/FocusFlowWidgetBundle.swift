@@ -6,150 +6,94 @@ import AppIntents
 // 1. MODELO
 public struct FocusFlowAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
+        public var startDate: Date
         public var targetEndDate: Date
         public var isPaused: Bool
         public var totalDuration: Double
         public var progress: Double
         public var status: String
         public var remainingSeconds: Int
+        
+        public init(startDate: Date, targetEndDate: Date, isPaused: Bool, totalDuration: Double, progress: Double, status: String, remainingSeconds: Int) {
+            self.startDate = startDate
+            self.targetEndDate = targetEndDate
+            self.isPaused = isPaused
+            self.totalDuration = totalDuration
+            self.progress = progress
+            self.status = status
+            self.remainingSeconds = remainingSeconds
+        }
     }
     public var name: String
     public init(name: String) { self.name = name }
 }
 
-// 2. INTENT OPTIMIZADO
+// 2. INTENT
 struct TimerToggleIntent: AppIntent {
     static var title: LocalizedStringResource = "Toggle Timer"
     @Parameter(title: "Action") var action: String
     init() {}
     init(action: String) { self.action = action }
-    
     func perform() async throws -> some IntentResult {
         let identifier = action == "pause" ? "com.andaluzcode.focusflow.pause" : "com.andaluzcode.focusflow.play"
-        Task {
-            CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName(identifier as CFString), nil, nil, true)
-        }
+        Task { CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName(identifier as CFString), nil, nil, true) }
         return .result()
     }
 }
 
-// 3. DISEÑO ULTRA-PREMIUM CORREGIDO
+// 3. DISEÑO
 struct FocusFlowLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: FocusFlowAttributes.self) { context in
-            // --- LOCK SCREEN / NOTIFICATION CENTER ---
+            // LOCK SCREEN
             HStack(spacing: 15) {
-                // Anillo de progreso CORREGIDO
                 ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.08), lineWidth: 4)
-                        .frame(width: 48, height: 48)
-                    Circle()
-                        .trim(from: 0, to: context.state.progress)
-                        .stroke(
-                            context.state.status == "focus" ? Color.purple : Color.green,
-                            style: StrokeStyle(lineWidth: 4, lineCap: .round)
-                        )
-                        .frame(width: 48, height: 48)
-                        .rotationEffect(.degrees(-90))
-                    
-                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.white)
-                }
-                
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(context.state.status == "focus" ? "FOCUS" : "BREAK")
-                        .font(.system(size: 14, weight: .black))
-                        .letterSpacing(1)
-                        .foregroundColor(context.state.status == "focus" ? .purple : .green)
-                    
                     if context.state.isPaused {
-                        Text(formatTime(context.state.remainingSeconds))
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(.yellow)
+                        Circle().stroke(Color.white.opacity(0.1), lineWidth: 3).frame(width: 36, height: 36)
                     } else {
-                        Text(context.state.targetEndDate, style: .timer)
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundColor(.white)
-                            .frame(width: 90, alignment: .leading)
+                        ProgressView(timerInterval: context.state.startDate...context.state.targetEndDate, countsDown: true, label: { EmptyView() }, currentValueLabel: { EmptyView() })
+                            .progressViewStyle(.circular).tint(context.state.status == "focus" ? .purple : .green).scaleEffect(1.1)
+                    }
+                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill").font(.system(size: 12)).foregroundColor(.white)
+                }
+                VStack(alignment: .leading, spacing: -2) {
+                    Text(context.state.status.uppercased()).font(.system(size: 11, weight: .black)).letterSpacing(1).foregroundColor(context.state.status == "focus" ? .purple : .green)
+                    if context.state.isPaused {
+                        Text(formatTime(context.state.remainingSeconds)).font(.system(size: 24, weight: .bold, design: .rounded)).foregroundColor(.yellow)
+                    } else {
+                        Text(context.state.targetEndDate, style: .timer).font(.system(size: 24, weight: .bold, design: .rounded)).monospacedDigit().foregroundColor(.white).frame(width: 70, alignment: .leading)
                     }
                 }
-                
                 Spacer()
-                
-                // BOTÓN SOLO ICONO
                 Button(intent: TimerToggleIntent(action: context.state.isPaused ? "play" : "pause")) {
-                    ZStack {
-                        Circle()
-                            .fill(context.state.isPaused ? Color.green.opacity(0.15) : Color.white.opacity(0.1))
-                            .frame(width: 50, height: 50)
-                        Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 22))
-                            .foregroundColor(context.state.isPaused ? .green : .white)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 15)
-            .activityBackgroundTint(Color(red: 0.05, green: 0.07, blue: 0.12))
+                    Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill").font(.system(size: 18)).foregroundColor(context.state.isPaused ? .green : .white).frame(width: 44, height: 44).background(Color.white.opacity(0.1)).clipShape(Circle())
+                }.buttonStyle(.plain)
+            }.padding(.horizontal, 20).padding(.vertical, 10).activityBackgroundTint(Color(red: 0.05, green: 0.07, blue: 0.12))
             
         } dynamicIsland: { context in
             DynamicIsland {
-                // EXPANDIDA
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                        .font(.title2)
-                        .foregroundColor(.purple)
-                        .padding(.leading, 12).padding(.top, 12)
+                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill").foregroundColor(.purple).padding(.leading, 10).padding(.top, 10)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing) {
-                        if context.state.isPaused {
-                            Text(formatTime(context.state.remainingSeconds))
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
-                                .foregroundColor(.yellow)
-                        } else {
-                            Text(context.state.targetEndDate, style: .timer)
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
-                                .monospacedDigit()
-                                .foregroundColor(.purple)
-                                .frame(width: 70)
-                        }
+                    if context.state.isPaused {
+                        Text(formatTime(context.state.remainingSeconds)).font(.title3).bold().monospacedDigit().foregroundColor(.yellow).padding(.trailing, 10).padding(.top, 10)
+                    } else {
+                        Text(context.state.targetEndDate, style: .timer).font(.title3).bold().monospacedDigit().foregroundColor(.purple).frame(width: 60).padding(.trailing, 10).padding(.top, 10)
                     }
-                    .padding(.trailing, 12).padding(.top, 12)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     Button(intent: TimerToggleIntent(action: context.state.isPaused ? "play" : "pause")) {
-                        Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill")
-                            .font(.title2)
-                            .padding(14)
-                            .background(context.state.isPaused ? Color.green.opacity(0.2) : Color.white.opacity(0.1))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.bottom, 10)
+                        Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill").font(.title3).padding(10).background(context.state.isPaused ? Color.green.opacity(0.2) : Color.white.opacity(0.1)).clipShape(Circle())
+                    }.buttonStyle(.plain).padding(.bottom, 8)
                 }
             } compactLeading: {
-                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                    .imageScale(.medium)
-                    .foregroundColor(.purple)
-                    .padding(.leading, 4)
+                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill").imageScale(.small).foregroundColor(.purple).padding(.leading, 4)
             } compactTrailing: {
                 if context.state.isPaused {
-                    Image(systemName: "pause.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.yellow)
-                        .padding(.trailing, 4)
+                    Image(systemName: "pause.fill").foregroundColor(.yellow).font(.system(size: 12)) // Icono más grande
                 } else {
-                    Text(context.state.targetEndDate, style: .timer)
-                        .monospacedDigit()
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.purple)
-                        .frame(width: 45, alignment: .center)
-                        .padding(.trailing, 4)
+                    Text(context.state.targetEndDate, style: .timer).monospacedDigit().font(.system(size: 14, weight: .bold)).foregroundColor(.purple).frame(width: 42, alignment: .center).padding(.trailing, 2)
                 }
             } minimal: {
                 Image(systemName: "timer").foregroundColor(.purple)
@@ -157,7 +101,6 @@ struct FocusFlowLiveActivity: Widget {
             .widgetURL(URL(string: "focusflow://open"))
         }
     }
-    
     func formatTime(_ totalSeconds: Int) -> String {
         let mins = totalSeconds / 60
         let secs = totalSeconds % 60
