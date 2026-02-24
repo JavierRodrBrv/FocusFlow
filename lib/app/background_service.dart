@@ -19,9 +19,6 @@ const int notificationId = 888;
 const String _controlPortName = 'focus_flow_control_port';
 const MethodChannel _notificationChannel = MethodChannel('com.example.focus_flow/notification');
 
-PomodoroStatus? _lastStatus;
-Duration? _lastRemaining;
-
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
   await service.configure(
@@ -45,12 +42,25 @@ void onStart(ServiceInstance service) async {
 
   FocusBloc? bloc;
 
+  PomodoroStatus? _lastStatus;
+  Duration? _lastRemaining;
+  bool _forceNextUpdate = false;
+
   _notificationChannel.setMethodCallHandler((call) async {
     if (call.method == 'onNotificationAction') {
       final action = call.arguments as String;
       if (bloc == null) return;
-      if (action == 'PAUSE_ACTION') bloc.add(PauseTimer());
-      else if (action == 'PLAY_ACTION') bloc.add(StartTimer());
+
+      if (action == 'PAUSE_ACTION') {
+        bloc.add(PauseTimer());
+      } else if (action == 'PLAY_ACTION') {
+        bloc.add(StartTimer());
+      } else if (action == 'STOP_ACTION') {
+        bloc.add(ResetTimer());
+      }
+      // Forzar actualización inmediata: si Dart estaba suspendido,
+      // al despertar y procesar esto sobrescribirá el estado de la Isla.
+      _forceNextUpdate = true;
     }
   });
 
@@ -69,12 +79,39 @@ void onStart(ServiceInstance service) async {
   service.on('sendEvent').listen((event) {
     if (event == null || bloc == null) return;
     final name = event['event'];
-    if (name == 'startTimer') bloc.add(StartTimer());
-    else if (name == 'pauseTimer') bloc.add(PauseTimer());
-    else if (name == 'resetTimer') bloc.add(ResetTimer());
-    else if (name == 'stopAlarm') bloc.add(StopAlarm());
-    else if (name == 'togglePremium') bloc.add(TogglePremiumStatus());
-    else if (name == 'requestState') service.invoke('update', bloc.state.toJson());
+
+    if (name == 'startTimer') {
+      bloc?.add(StartTimer());
+      _forceNextUpdate = true;
+    } else if (name == 'pauseTimer') {
+      bloc?.add(PauseTimer());
+      _forceNextUpdate = true;
+    } else if (name == 'resetTimer') {
+      bloc?.add(ResetTimer());
+      _forceNextUpdate = true;
+    } else if (name == 'stopAlarm') {
+      bloc?.add(StopAlarm());
+    } else if (name == 'togglePremium') {
+      bloc?.add(TogglePremiumStatus());
+    } else if (name == 'updatePomodoroDuration') {
+      final minutes = event['durationMinutes'] as int;
+      final seconds = event['durationSeconds'] as int?;
+      bloc?.add(
+        UpdatePomodoroDuration(Duration(minutes: minutes, seconds: seconds ?? 0)),
+      );
+      _forceNextUpdate = true;
+    } else if (name == 'setBreakDuration') {
+      final minutes = event['durationMinutes'] as int?;
+      bloc?.add(
+        SetBreakDuration(minutes != null ? Duration(minutes: minutes) : null),
+      );
+      _forceNextUpdate = true;
+    } else if (name == 'requestState') {
+      service.invoke('update', bloc?.state.toJson());
+    } else if (name == 'ui_resumed') {
+      _forceNextUpdate = true;
+      bloc?.add(ForceLiveActivityUpdate());
+    }
   });
 
   bloc?.stream.listen((state) async {
@@ -83,13 +120,16 @@ void onStart(ServiceInstance service) async {
     bool isFinished = status == PomodoroStatus.finished;
     bool isPaused = status == PomodoroStatus.paused;
 
-    // 1. Siempre avisar a la UI (Isolate Principal) para el modal y el timer de la app
+    // Siempre avisar a la UI (Isolate Principal)
     service.invoke('update', state.toJson());
 
-    // 2. Sincronización Nativa (Isolate de Background)
-    // Solo actualizamos el estado nativo si cambia el status o hay un salto grande de tiempo
-    if (_lastStatus != status || (_lastRemaining != null && (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2)) {
-      
+    bool statusChanged = _lastStatus != status;
+    bool isBigTimeJump = _lastRemaining != null && (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2;
+
+    // Sincronización Nativa Normal (Sin bloqueos)
+    if (_forceNextUpdate || statusChanged || isBigTimeJump) {
+      _forceNextUpdate = false;
+
       try {
         if (Platform.isAndroid || (Platform.isIOS && isFinished)) {
           await _notificationChannel.invokeMethod('updateNotification', {
@@ -100,13 +140,11 @@ void onStart(ServiceInstance service) async {
 
         if (Platform.isIOS) {
           if (status == PomodoroStatus.initial || isFinished) {
-            // Delay para que el modal aparezca en la app antes de matar la isla
             if (isFinished) await Future.delayed(const Duration(milliseconds: 800));
             await _notificationChannel.invokeMethod('endLiveActivity');
           } else {
             final now = DateTime.now();
             final targetEndTime = now.add(state.remainingTime);
-            // El inicio virtual es el tiempo final menos la duración total
             final startDate = targetEndTime.subtract(state.pomodoroDuration);
 
             await _notificationChannel.invokeMethod('updateLiveActivity', {
@@ -123,7 +161,7 @@ void onStart(ServiceInstance service) async {
       } catch (e) {
         print('[BackgroundService] Sync Error: $e');
       }
-      
+
       _lastStatus = status;
       _lastRemaining = state.remainingTime;
     }

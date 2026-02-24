@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart'; // Added
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -35,6 +36,8 @@ class _FocusViewState extends State<FocusView> {
   Timer? _handshakeTimer;
   Timer? _heartbeatTimer;
   late ConfettiController _confettiController;
+  late AppLinks _appLinks; // Added
+  StreamSubscription<Uri>? _linkSubscription; // Added
   bool _completionDialogShown = false;
   FocusState? _lastKnownState;
   late Stream<Map<String, dynamic>?> _updateStream;
@@ -47,6 +50,8 @@ class _FocusViewState extends State<FocusView> {
       duration: const Duration(seconds: 3),
     );
     _updateStream = FlutterBackgroundService().on('update');
+    
+    _initDeepLinks(); // Added
 
     _requestState();
     _startHeartbeat();
@@ -64,9 +69,44 @@ class _FocusViewState extends State<FocusView> {
       if (mounted) setState(() => _isResuming = false);
     });
   }
+  
+  // Added method
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+    
+    // Check initial link
+    try {
+      final initialLink = await _appLinks.getInitialLink();
+      if (initialLink != null) {
+        _handleDeepLink(initialLink);
+      }
+    } catch (e) {
+      debugPrint('Error getting initial link: $e');
+    }
+
+    // Listen to link stream
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    });
+  }
+
+  // Added method
+  void _handleDeepLink(Uri uri) {
+    if (uri.scheme == 'focusflow') {
+      final host = uri.host;
+      if (host == 'pause') {
+        FlutterBackgroundService().invoke('sendEvent', {'event': 'pauseTimer'});
+      } else if (host == 'resume') {
+        FlutterBackgroundService().invoke('sendEvent', {'event': 'startTimer'});
+      } else if (host == 'stop') {
+        FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
+      }
+    }
+  }
 
   @override
   void dispose() {
+    _linkSubscription?.cancel(); // Added
     _handshakeTimer?.cancel();
     _heartbeatTimer?.cancel();
     _confettiController.dispose();

@@ -57,6 +57,7 @@ dependencies:
   flutter_shaders: ^0.1.3
   focus_flow_notification:
     path: lib/core/plugins/focus_flow_notification
+  app_links: ^7.0.0
 
 dev_dependencies:
   flutter_test:

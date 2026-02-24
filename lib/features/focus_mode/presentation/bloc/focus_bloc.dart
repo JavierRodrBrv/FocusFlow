@@ -114,6 +114,11 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
       (e, emit) => emit(state.copyWith(canRequestAds: e.canRequestAds)),
     );
 
+    on<ForceLiveActivityUpdate>((e, emit) {
+      // Force emission to trigger background service listener
+      emit(state.copyWith());
+    });
+
     on<SaveCurrentMix>(_onSaveCurrentMix);
     on<PlaySavedMix>(_onPlaySavedMix);
     on<LoadMix>(_onLoadMix);

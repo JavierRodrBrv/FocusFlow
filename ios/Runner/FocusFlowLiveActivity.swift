@@ -1,6 +1,7 @@
 import ActivityKit
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 struct FocusFlowLiveActivity: Widget {
     var body: some WidgetConfiguration {
@@ -9,22 +10,22 @@ struct FocusFlowLiveActivity: Widget {
             HStack(spacing: 15) {
                 ZStack {
                     Circle()
-                        .stroke(Color.white.opacity(0.1), lineWidth: 4)
-                        .frame(width: 45, height: 45)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 2)
+                        .frame(width: 22, height: 22)
                     Circle()
                         .trim(from: 0, to: context.state.progress)
-                        .stroke(context.state.status == "focus" ? Color.purple : Color.green, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                        .frame(width: 45, height: 45)
+                        .stroke(context.state.status == "focus" ? Color.purple : Color.green, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .frame(width: 22, height: 22)
                         .rotationEffect(.degrees(-90))
                     
                     Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                        .font(.system(size: 20))
+                        .font(.system(size: 10))
                         .foregroundColor(.white)
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(context.state.status == "focus" ? "Focus" : "Break")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
                     Text(context.state.isPaused ? "Paused" : "Running")
                         .font(.system(size: 12))
@@ -66,27 +67,57 @@ struct FocusFlowLiveActivity: Widget {
                         .padding(.trailing, 10)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack(spacing: 25) {
-                        Link(destination: URL(string: "focusflow://pause")!) {
-                            Image(systemName: "pause.fill").font(.title3).padding(12).background(Color.white.opacity(0.1)).clipShape(Circle())
-                        }
-                        Link(destination: URL(string: "focusflow://resume")!) {
-                            Image(systemName: "play.fill").font(.title3).padding(12).background(Color.white.opacity(0.1)).clipShape(Circle())
-                        }
-                        Link(destination: URL(string: "focusflow://stop")!) {
-                            Image(systemName: "xmark").font(.title3).padding(12).background(Color.red.opacity(0.2)).clipShape(Circle())
+                    // Controles Grandes
+                    HStack(spacing: 40) {
+                        if #available(iOS 17.0, *) {
+                            Button(intent: PauseIntent()) {
+                                Image(systemName: "pause.fill")
+                                    .font(.title2)
+                                    .frame(width: 50, height: 50)
+                                    .background(Color.white.opacity(0.15))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+
+                            Button(intent: ResumeIntent()) {
+                                Image(systemName: "play.fill")
+                                    .font(.title2)
+                                    .frame(width: 50, height: 50)
+                                    .background(Color.white.opacity(0.15))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+
+                            Button(intent: StopIntent()) {
+                                Image(systemName: "xmark")
+                                    .font(.title2)
+                                    .frame(width: 50, height: 50)
+                                    .background(Color.red.opacity(0.25))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            // Fallback para iOS 16 (Usando Link pero más grande)
+                            Link(destination: URL(string: "focusflow://pause")!) {
+                                Image(systemName: "pause.fill").font(.title2).frame(width: 50, height: 50).background(Color.white.opacity(0.15)).clipShape(Circle())
+                            }
+                            Link(destination: URL(string: "focusflow://resume")!) {
+                                Image(systemName: "play.fill").font(.title2).frame(width: 50, height: 50).background(Color.white.opacity(0.15)).clipShape(Circle())
+                            }
+                            Link(destination: URL(string: "focusflow://stop")!) {
+                                Image(systemName: "xmark").font(.title2).frame(width: 50, height: 50).background(Color.red.opacity(0.25)).clipShape(Circle())
+                            }
                         }
                     }
                     .foregroundColor(.white)
                     .padding(.bottom, 10)
+                    .padding(.top, 10)
                 }
             } compactLeading: {
-                // --- COMPACTO IZQUIERDA (Más estrecho) ---
                 Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
                     .imageScale(.small)
                     .foregroundColor(.purple)
             } compactTrailing: {
-                // --- COMPACTO DERECHA (Más estrecho) ---
                 Text(context.state.targetEndDate, style: .timer)
                     .monospacedDigit()
                     .font(.system(size: 13, weight: .bold))
@@ -96,5 +127,47 @@ struct FocusFlowLiveActivity: Widget {
                 Image(systemName: "timer").foregroundColor(.purple)
             }
         }
+    }
+}
+
+// --- INTENTS FOR INTERACTIVE WIDGETS (iOS 17+) ---
+
+@available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
+struct PauseIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Pausar Timer"
+    
+    init() {}
+    
+    func perform() async throws -> some IntentResult {
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.pause" as CFString), nil, nil, true)
+        return .result()
+    }
+}
+
+@available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
+struct ResumeIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Reanudar Timer"
+    static var openAppWhenRun: Bool = true // Force open to ensure resume works from suspension
+    
+    init() {}
+    
+    func perform() async throws -> some IntentResult {
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.play" as CFString), nil, nil, true)
+        return .result()
+    }
+}
+
+@available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
+struct StopIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Detener Timer"
+    
+    init() {}
+    
+    func perform() async throws -> some IntentResult {
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.stop" as CFString), nil, nil, true)
+        return .result()
     }
 }

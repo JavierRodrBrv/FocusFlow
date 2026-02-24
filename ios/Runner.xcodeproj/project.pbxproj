@@ -12,7 +12,6 @@
 		22C120052F4CE91400EFF306 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 22C120042F4CE91400EFF306 /* SwiftUI.framework */; };
 		22C120162F4CE91600EFF306 /* FocusFlowWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 22C120012F4CE91400EFF306 /* FocusFlowWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		22C120A52F4D092200EFF306 /* FocusFlowAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C120A42F4D092200EFF306 /* FocusFlowAttributes.swift */; };
-		22C120A62F4D092200EFF306 /* FocusFlowAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C120A42F4D092200EFF306 /* FocusFlowAttributes.swift */; };
 		3149B50C69273AD723954519 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EF7B49AC66CFEDF7D696BAE /* Pods_RunnerTests.framework */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -567,7 +566,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				22C120A62F4D092200EFF306 /* FocusFlowAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

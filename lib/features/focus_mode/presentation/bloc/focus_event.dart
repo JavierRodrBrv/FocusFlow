@@ -63,6 +63,8 @@ class UpdateConsentStatus extends FocusEvent {
   UpdateConsentStatus(this.canRequestAds);
 }
 
+class ForceLiveActivityUpdate extends FocusEvent {}
+
 class _SessionStateChanged extends FocusEvent {
   final SessionState sessionState;
   _SessionStateChanged(this.sessionState);
