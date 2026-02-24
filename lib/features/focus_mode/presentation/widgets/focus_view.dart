@@ -92,7 +92,8 @@ class _FocusViewState extends State<FocusView> {
     if (_isResuming) return;
 
     if (state.pomodoroStatus == PomodoroStatus.finished) {
-      if (!_completionDialogShown) {
+      // SOLO MOSTRAR SI EL ESTADO ANTERIOR NO ERA 'FINISHED'
+      if (!_completionDialogShown && (_lastKnownState?.pomodoroStatus != PomodoroStatus.finished)) {
         _completionDialogShown = true;
         FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
         _confettiController.play();
