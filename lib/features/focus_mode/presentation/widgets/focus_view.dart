@@ -209,8 +209,8 @@ class _FocusViewState extends State<FocusView> {
         if (snapshot.hasData && snapshot.data != null) {
           try {
             state = FocusState.fromJson(snapshot.data!);
-            _lastKnownState = state;
             _checkCompletion(state);
+            _lastKnownState = state;
           } catch (e) {
             state = _lastKnownState ?? const FocusState();
           }

@@ -15,9 +15,22 @@ import android.graphics.Color
 import android.util.TypedValue
 import android.content.res.Configuration
 
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.os.Build
+
 class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
     private lateinit var channel: MethodChannel
     private lateinit var context: Context
+
+    private val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val action = intent?.action
+            if (action == "PAUSE_ACTION" || action == "PLAY_ACTION") {
+                sendActionToDart(action)
+            }
+        }
+    }
 
     companion object {
         private var instance: FocusFlowNotificationPlugin? = null
@@ -32,6 +45,16 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "com.example.focus_flow/notification")
         channel.setMethodCallHandler(this)
         context = flutterPluginBinding.applicationContext
+
+        val filter = IntentFilter().apply {
+            addAction("PAUSE_ACTION")
+            addAction("PLAY_ACTION")
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            context.registerReceiver(receiver, filter)
+        }
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
@@ -139,5 +162,10 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         if (instance == this) instance = null
         channel.setMethodCallHandler(null)
+        try {
+            context.unregisterReceiver(receiver)
+        } catch (e: Exception) {
+            // Ignore if already unregistered
+        }
     }
 }

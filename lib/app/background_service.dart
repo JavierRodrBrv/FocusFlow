@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -25,7 +26,7 @@ Future<void> initializeService() async {
     androidConfiguration: AndroidConfiguration(
       onStart: onStart,
       autoStart: true,
-      isForegroundMode: true,
+      isForegroundMode: false,
       notificationChannelId: notificationChannelId,
       initialNotificationTitle: 'FocusFlow',
       initialNotificationContent: 'Iniciando...',
@@ -91,8 +92,33 @@ void onStart(ServiceInstance service) async {
       _forceNextUpdate = true;
     } else if (name == 'stopAlarm') {
       bloc?.add(StopAlarm());
+    } else if (name == 'toggleHardcore') {
+      bloc?.add(ToggleHardcoreMode());
+    } else if (name == 'toggleAlarmSound') {
+      bloc?.add(ToggleAlarmSound());
     } else if (name == 'togglePremium') {
       bloc?.add(TogglePremiumStatus());
+    } else if (name == 'updateConsentStatus') {
+      final canRequest = event['canRequest'] as bool;
+      bloc?.add(UpdateConsentStatus(canRequest));
+    } else if (name == 'updateRainVolume') {
+      final volume = (event['volume'] as num).toDouble();
+      bloc?.add(UpdateRainVolume(volume));
+    } else if (name == 'updateFireVolume') {
+      final volume = (event['volume'] as num).toDouble();
+      bloc?.add(UpdateFireVolume(volume));
+    } else if (name == 'updateBrownNoiseVolume') {
+      final volume = (event['volume'] as num).toDouble();
+      bloc?.add(UpdateBrownNoiseVolume(volume));
+    } else if (name == 'saveMix') {
+      bloc?.add(SaveCurrentMix());
+    } else if (name == 'loadMix') {
+      final mixId = event['mixId'] as String;
+      bloc?.add(LoadMix(mixId));
+    } else if (name == 'pauseMix') {
+      bloc?.add(PauseMix());
+    } else if (name == 'resumeMix') {
+      bloc?.add(ResumeMix());
     } else if (name == 'updatePomodoroDuration') {
       final minutes = event['durationMinutes'] as int;
       final seconds = event['durationSeconds'] as int?;
@@ -119,15 +145,35 @@ void onStart(ServiceInstance service) async {
     final status = state.pomodoroStatus;
     bool isFinished = status == PomodoroStatus.finished;
     bool isPaused = status == PomodoroStatus.paused;
+    bool isInitial = status == PomodoroStatus.initial;
+
+    // Toggle Foreground Mode to hide notification when idle
+    if (service is AndroidServiceInstance) {
+      if (isInitial || isFinished) {
+        service.setAsBackgroundService();
+      } else {
+        service.setAsForegroundService();
+      }
+    }
 
     // Siempre avisar a la UI (Isolate Principal)
     service.invoke('update', state.toJson());
 
     bool statusChanged = _lastStatus != status;
+    bool timeDifference = _lastRemaining == null || (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() >= 1;
     bool isBigTimeJump = _lastRemaining != null && (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2;
 
-    // Sincronización Nativa Normal (Sin bloqueos)
-    if (_forceNextUpdate || statusChanged || isBigTimeJump) {
+    bool shouldUpdate = _forceNextUpdate || statusChanged;
+
+    if (Platform.isAndroid) {
+      // Android: Update every second for smooth timer
+      shouldUpdate = shouldUpdate || timeDifference;
+    } else if (Platform.isIOS) {
+      // iOS: Throttle updates to save Live Activity budget (only big jumps or status changes)
+      shouldUpdate = shouldUpdate || isBigTimeJump;
+    }
+
+    if (shouldUpdate) {
       _forceNextUpdate = false;
 
       try {
