@@ -30,7 +30,7 @@ Future<void> initializeService() async {
       isForegroundMode: false,
       notificationChannelId: notificationChannelId,
       initialNotificationTitle: 'FocusFlow',
-      initialNotificationContent: 'Iniciando...',
+      initialNotificationContent: '',
       foregroundServiceNotificationId: notificationId,
     ),
     iosConfiguration: IosConfiguration(autoStart: true, onForeground: onStart),
@@ -47,6 +47,7 @@ void onStart(ServiceInstance service) async {
   PomodoroStatus? _lastStatus;
   Duration? _lastRemaining;
   bool _forceNextUpdate = false;
+  bool _lastPenaltyState = false;
 
   _notificationChannel.setMethodCallHandler((call) async {
     if (call.method == 'onNotificationAction') {
@@ -159,10 +160,15 @@ void onStart(ServiceInstance service) async {
 
     // Toggle Foreground Mode to hide notification when idle
     if (service is AndroidServiceInstance) {
-      if (isInitial || isFinished) {
-        service.setAsBackgroundService();
-      } else {
-        service.setAsForegroundService();
+      bool isCurrentlyIdle = isInitial || isFinished;
+      bool wasIdle = _lastStatus == null || _lastStatus == PomodoroStatus.initial || _lastStatus == PomodoroStatus.finished;
+      
+      if (isCurrentlyIdle != wasIdle || _lastStatus == null) {
+        if (isCurrentlyIdle) {
+          service.setAsBackgroundService();
+        } else {
+          service.setAsForegroundService();
+        }
       }
     }
 
@@ -194,11 +200,26 @@ void onStart(ServiceInstance service) async {
           await LocalNotificationService().showTimerCompleteNotification();
         }
 
+        // Revisar cambios en el modo castigo (penalty) para la notificación local
+        bool penaltyChanged = _lastPenaltyState != state.isInPenaltyBox;
+        if (penaltyChanged) {
+          if (state.isInPenaltyBox) {
+            await LocalNotificationService().showPenaltyWarningNotification();
+          } else {
+            await LocalNotificationService().cancelPenaltyWarningNotification();
+          }
+          _lastPenaltyState = state.isInPenaltyBox;
+        }
+
         // Android: Solo actualizamos la notificación en primer plano si el temporizador está activo
         if (Platform.isAndroid && !isFinished && !isInitial) {
+          // Si estamos en penalty, enviamos 'running' para que el plugin nativo no oculte
+          // la notificación (ya que 'paused' en Kotlin quita el setOngoing(true))
+          String notificationStatus = state.isInPenaltyBox ? 'running' : (isPaused ? 'paused' : 'running');
+          
           await _notificationChannel.invokeMethod('updateNotification', {
             'time': time,
-            'status': isPaused ? 'paused' : 'running',
+            'status': notificationStatus,
           });
         }
 

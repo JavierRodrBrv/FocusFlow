@@ -33,6 +33,13 @@ Future<void> bootstrap() async {
   // 4. Anuncios (Solo funciona en UI Isolate)
   try {
     await MobileAds.instance.initialize();
+    
+    // Configurar dispositivo de prueba para evitar Error Code 3 (No Fill)
+    RequestConfiguration configuration = RequestConfiguration(
+      testDeviceIds: ['EC239DEACF2B25B0647324A1BA22FFBD'],
+    );
+    await MobileAds.instance.updateRequestConfiguration(configuration);
+    
     print('[Bootstrap] Mobile Ads Initialized.');
   } catch (e) {
     print('[Bootstrap] Mobile Ads Error: $e');

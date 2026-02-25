@@ -54,6 +54,33 @@ class LocalNotificationService {
     );
   }
 
+  Future<void> showPenaltyWarningNotification() async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'focus_flow_alerts',
+      'Alertas de FocusFlow',
+      channelDescription: 'Notificaciones informativas de la aplicación',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics = DarwinNotificationDetails();
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      id: 2,
+      title: '¡Vuelve a tu foco!',
+      body: 'Por favor, voltea tu teléfono boca abajo para continuar.',
+      notificationDetails: platformChannelSpecifics,
+    );
+  }
+
+  Future<void> cancelPenaltyWarningNotification() async {
+    await flutterLocalNotificationsPlugin.cancel(id: 2);
+  }
+
   Future<void> scheduleReminderNotification() async {
     // Cancelar cualquier recordatorio anterior para que no se acumulen
     await flutterLocalNotificationsPlugin.cancel(id: 1);

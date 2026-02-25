@@ -36,6 +36,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   InterstitialAd? _interstitialAd;
   bool _isAdLoaded = false;
   bool _isAdLoading = false;
+  bool _isWaitingForAd = false;
   late final String _randomJoyImage;
   late final String _randomDogPhrase;
 
@@ -84,6 +85,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
 
   void _loadInterstitialAd() {
     if (_isAdLoading || kIsWeb) return;
+    
     setState(() => _isAdLoading = true);
 
     final String adUnitId = Platform.isAndroid
@@ -101,6 +103,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
               _dismissDialog();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
+              debugPrint('[AdMob] Failed to show ad: $error');
               ad.dispose();
               _dismissDialog();
             },
@@ -111,15 +114,24 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
               _isAdLoaded = true;
               _isAdLoading = false;
             });
+            // Si el usuario ya había pulsado el botón y estaba esperando
+            if (_isWaitingForAd) {
+              _isWaitingForAd = false;
+              _showAd();
+            }
           }
         },
         onAdFailedToLoad: (err) {
-          debugPrint('InterstitialAd failed to load: $err');
+          debugPrint('[AdMob] InterstitialAd failed to load: $err');
           if (mounted) {
             setState(() {
               _isAdLoading = false;
               _isAdLoaded = false;
             });
+            if (_isWaitingForAd) {
+              _isWaitingForAd = false;
+              _dismissDialog();
+            }
           }
         },
       ),
@@ -133,18 +145,31 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     }
 
     if (_isAdLoaded && _interstitialAd != null) {
-      _interstitialAd!.show();
+      // Bloquear doble tap preventivamente
+      setState(() {
+        _isAdLoaded = false; 
+        _isWaitingForAd = true; 
+      });
+      
+      _interstitialAd!.setImmersiveMode(true);
+      
+      // Pequeño delay para asegurar que el SDK de AdMob y el Activity estén sincronizados
+      // (evita el error de "The ad can not be shown when app is not in foreground")
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        try {
+          _interstitialAd!.show();
+        } catch (e) {
+          debugPrint('[AdMob] Exception showing ad: $e');
+          _dismissDialog();
+        }
+      });
+    } else if (_isAdLoading) {
+      setState(() => _isWaitingForAd = true);
     } else {
-      if (_isAdLoading) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Preparando anuncio... Inténtalo en un momento.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      } else {
-        _dismissDialog();
-      }
+      // Si la carga falló antes, intentamos una vez más mostrando spinner
+      setState(() => _isWaitingForAd = true);
+      _loadInterstitialAd();
     }
   }
 
@@ -335,12 +360,21 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             OutlinedButton(
-              onPressed: _showAd,
+              onPressed: _isWaitingForAd ? null : _showAd,
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white54,
                 side: const BorderSide(color: Colors.white24),
               ),
-              child: const Text('No mucho'),
+              child: _isWaitingForAd
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white54,
+                      ),
+                    )
+                  : const Text('No mucho'),
             ),
             ElevatedButton(
               onPressed: () => setState(() {
