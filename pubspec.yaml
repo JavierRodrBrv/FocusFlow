@@ -58,6 +58,8 @@ dependencies:
   focus_flow_notification:
     path: lib/core/plugins/focus_flow_notification
   app_links: ^7.0.0
+  flutter_local_notifications: ^20.1.0
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:

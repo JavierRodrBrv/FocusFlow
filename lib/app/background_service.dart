@@ -14,6 +14,7 @@ import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow_notification/focus_flow_notification.dart';
 import '../features/focus_mode/data/models/sound_mix_model.dart';
+import '../core/services/local_notification_service.dart';
 
 const String notificationChannelId = 'focus_flow_channel';
 const int notificationId = 888;
@@ -71,6 +72,10 @@ void onStart(ServiceInstance service) async {
     if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(PremiumStatusAdapter());
     if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SoundMixModelAdapter());
     await configureDependencies();
+    
+    // Inicializar LocalNotificationService para el Isolate de Background
+    await LocalNotificationService().init();
+    
     bloc = getIt<FocusBloc>();
     bloc.add(InitializeApp());
   } catch (e) {
@@ -184,10 +189,16 @@ void onStart(ServiceInstance service) async {
       _forceNextUpdate = false;
 
       try {
-        if (Platform.isAndroid || (Platform.isIOS && isFinished)) {
+        if (statusChanged && isFinished) {
+          // Mostrar notificación local cuando el temporizador finaliza
+          await LocalNotificationService().showTimerCompleteNotification();
+        }
+
+        // Android: Solo actualizamos la notificación en primer plano si el temporizador está activo
+        if (Platform.isAndroid && !isFinished && !isInitial) {
           await _notificationChannel.invokeMethod('updateNotification', {
-            'time': isFinished ? '¡Completado!' : time,
-            'status': isFinished ? 'finished' : (isPaused ? 'paused' : 'running'),
+            'time': time,
+            'status': isPaused ? 'paused' : 'running',
           });
         }
 

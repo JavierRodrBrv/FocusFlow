@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'app/background_service.dart';
+import 'core/services/local_notification_service.dart';
 
 /// Inicializa los sistemas críticos antes de lanzar la UI.
 Future<void> bootstrap() async {
@@ -37,7 +38,12 @@ Future<void> bootstrap() async {
     print('[Bootstrap] Mobile Ads Error: $e');
   }
 
-  // 5. Servicio en Segundo Plano
+  // 5. Inicializar Notificaciones Locales Informativas
+  final localNotifications = LocalNotificationService();
+  await localNotifications.init();
+  await localNotifications.scheduleReminderNotification();
+
+  // 6. Servicio en Segundo Plano
   await initializeService();
 
   // RELAY: Recibir eventos del isolate de la notificación (u otros) y enviarlos al servicio de fondo
