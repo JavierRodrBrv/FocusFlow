@@ -59,17 +59,20 @@ struct FocusFlowLiveActivity: Widget {
                 
                 Spacer()
                 
+                // Botones y Timer
                 if context.state.isPaused {
                     Text(formatTime(seconds: context.state.remainingSeconds))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(.yellow)
+                        .padding(.trailing, 8) // Separación del botón
                 } else {
                     Text(context.state.targetEndDate, style: .timer)
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(.white)
-                        .frame(width: 90)
+                        // ELIMINADO: .frame(width: 90) para evitar que se monte encima
+                        .padding(.trailing, 8) // Separación del botón
                 }
                 
                 // Botón de Acción
@@ -162,16 +165,21 @@ struct FocusFlowLiveActivity: Widget {
                 Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
                     .foregroundColor(context.state.isPaused ? .yellow : .purple)
             } compactTrailing: {
+                // REDUCCIÓN DEL WIDTH Y AUTO-ESCALADO
                 if context.state.isPaused {
                     Text(formatTime(seconds: context.state.remainingSeconds))
                         .monospacedDigit()
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.yellow)
+                        .minimumScaleFactor(0.8)
+                        .frame(maxWidth: 40, alignment: .trailing)
                 } else {
                     Text(context.state.targetEndDate, style: .timer)
                         .monospacedDigit()
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.purple)
+                        .minimumScaleFactor(0.8)
+                        .frame(maxWidth: 40, alignment: .trailing)
                 }
             } minimal: {
                 Image(systemName: "timer").foregroundColor(context.state.isPaused ? .yellow : .purple)
