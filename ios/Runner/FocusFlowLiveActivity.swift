@@ -6,22 +6,14 @@ import AppIntents
 struct FocusFlowLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: FocusFlowAttributes.self) { context in
-            // --- LOCK SCREEN (La tarjeta negra) ---
+            // --- LOCK SCREEN (Versión Ultraligera) ---
             HStack(spacing: 15) {
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.1), lineWidth: 2)
-                        .frame(width: 22, height: 22)
-                    Circle()
-                        .trim(from: 0, to: context.state.progress)
-                        .stroke(context.state.status == "focus" ? Color.purple : Color.green, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                        .frame(width: 22, height: 22)
-                        .rotationEffect(.degrees(-90))
-                    
-                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(context.state.status == "focus" ? .purple : .green)
+                    .frame(width: 32, height: 32)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(Circle())
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(context.state.status == "focus" ? "Focus" : "Break")

@@ -118,16 +118,30 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       if !activities.isEmpty {
           Task {
               for activity in activities {
-                  await activity.update(using: state)
+                  if #available(iOS 16.2, *) {
+                      let content = ActivityContent(state: state, staleDate: nil)
+                      await activity.update(content)
+                  } else {
+                      await activity.update(using: state)
+                  }
               }
           }
       } else {
           do {
-              _ = try Activity<FocusFlowAttributes>.request(
-                  attributes: FocusFlowAttributes(name: "Focus Timer"),
-                  contentState: state,
-                  pushType: nil
-              )
+              if #available(iOS 16.2, *) {
+                  let content = ActivityContent(state: state, staleDate: nil)
+                  _ = try Activity<FocusFlowAttributes>.request(
+                      attributes: FocusFlowAttributes(name: "Focus Timer"),
+                      content: content,
+                      pushType: nil
+                  )
+              } else {
+                  _ = try Activity<FocusFlowAttributes>.request(
+                      attributes: FocusFlowAttributes(name: "Focus Timer"),
+                      contentState: state,
+                      pushType: nil
+                  )
+              }
           } catch { print("[FocusFlow] Error: \(error)") }
       }
   }

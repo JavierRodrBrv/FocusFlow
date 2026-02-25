@@ -39,52 +39,47 @@ public struct FocusFlowAttributes: ActivityAttributes {
 struct FocusFlowLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: FocusFlowAttributes.self) { context in
-            // --- LOCK SCREEN / NOTIFICATION CENTER ---
+            // --- LOCK SCREEN (Versión Ultra-Estable) ---
             HStack(spacing: 12) {
-                // 1. Ring & Icon
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.1), lineWidth: 2)
-                        .frame(width: 22, height: 22)
-                    Circle()
-                        .trim(from: 0, to: context.state.progress)
-                        .stroke(context.state.status == "focus" ? Color.purple : Color.green, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                        .frame(width: 22, height: 22)
-                        .rotationEffect(.degrees(-90))
-                    
-                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(context.state.status == "focus" ? .purple : .green)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(Circle())
                 
-                // 2. Status Text
-                
+                VStack(alignment: .leading, spacing: 2) {
                     Text(context.state.status == "focus" ? "Focus" : "Descanso")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
-                
-                // 3. Timer Display
-                if context.state.isPaused {
-                    Text("PAUSADO")
-                        .font(.system(size: 20, weight: .black, design: .rounded))
-                        .foregroundColor(.yellow)
-                        .padding(.trailing, 4)
-                } else {
-                    Text(context.state.targetEndDate, style: .timer)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundColor(.white)
-                        .padding(.trailing, 4)
+                    Text(context.state.isPaused ? "Pausado" : "En curso")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.6))
                 }
                 
-                // 4. Play/Pause Action Button
+                Spacer()
+                
+                if context.state.isPaused {
+                    Text(formatTime(seconds: context.state.remainingSeconds))
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(.yellow)
+                } else {
+                    Text(context.state.targetEndDate, style: .timer)
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(.white)
+                        .frame(width: 90)
+                }
+                
+                // Botón de Acción
                 if #available(iOS 17.0, *) {
                     if context.state.isPaused {
                         Button(intent: ResumeIntent()) {
                             Image(systemName: "play.fill")
                                 .font(.title3)
-                                .frame(width: 36, height: 36)
-                                .background(Color.purple.opacity(0.2))
+                                .frame(width: 40, height: 40)
+                                .background(Color.purple.opacity(0.3))
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -92,24 +87,16 @@ struct FocusFlowLiveActivity: Widget {
                         Button(intent: PauseIntent()) {
                             Image(systemName: "pause.fill")
                                 .font(.title3)
-                                .frame(width: 36, height: 36)
+                                .frame(width: 40, height: 40)
                                 .background(Color.white.opacity(0.15))
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
                     }
-                } else {
-                    Link(destination: URL(string: context.state.isPaused ? "focusflow://resume" : "focusflow://pause")!) {
-                         Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill")
-                            .font(.title3)
-                            .frame(width: 36, height: 36)
-                            .background(context.state.isPaused ? Color.purple.opacity(0.2) : Color.white.opacity(0.15))
-                            .clipShape(Circle())
-                    }
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.vertical, 12)
             .activityBackgroundTint(Color(red: 0.05, green: 0.07, blue: 0.12))
             
         } dynamicIsland: { context in
@@ -122,7 +109,6 @@ struct FocusFlowLiveActivity: Widget {
                         .padding(.leading, 10)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    // SOLUCION BUG VISUAL EXPANDED: Condición para mostrar el tiempo estático si está pausado
                     if context.state.isPaused {
                         Text(formatTime(seconds: context.state.remainingSeconds))
                             .font(.title2)
@@ -138,60 +124,54 @@ struct FocusFlowLiveActivity: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack {
+                    HStack(spacing: 30) {
                         if #available(iOS 17.0, *) {
                             if context.state.isPaused {
                                 Button(intent: ResumeIntent()) {
                                     Image(systemName: "play.fill")
-                                        .font(.largeTitle)
-                                        .frame(width: 60, height: 60)
-                                        .background(Color.purple.opacity(0.2))
+                                        .font(.title)
+                                        .frame(width: 50, height: 50)
+                                        .background(Color.white.opacity(0.15))
                                         .clipShape(Circle())
                                 }
                                 .buttonStyle(.plain)
                             } else {
                                 Button(intent: PauseIntent()) {
                                     Image(systemName: "pause.fill")
-                                        .font(.largeTitle)
-                                        .frame(width: 60, height: 60)
+                                        .font(.title)
+                                        .frame(width: 50, height: 50)
                                         .background(Color.white.opacity(0.15))
                                         .clipShape(Circle())
                                 }
                                 .buttonStyle(.plain)
                             }
-                        } else {
-                            Link(destination: URL(string: context.state.isPaused ? "focusflow://resume" : "focusflow://pause")!) {
-                                Image(systemName: context.state.isPaused ? "play.fill" : "pause.fill")
-                                    .font(.largeTitle)
-                                    .frame(width: 60, height: 60)
-                                    .background(context.state.isPaused ? Color.purple.opacity(0.2) : Color.white.opacity(0.15))
+
+                            Button(intent: StopIntent()) {
+                                Image(systemName: "xmark")
+                                    .font(.title)
+                                    .frame(width: 50, height: 50)
+                                    .background(Color.red.opacity(0.2))
                                     .clipShape(Circle())
                             }
+                            .buttonStyle(.plain)
                         }
                     }
-                    .padding(.bottom, 10)
-                    .padding(.top, 10)
+                    .padding(.vertical, 10)
                 }
             } compactLeading: {
                 Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
-                    .imageScale(.small)
                     .foregroundColor(context.state.isPaused ? .yellow : .purple)
             } compactTrailing: {
-                // SOLUCION BUG VISUAL COMPACT: Condición para la isla cerrada
                 if context.state.isPaused {
                     Text(formatTime(seconds: context.state.remainingSeconds))
                         .monospacedDigit()
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.yellow)
-                        .minimumScaleFactor(0.8)
-                        .frame(minWidth: 40, maxWidth: 60)
                 } else {
                     Text(context.state.targetEndDate, style: .timer)
                         .monospacedDigit()
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.purple)
-                        .minimumScaleFactor(0.8)
-                        .frame(minWidth: 40, maxWidth: 60)
                 }
             } minimal: {
                 Image(systemName: "timer").foregroundColor(context.state.isPaused ? .yellow : .purple)

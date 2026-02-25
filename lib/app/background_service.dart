@@ -135,6 +135,11 @@ void onStart(ServiceInstance service) async {
     } else if (name == 'requestState') {
       service.invoke('update', bloc?.state.toJson());
     } else if (name == 'ui_resumed') {
+      service.invoke('update', bloc?.state.toJson());
+    } else if (name == 'ui_paused') {
+      // CRÍTICO: Cuando el usuario minimiza la app, forzamos una última actualización
+      // para asegurar que el widget tenga el estado final exacto y no se quede "congelado"
+      // por actualizaciones descartadas mientras la app estaba abierta.
       _forceNextUpdate = true;
       bloc?.add(ForceLiveActivityUpdate());
     }
@@ -169,8 +174,10 @@ void onStart(ServiceInstance service) async {
       // Android: Update every second for smooth timer
       shouldUpdate = shouldUpdate || timeDifference;
     } else if (Platform.isIOS) {
-      // iOS: Throttle updates to save Live Activity budget (only big jumps or status changes)
-      shouldUpdate = shouldUpdate || isBigTimeJump;
+      // iOS: Máxima estabilidad. 
+      // SOLO actualizamos si hay una orden explícita (_forceNextUpdate) 
+      // o un cambio de estado real (Play -> Pausa -> Break -> Focus).
+      // El reloj se ve corriendo porque Apple usa el .timer nativo.
     }
 
     if (shouldUpdate) {
