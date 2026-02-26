@@ -4,12 +4,14 @@ class BottomActionItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color? iconColor;
 
   const BottomActionItem({
     super.key,
     required this.icon,
     required this.label,
     required this.onTap,
+    this.iconColor,
   });
 
   @override
@@ -22,7 +24,7 @@ class BottomActionItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.blueAccent, size: 28),
+            Icon(icon, color: iconColor ?? Colors.blueAccent, size: 28),
             const SizedBox(height: 4),
             Text(
               label,

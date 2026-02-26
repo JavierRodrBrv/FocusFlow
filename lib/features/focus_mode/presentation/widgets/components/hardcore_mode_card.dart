@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
@@ -54,12 +55,12 @@ class HardcoreModeCard extends StatelessWidget {
                     Text(
                       isSessionActive
                           ? 'Bloqueado durante la sesión'
-                          : 'La sesión se pausa si levantas el móvil',
+                          : 'El temporizador solo iniciará cuando pongas el móvil boca abajo.',
                       style: TextStyle(
                         fontSize: 12,
                         color: isSessionActive
                             ? Colors.amber.withOpacity(0.8)
-                            : Colors.white.withOpacity(0.6),
+                            : Colors.blueAccent.withOpacity(0.9),
                         fontWeight: isSessionActive
                             ? FontWeight.bold
                             : FontWeight.normal,
@@ -72,7 +73,10 @@ class HardcoreModeCard extends StatelessWidget {
                 value: state.isHardcoreMode,
                 onChanged: isSessionActive
                     ? null
-                    : (_) {
+                    : (val) {
+                        if (val) {
+                          HapticFeedback.mediumImpact();
+                        }
                         service.invoke('sendEvent', {
                           'event': 'toggleHardcore',
                         });
@@ -128,6 +132,14 @@ class _StatusMessage extends StatelessWidget {
     }
 
     if (state.pomodoroStatus == PomodoroStatus.running) {
+      if (state.isWaitingForFirstFlip) {
+        return _buildRow(
+          icon: Icons.screen_rotation_rounded,
+          color: Colors.blueAccent,
+          text: '¡Activado! Voltea el móvil para comenzar.',
+          isBold: true,
+        );
+      }
       if (state.phoneOrientation == PhoneOrientation.faceDown) {
         return _buildRow(
           icon: Icons.check_circle_outline,
@@ -148,7 +160,7 @@ class _StatusMessage extends StatelessWidget {
       return _buildRow(
         icon: Icons.info_outline,
         color: Colors.white54,
-        text: 'Para empezar, pon el móvil boca abajo y pulsa Play.',
+        text: 'Modo Focus armado. Pulsa Play y voltea el móvil.',
       );
     }
   }

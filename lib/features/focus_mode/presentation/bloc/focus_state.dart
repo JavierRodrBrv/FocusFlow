@@ -40,6 +40,7 @@ class FocusState {
   final Duration totalPenaltyTime;
   final bool isZoomMode;
   final BackgroundEffect backgroundEffect;
+  final bool isWaitingForFirstFlip;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -69,6 +70,7 @@ class FocusState {
     this.totalPenaltyTime = Duration.zero,
     this.isZoomMode = false,
     this.backgroundEffect = BackgroundEffect.gradient,
+    this.isWaitingForFirstFlip = false,
   });
 
   factory FocusState.initial() => const FocusState();
@@ -101,6 +103,7 @@ class FocusState {
     Duration? totalPenaltyTime,
     bool? isZoomMode,
     BackgroundEffect? backgroundEffect,
+    bool? isWaitingForFirstFlip,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -130,6 +133,8 @@ class FocusState {
       totalPenaltyTime: totalPenaltyTime ?? this.totalPenaltyTime,
       isZoomMode: isZoomMode ?? this.isZoomMode,
       backgroundEffect: backgroundEffect ?? this.backgroundEffect,
+      isWaitingForFirstFlip:
+          isWaitingForFirstFlip ?? this.isWaitingForFirstFlip,
     );
   }
 
@@ -172,6 +177,7 @@ class FocusState {
       'totalPenaltyTimeSeconds': totalPenaltyTime.inSeconds,
       'isZoomMode': isZoomMode,
       'backgroundEffect': backgroundEffect.index,
+      'isWaitingForFirstFlip': isWaitingForFirstFlip,
     };
   }
 
@@ -224,6 +230,7 @@ class FocusState {
       totalPenaltyTime: Duration(seconds: json['totalPenaltyTimeSeconds'] ?? 0),
       isZoomMode: json['isZoomMode'] ?? false,
       backgroundEffect: BackgroundEffect.values[json['backgroundEffect'] ?? 1],
+      isWaitingForFirstFlip: json['isWaitingForFirstFlip'] ?? false,
     );
   }
 }

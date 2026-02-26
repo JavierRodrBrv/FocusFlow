@@ -328,6 +328,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
           isPlayingMix: false,
           lastActivatedMixId: null, // Reset active
           persistedLastMixId: persistedId, // Set history
+          backgroundEffect: _sessionManager.currentState.backgroundEffect,
+          isWaitingForFirstFlip: _sessionManager.currentState.isWaitingForFirstFlip,
         ),
       );
     } catch (e) {
@@ -402,6 +404,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
             penaltyCount: s.penaltyCount,
             totalPenaltyTime: s.totalPenaltyTime,
             backgroundEffect: s.backgroundEffect,
+            isWaitingForFirstFlip: s.isWaitingForFirstFlip,
             // Update mix state to paused
             rainVolume: 0.0,
             fireVolume: 0.0,
@@ -435,6 +438,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
         penaltyCount: s.penaltyCount,
         totalPenaltyTime: s.totalPenaltyTime,
         backgroundEffect: s.backgroundEffect,
+        isWaitingForFirstFlip: s.isWaitingForFirstFlip,
       ),
     );
   }
