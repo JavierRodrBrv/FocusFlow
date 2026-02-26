@@ -108,82 +108,110 @@ class TimerControls extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Reset Button - Acción secundaria
+        if (!state.isZoomMode) ...[
+          // Reset Button - Acción secundaria
+          BouncingButton(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.05),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              child: Icon(
+                Icons.replay,
+                size: 28,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+            onPressed: () => _confirmReset(
+              context,
+              () => service.invoke('sendEvent', {'event': 'resetTimer'}),
+            ),
+          ),
+
+          const SizedBox(width: 32),
+
+          // Play/Pause Button - Acción principal rediseñada
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) =>
+                ScaleTransition(scale: animation, child: child),
+            child: BouncingButton(
+              key: ValueKey(isActive ? 'pause_btn' : 'play_btn'),
+              child: GestureDetector(
+                onTap: () {
+                  if (status == PomodoroStatus.initial) {
+                    _showBreakSelectionDialog(context);
+                  } else {
+                    final event = isActive ? 'pauseTimer' : 'startTimer';
+                    service.invoke('sendEvent', {'event': event});
+                  }
+                },
+                child: Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.secondary,
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.4),
+                        blurRadius: 25,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    isActive ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    size: 52,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 32),
+        ],
+
+        // Zoom Button - Acción complementaria
         BouncingButton(
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.05),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-            child: Icon(
-              Icons.replay,
-              size: 28,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
-          ),
-          onPressed: () => _confirmReset(
-            context,
-            () => service.invoke('sendEvent', {'event': 'resetTimer'}),
-          ),
-        ),
-
-        const SizedBox(width: 32),
-
-        // Play/Pause Button - Acción principal rediseñada
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, animation) =>
-              ScaleTransition(scale: animation, child: child),
-          child: BouncingButton(
-            key: ValueKey(isActive ? 'pause_btn' : 'play_btn'),
-            child: GestureDetector(
-              onTap: () {
-                if (status == PomodoroStatus.initial) {
-                  _showBreakSelectionDialog(context);
-                } else {
-                  final event = isActive ? 'pauseTimer' : 'startTimer';
-                  service.invoke('sendEvent', {'event': event});
-                }
-              },
-              child: Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary,
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.4),
-                      blurRadius: 25,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  isActive ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  size: 52,
-                  color: Colors.white,
-                ),
+              color: state.isZoomMode
+                  ? Colors.blueAccent.withValues(alpha: 0.2)
+                  : Colors.white.withValues(alpha: 0.05),
+              border: Border.all(
+                color: state.isZoomMode
+                    ? Colors.blueAccent.withValues(alpha: 0.4)
+                    : Colors.white.withValues(alpha: 0.1),
               ),
             ),
+            child: Icon(
+              state.isZoomMode
+                  ? Icons.zoom_in_map_rounded
+                  : Icons.zoom_out_map_rounded,
+              size: 28,
+              color: state.isZoomMode ? Colors.blueAccent : Colors.white70,
+            ),
           ),
+          onPressed: () {
+            service.invoke('sendEvent', {'event': 'toggleZoomMode'});
+          },
         ),
-
-        // Espaciadores para mantener el Play centrado perfectamente
-        const SizedBox(width: 32),
-        const SizedBox(width: 52),
       ],
     );
   }

@@ -38,6 +38,7 @@ class FocusState {
   final bool hasBreak;
   final int penaltyCount;
   final Duration totalPenaltyTime;
+  final bool isZoomMode;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -65,6 +66,7 @@ class FocusState {
     this.hasBreak = false,
     this.penaltyCount = 0,
     this.totalPenaltyTime = Duration.zero,
+    this.isZoomMode = false,
   });
 
   factory FocusState.initial() => const FocusState();
@@ -95,6 +97,7 @@ class FocusState {
     bool? hasBreak,
     int? penaltyCount,
     Duration? totalPenaltyTime,
+    bool? isZoomMode,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -122,6 +125,7 @@ class FocusState {
       hasBreak: hasBreak ?? this.hasBreak,
       penaltyCount: penaltyCount ?? this.penaltyCount,
       totalPenaltyTime: totalPenaltyTime ?? this.totalPenaltyTime,
+      isZoomMode: isZoomMode ?? this.isZoomMode,
     );
   }
 
@@ -162,6 +166,7 @@ class FocusState {
       'hasBreak': hasBreak,
       'penaltyCount': penaltyCount,
       'totalPenaltyTimeSeconds': totalPenaltyTime.inSeconds,
+      'isZoomMode': isZoomMode,
     };
   }
 
@@ -212,6 +217,7 @@ class FocusState {
       hasBreak: json['hasBreak'] ?? false,
       penaltyCount: json['penaltyCount'] ?? 0,
       totalPenaltyTime: Duration(seconds: json['totalPenaltyTimeSeconds'] ?? 0),
+      isZoomMode: json['isZoomMode'] ?? false,
     );
   }
 }

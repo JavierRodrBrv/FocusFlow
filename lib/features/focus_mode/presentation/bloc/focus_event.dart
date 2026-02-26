@@ -40,6 +40,8 @@ class ToggleHardcoreMode extends FocusEvent {}
 
 class ToggleAlarmSound extends FocusEvent {}
 
+class ToggleZoomMode extends FocusEvent {}
+
 class StartTimer extends FocusEvent {}
 
 class PauseTimer extends FocusEvent {}

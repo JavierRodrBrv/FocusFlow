@@ -92,6 +92,9 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
       _sessionManager.toggleAlarmSound();
       add(_SessionStateChanged(_sessionManager.currentState));
     });
+    on<ToggleZoomMode>((e, emit) {
+      emit(state.copyWith(isZoomMode: !state.isZoomMode));
+    });
     on<StartTimer>((e, emit) {
       _sessionManager.startTimer();
       add(_SessionStateChanged(_sessionManager.currentState));

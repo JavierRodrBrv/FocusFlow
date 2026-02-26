@@ -12,6 +12,7 @@ class FocusBody extends StatelessWidget {
   final FlutterBackgroundService service;
   final GlobalKey timerKey;
   final GlobalKey controlsKey;
+  final bool overlayVisible;
 
   const FocusBody({
     super.key,
@@ -19,6 +20,7 @@ class FocusBody extends StatelessWidget {
     required this.service,
     required this.timerKey,
     required this.controlsKey,
+    this.overlayVisible = true,
   });
 
   @override
@@ -31,11 +33,18 @@ class FocusBody extends StatelessWidget {
       return const Center(child: Text("Error fatal de inicialización"));
     }
 
+    final isZoomMode = state.isZoomMode;
+    final showUI = !isZoomMode || (isZoomMode && overlayVisible);
+    // El anuncio se muestra si showUI es true (modo normal o toque) 
+    // O si estamos en modo zoom (según el nuevo requisito: "muestra el anuncio siempre")
+    final showAd = (!state.isPremium && state.canRequestAds) && (isZoomMode || showUI);
+
     return Column(
       children: [
         Expanded(
           child: Center(
             child: SingleChildScrollView(
+              physics: isZoomMode ? const NeverScrollableScrollPhysics() : null,
               padding: const EdgeInsets.symmetric(
                 horizontal: 24.0,
                 vertical: 16.0,
@@ -43,30 +52,49 @@ class FocusBody extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Showcase(
-                    key: timerKey,
-                    title: 'Temporizador',
-                    description:
-                        'Ajusta tu tiempo de enfoque. Pulsa el centro para usar el selector preciso de tiempo.',
-                    child: TimerDisplay(state: state, service: service),
+                  AnimatedScale(
+                    duration: const Duration(milliseconds: 500),
+                    scale: isZoomMode ? 1.4 : 1.0,
+                    curve: Curves.easeInOut,
+                    child: Showcase(
+                      key: timerKey,
+                      title: 'Temporizador',
+                      description:
+                          'Ajusta tu tiempo de enfoque. Pulsa el centro para usar el selector preciso de tiempo.',
+                      child: TimerDisplay(state: state, service: service),
+                    ),
                   ),
-                  const SizedBox(height: 48),
-                  Showcase(
-                    key: controlsKey,
-                    title: 'Controles de Sesión',
-                    description:
-                        'Inicia, pausa o reinicia tu sesión. Al pulsar Play, podrás elegir si quieres añadir un tiempo de descanso al finalizar el foco.',
-                    child: TimerControls(state: state, service: service),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                    child: SizedBox(height: isZoomMode ? 120 : 48),
+                  ),
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 400),
+                    opacity: showUI ? 1.0 : 0.0,
+                    child: IgnorePointer(
+                      ignoring: !showUI,
+                      child: Showcase(
+                        key: controlsKey,
+                        title: 'Controles de Sesión',
+                        description:
+                            'Inicia, pausa o reinicia tu sesión. Al pulsar Play, podrás elegir si quieres añadir un tiempo de descanso al finalizar el foco.',
+                        child: TimerControls(state: state, service: service),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
         ),
-        if (!state.isPremium && state.canRequestAds)
-          const SafeArea(top: false, child: AdBannerWidget())
-        else
-          const SizedBox.shrink(),
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 400),
+          opacity: showAd ? 1.0 : 0.0,
+          child: showAd
+              ? const SafeArea(top: false, child: AdBannerWidget())
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }

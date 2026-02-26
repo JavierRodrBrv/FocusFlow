@@ -43,6 +43,11 @@ class _FocusViewState extends State<FocusView> {
   late Stream<Map<String, dynamic>?> _updateStream;
   bool _isResuming = false;
 
+  // Zoom Mode Local State
+  bool _overlayVisible = true;
+  Timer? _overlayTimer;
+  bool? _lastKnownIsZoomMode;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +72,46 @@ class _FocusViewState extends State<FocusView> {
     _isResuming = true;
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() => _isResuming = false);
+    });
+  }
+
+  void _handleScreenTap(bool isZoomMode) {
+    if (!isZoomMode) return;
+
+    if (mounted) {
+      setState(() {
+        _overlayVisible = true;
+      });
+    }
+
+    _overlayTimer?.cancel();
+    _overlayTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _overlayVisible = false;
+        });
+      }
+    });
+  }
+
+  void _handleZoomModeTransition(bool isZoomMode) {
+    if (_lastKnownIsZoomMode == isZoomMode) return;
+
+    // Usamos postFrameCallback para evitar el error de setState durante el build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          if (isZoomMode) {
+            // Al entrar en modo zoom, ocultamos todo inmediatamente
+            _overlayVisible = false;
+          } else {
+            // Al salir, mostramos todo y cancelamos timers
+            _overlayVisible = true;
+            _overlayTimer?.cancel();
+          }
+          _lastKnownIsZoomMode = isZoomMode;
+        });
+      }
     });
   }
 
@@ -211,6 +256,10 @@ class _FocusViewState extends State<FocusView> {
           try {
             state = FocusState.fromJson(snapshot.data!);
             _checkCompletion(state);
+
+            // Manejar la transición de modo zoom de forma segura
+            _handleZoomModeTransition(state.isZoomMode);
+
             _lastKnownState = state;
           } catch (e) {
             state = _lastKnownState ?? const FocusState();
@@ -220,39 +269,53 @@ class _FocusViewState extends State<FocusView> {
               _lastKnownState ?? const FocusState(status: AppStatus.loading);
         }
 
-        return Stack(
-          children: [
-            TimerShaderBackground(state: state),
-            Scaffold(
-              backgroundColor: Colors.transparent,
-              appBar: FocusAppBar(
-                state: state,
-                tutorialKey: _tutorialKey,
-                premiumKey: _premiumKey,
-                onTutorialResult: (result) {
-                  if (result == 'tutorial') _startShowcase();
-                },
+        return GestureDetector(
+          onTap: () => _handleScreenTap(state.isZoomMode),
+          behavior: HitTestBehavior.translucent,
+          child: Stack(
+            children: [
+              TimerShaderBackground(state: state),
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                extendBody: true,
+                extendBodyBehindAppBar: true,
+                appBar: state.isZoomMode
+                    ? null
+                    : PreferredSize(
+                        preferredSize: const Size.fromHeight(kToolbarHeight),
+                        child: FocusAppBar(
+                          state: state,
+                          tutorialKey: _tutorialKey,
+                          premiumKey: _premiumKey,
+                          onTutorialResult: (result) {
+                            if (result == 'tutorial') _startShowcase();
+                          },
+                        ),
+                      ),
+                body: Stack(
+                  children: [
+                    FocusBody(
+                      state: state,
+                      service: FlutterBackgroundService(),
+                      timerKey: _timerKey,
+                      controlsKey: _controlsKey,
+                      overlayVisible: _overlayVisible,
+                    ),
+                    ConfettiOverlay(controller: _confettiController),
+                  ],
+                ),
+                bottomNavigationBar: state.isZoomMode
+                    ? null
+                    : FocusBottomBar(
+                        state: state,
+                        mixerKey: _mixerKey,
+                        focusModeKey: _focusModeKey,
+                        onMixerTap: () => _showMixerModal(state),
+                        onFocusModeTap: () => _showFocusModal(state),
+                      ),
               ),
-              body: Stack(
-                children: [
-                  FocusBody(
-                    state: state,
-                    service: FlutterBackgroundService(),
-                    timerKey: _timerKey,
-                    controlsKey: _controlsKey,
-                  ),
-                  ConfettiOverlay(controller: _confettiController),
-                ],
-              ),
-              bottomNavigationBar: FocusBottomBar(
-                state: state,
-                mixerKey: _mixerKey,
-                focusModeKey: _focusModeKey,
-                onMixerTap: () => _showMixerModal(state),
-                onFocusModeTap: () => _showFocusModal(state),
-              ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );

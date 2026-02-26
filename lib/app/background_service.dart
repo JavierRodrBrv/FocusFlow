@@ -112,6 +112,8 @@ void onStart(ServiceInstance service) async {
       bloc?.add(ToggleHardcoreMode());
     } else if (name == 'toggleAlarmSound') {
       bloc?.add(ToggleAlarmSound());
+    } else if (name == 'toggleZoomMode') {
+      bloc?.add(ToggleZoomMode());
     } else if (name == 'togglePremium') {
       bloc?.add(TogglePremiumStatus());
     } else if (name == 'updateConsentStatus') {
@@ -218,7 +220,7 @@ void onStart(ServiceInstance service) async {
         if (statusChanged && isFinished) {
           // Mostrar notificación local cuando el temporizador finaliza
           await LocalNotificationService().showTimerCompleteNotification();
-          
+
           // Avisar a la UI que hay una nueva sesión guardada en el historial
           service.invoke('refresh_history');
         }
