@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 class FocusFlowNotification {
-  static const MethodChannel _channel = MethodChannel('com.example.focus_flow/notification');
+  static const MethodChannel _channel = MethodChannel(
+    'com.example.focus_flow/notification',
+  );
 
   /// Inicializa la escucha de notificaciones
   static Future<void> initialize(Function(String) onActionReceived) async {

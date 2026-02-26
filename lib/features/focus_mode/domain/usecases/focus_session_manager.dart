@@ -91,20 +91,20 @@ class FocusSessionManager {
   bool get isAlarmSoundEnabled => _isAlarmSoundEnabled;
 
   SessionState get currentState => SessionState(
-        status: _status,
-        remainingTime: _remainingTime,
-        pomodoroDuration: _duration,
-        isInPenalty: _isInPenalty,
-        orientation: _orientation,
-        isHardcore: _isHardcore,
-        isAlarmSoundEnabled: _isAlarmSoundEnabled,
-        isResting:
-            _status == PomodoroStatus.resting ||
-            _prePauseStatus == PomodoroStatus.resting,
-        hasBreak: _breakDuration != null,
-        penaltyCount: _penaltyCount,
-        totalPenaltyTime: _totalPenaltyTime,
-      );
+    status: _status,
+    remainingTime: _remainingTime,
+    pomodoroDuration: _duration,
+    isInPenalty: _isInPenalty,
+    orientation: _orientation,
+    isHardcore: _isHardcore,
+    isAlarmSoundEnabled: _isAlarmSoundEnabled,
+    isResting:
+        _status == PomodoroStatus.resting ||
+        _prePauseStatus == PomodoroStatus.resting,
+    hasBreak: _breakDuration != null,
+    penaltyCount: _penaltyCount,
+    totalPenaltyTime: _totalPenaltyTime,
+  );
 
   FocusSessionManager(
     this._audioManager,

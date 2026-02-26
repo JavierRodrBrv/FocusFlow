@@ -41,6 +41,18 @@ import '../features/premium/data/repositories/premium_repository_impl.dart'
     as _i380;
 import '../features/premium/domain/repositories/premium_repository.dart'
     as _i843;
+import '../features/session_history/data/repositories/session_history_repository_impl.dart'
+    as _i777;
+import '../features/session_history/domain/repositories/i_session_history_repository.dart'
+    as _i506;
+import '../features/session_history/domain/usecases/delete_session_usecase.dart'
+    as _i684;
+import '../features/session_history/domain/usecases/get_session_history_usecase.dart'
+    as _i37;
+import '../features/session_history/domain/usecases/save_session_usecase.dart'
+    as _i415;
+import '../features/session_history/presentation/bloc/session_history_bloc.dart'
+    as _i120;
 
 // initializes the registration of main-scope dependencies inside of GetIt
 Future<_i174.GetIt> $initGetIt(
@@ -90,6 +102,9 @@ Future<_i174.GetIt> $initGetIt(
   gh.lazySingleton<_i657.SaveLastPlayedMixUseCase>(
     () => _i657.SaveLastPlayedMixUseCase(gh<_i72.SoundMixRepository>()),
   );
+  gh.lazySingleton<_i506.ISessionHistoryRepository>(
+    () => _i777.SessionHistoryRepositoryImpl(),
+  );
   gh.lazySingleton<_i843.PremiumRepository>(
     () => _i380.PremiumRepositoryImpl(gh<_i979.Box<_i434.PremiumStatus>>()),
   );
@@ -102,6 +117,21 @@ Future<_i174.GetIt> $initGetIt(
       gh<_i579.DndService>(),
     ),
   );
+  gh.lazySingleton<_i684.DeleteSessionUseCase>(
+    () => _i684.DeleteSessionUseCase(gh<_i506.ISessionHistoryRepository>()),
+  );
+  gh.lazySingleton<_i37.GetSessionHistoryUseCase>(
+    () => _i37.GetSessionHistoryUseCase(gh<_i506.ISessionHistoryRepository>()),
+  );
+  gh.lazySingleton<_i415.SaveSessionUseCase>(
+    () => _i415.SaveSessionUseCase(gh<_i506.ISessionHistoryRepository>()),
+  );
+  gh.factory<_i120.SessionHistoryBloc>(
+    () => _i120.SessionHistoryBloc(
+      gh<_i37.GetSessionHistoryUseCase>(),
+      gh<_i684.DeleteSessionUseCase>(),
+    ),
+  );
   gh.factory<_i176.FocusBloc>(
     () => _i176.FocusBloc(
       gh<_i843.PremiumRepository>(),
@@ -110,6 +140,7 @@ Future<_i174.GetIt> $initGetIt(
       gh<_i438.GetSavedMixesUseCase>(),
       gh<_i1064.GetLastPlayedMixUseCase>(),
       gh<_i657.SaveLastPlayedMixUseCase>(),
+      gh<_i415.SaveSessionUseCase>(),
     ),
   );
   return getIt;

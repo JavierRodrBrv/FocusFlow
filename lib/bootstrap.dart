@@ -4,14 +4,22 @@ import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:focus_flow/core/services/local_notification_service.dart';
+import 'package:focus_flow/app/injection.dart';
+import 'features/focus_mode/data/models/sound_mix_model.dart';
+import 'features/premium/data/models/premium_status.dart';
+import 'features/session_history/data/models/focus_session_model.dart';
 import 'app/background_service.dart';
-import 'core/services/local_notification_service.dart';
 
 /// Inicializa los sistemas críticos antes de lanzar la UI.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 0. Inicializar localización
+  await initializeDateFormatting('es', null);
 
   // 1. Configuración de UI
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -25,6 +33,16 @@ Future<void> bootstrap() async {
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
+
+    if (!Hive.isAdapterRegistered(0))
+      Hive.registerAdapter(PremiumStatusAdapter());
+    if (!Hive.isAdapterRegistered(1))
+      Hive.registerAdapter(SoundMixModelAdapter());
+    if (!Hive.isAdapterRegistered(2))
+      Hive.registerAdapter(FocusSessionModelAdapter());
+
+    await configureDependencies();
+
     print('[Bootstrap] Hive Initialized (UI Isolate).');
   } catch (e) {
     print('[Bootstrap] Hive Error: $e');
@@ -33,13 +51,13 @@ Future<void> bootstrap() async {
   // 4. Anuncios (Solo funciona en UI Isolate)
   try {
     await MobileAds.instance.initialize();
-    
+
     // Configurar dispositivo de prueba para evitar Error Code 3 (No Fill)
     RequestConfiguration configuration = RequestConfiguration(
       testDeviceIds: ['EC239DEACF2B25B0647324A1BA22FFBD'],
     );
     await MobileAds.instance.updateRequestConfiguration(configuration);
-    
+
     print('[Bootstrap] Mobile Ads Initialized.');
   } catch (e) {
     print('[Bootstrap] Mobile Ads Error: $e');

@@ -6,10 +6,7 @@ import 'package:flutter_shaders/flutter_shaders.dart';
 class GradientFlowBackground extends StatefulWidget {
   final Widget? child;
 
-  const GradientFlowBackground({
-    super.key,
-    this.child,
-  });
+  const GradientFlowBackground({super.key, this.child});
 
   @override
   State<GradientFlowBackground> createState() => _GradientFlowBackgroundState();
@@ -39,18 +36,12 @@ class _GradientFlowBackgroundState extends State<GradientFlowBackground>
 
   @override
   Widget build(BuildContext context) {
-    return ShaderBuilder(
-      (context, shader, child) {
-        return CustomPaint(
-          painter: _FlowPainter(
-            shader: shader,
-            time: _elapsedSeconds,
-          ),
-          child: widget.child ?? const SizedBox.expand(),
-        );
-      },
-      assetKey: 'shaders/gradient_flow.frag',
-    );
+    return ShaderBuilder((context, shader, child) {
+      return CustomPaint(
+        painter: _FlowPainter(shader: shader, time: _elapsedSeconds),
+        child: widget.child ?? const SizedBox.expand(),
+      );
+    }, assetKey: 'shaders/gradient_flow.frag');
   }
 }
 
@@ -67,7 +58,7 @@ class _FlowPainter extends CustomPainter {
     shader.setFloat(2, size.height);
 
     final paint = Paint()..shader = shader;
-    
+
     // Check if we need to apply border radius
     // Since this is a painter, we should use drawRRect if needed.
     // However, it's often better to clip the widget that contains this painter.

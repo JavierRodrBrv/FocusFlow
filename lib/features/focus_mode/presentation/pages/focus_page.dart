@@ -54,7 +54,7 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
           _pauseTime = null;
         });
       }
-      
+
       // Always sync Live Activity state on resume
       FlutterBackgroundService().invoke('sendEvent', {'event': 'ui_resumed'});
     }

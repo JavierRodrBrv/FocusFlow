@@ -60,6 +60,8 @@ dependencies:
   app_links: ^7.0.0
   flutter_local_notifications: ^20.1.0
   timezone: ^0.10.1
+  intl: ^0.20.2
+  equatable: ^2.0.8
 
 dev_dependencies:
   flutter_test:

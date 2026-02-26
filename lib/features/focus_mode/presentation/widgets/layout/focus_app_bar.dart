@@ -3,6 +3,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings_menu_bottom_sheet.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
+import 'package:focus_flow/features/session_history/presentation/pages/session_history_page.dart';
 import 'package:focus_flow/flavors.dart';
 import 'package:showcaseview/showcaseview.dart';
 
@@ -55,6 +56,17 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.history_rounded, color: Colors.white70),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SessionHistoryPage(),
+              ),
+            );
+          },
+        ),
         Showcase(
           key: premiumKey,
           title: 'Experiencia Premium',

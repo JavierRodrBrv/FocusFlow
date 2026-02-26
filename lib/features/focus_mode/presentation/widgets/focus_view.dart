@@ -50,7 +50,7 @@ class _FocusViewState extends State<FocusView> {
       duration: const Duration(seconds: 3),
     );
     _updateStream = FlutterBackgroundService().on('update');
-    
+
     _initDeepLinks(); // Added
 
     _requestState();
@@ -69,11 +69,11 @@ class _FocusViewState extends State<FocusView> {
       if (mounted) setState(() => _isResuming = false);
     });
   }
-  
+
   // Added method
   Future<void> _initDeepLinks() async {
     _appLinks = AppLinks();
-    
+
     // Check initial link
     try {
       final initialLink = await _appLinks.getInitialLink();
@@ -133,7 +133,8 @@ class _FocusViewState extends State<FocusView> {
 
     if (state.pomodoroStatus == PomodoroStatus.finished) {
       // SOLO MOSTRAR SI EL ESTADO ANTERIOR NO ERA 'FINISHED'
-      if (!_completionDialogShown && (_lastKnownState?.pomodoroStatus != PomodoroStatus.finished)) {
+      if (!_completionDialogShown &&
+          (_lastKnownState?.pomodoroStatus != PomodoroStatus.finished)) {
         _completionDialogShown = true;
         FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
         _confettiController.play();

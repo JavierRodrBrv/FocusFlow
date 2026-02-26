@@ -12,8 +12,10 @@ import 'package:focus_flow/features/focus_mode/domain/usecases/get_saved_mixes_u
 import 'package:focus_flow/features/focus_mode/domain/usecases/save_sound_mix_usecase.dart';
 import 'package:focus_flow/features/focus_mode/domain/usecases/get_last_played_mix_usecase.dart';
 import 'package:focus_flow/features/focus_mode/domain/usecases/save_last_played_mix_usecase.dart';
-import 'package:injectable/injectable.dart';
 import 'package:focus_flow/features/premium/domain/repositories/premium_repository.dart';
+import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
+import 'package:focus_flow/features/session_history/domain/usecases/save_session_usecase.dart';
+import 'package:injectable/injectable.dart';
 
 part 'focus_event.dart';
 part 'focus_state.dart';
@@ -26,8 +28,10 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   final GetSavedMixesUseCase _getSavedMixesUseCase;
   final GetLastPlayedMixUseCase _getLastPlayedMixUseCase;
   final SaveLastPlayedMixUseCase _saveLastPlayedMixUseCase;
+  final SaveSessionUseCase _saveSessionUseCase;
 
   StreamSubscription? _sessionSubscription;
+  DateTime? _sessionStartTime;
 
   FocusBloc(
     this._premiumRepository,
@@ -36,6 +40,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     this._getSavedMixesUseCase,
     this._getLastPlayedMixUseCase,
     this._saveLastPlayedMixUseCase,
+    this._saveSessionUseCase,
   ) : super(FocusState.initial()) {
     _registerEventHandlers();
 
@@ -337,61 +342,91 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   ) {
     final s = event.sessionState;
 
+    // Detect session start to record start time
+    if (s.status == PomodoroStatus.running &&
+        (state.pomodoroStatus == PomodoroStatus.initial ||
+            _sessionStartTime == null)) {
+      _sessionStartTime = DateTime.now();
+    }
+
     // Detect if the session just transitioned to 'finished'
     final justFinished =
         s.status == PomodoroStatus.finished &&
         state.pomodoroStatus != PomodoroStatus.finished;
 
-    if (justFinished && state.isPlayingMix) {
-      // Auto-pause mix to avoid overlapping with alarm/vibration
-      final currentRain = state.rainVolume;
-      final currentFire = state.fireVolume;
-      final currentBrown = state.brownNoiseVolume;
-
-      _sessionManager.updateRainVolume(0.0);
-      _sessionManager.updateFireVolume(0.0);
-      _sessionManager.updateBrownNoiseVolume(0.0);
-
-      emit(
-        state.copyWith(
-          pomodoroStatus: s.status,
-          remainingTime: s.remainingTime,
-          pomodoroDuration: s.pomodoroDuration,
-          isInPenaltyBox: s.isInPenalty,
-          phoneOrientation: s.orientation,
-          isHardcoreMode: s.isHardcore,
-          isAlarmSoundEnabled: s.isAlarmSoundEnabled,
-          isResting: s.isResting,
-          hasBreak: s.hasBreak,
-          penaltyCount: s.penaltyCount,
-          totalPenaltyTime: s.totalPenaltyTime,
-          // Update mix state to paused
-          rainVolume: 0.0,
-          fireVolume: 0.0,
-          brownNoiseVolume: 0.0,
-          lastRainVolume: currentRain,
-          lastFireVolume: currentFire,
-          lastBrownNoiseVolume: currentBrown,
-          isPlayingMix: false,
-        ),
+    if (justFinished) {
+      // Save session to history
+      final session = FocusSession(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        startTime: _sessionStartTime ?? DateTime.now(),
+        plannedDuration: s.pomodoroDuration,
+        actualDuration: s.pomodoroDuration, // Finished means it reached the end
+        isHardcoreMode: s.isHardcore,
+        penaltyCount: s.penaltyCount,
+        totalPenaltyTime: s.totalPenaltyTime,
+        isResting: s.isResting,
+        isCompleted: true,
       );
-    } else {
-      emit(
-        state.copyWith(
-          pomodoroStatus: s.status,
-          remainingTime: s.remainingTime,
-          pomodoroDuration: s.pomodoroDuration,
-          isInPenaltyBox: s.isInPenalty,
-          phoneOrientation: s.orientation,
-          isHardcoreMode: s.isHardcore,
-          isAlarmSoundEnabled: s.isAlarmSoundEnabled,
-          isResting: s.isResting,
-          hasBreak: s.hasBreak,
-          penaltyCount: s.penaltyCount,
-          totalPenaltyTime: s.totalPenaltyTime,
-        ),
-      );
+      _saveSessionUseCase(session);
+      _sessionStartTime = null;
+
+      if (state.isPlayingMix) {
+        // Auto-pause mix to avoid overlapping with alarm/vibration
+        final currentRain = state.rainVolume;
+        final currentFire = state.fireVolume;
+        final currentBrown = state.brownNoiseVolume;
+
+        _sessionManager.updateRainVolume(0.0);
+        _sessionManager.updateFireVolume(0.0);
+        _sessionManager.updateBrownNoiseVolume(0.0);
+
+        emit(
+          state.copyWith(
+            pomodoroStatus: s.status,
+            remainingTime: s.remainingTime,
+            pomodoroDuration: s.pomodoroDuration,
+            isInPenaltyBox: s.isInPenalty,
+            phoneOrientation: s.orientation,
+            isHardcoreMode: s.isHardcore,
+            isAlarmSoundEnabled: s.isAlarmSoundEnabled,
+            isResting: s.isResting,
+            hasBreak: s.hasBreak,
+            penaltyCount: s.penaltyCount,
+            totalPenaltyTime: s.totalPenaltyTime,
+            // Update mix state to paused
+            rainVolume: 0.0,
+            fireVolume: 0.0,
+            brownNoiseVolume: 0.0,
+            lastRainVolume: currentRain,
+            lastFireVolume: currentFire,
+            lastBrownNoiseVolume: currentBrown,
+            isPlayingMix: false,
+          ),
+        );
+        return;
+      }
     }
+
+    // Reset start time if stopped manually
+    if (s.status == PomodoroStatus.initial) {
+      _sessionStartTime = null;
+    }
+
+    emit(
+      state.copyWith(
+        pomodoroStatus: s.status,
+        remainingTime: s.remainingTime,
+        pomodoroDuration: s.pomodoroDuration,
+        isInPenaltyBox: s.isInPenalty,
+        phoneOrientation: s.orientation,
+        isHardcoreMode: s.isHardcore,
+        isAlarmSoundEnabled: s.isAlarmSoundEnabled,
+        isResting: s.isResting,
+        hasBreak: s.hasBreak,
+        penaltyCount: s.penaltyCount,
+        totalPenaltyTime: s.totalPenaltyTime,
+      ),
+    );
   }
 
   @override

@@ -85,7 +85,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
 
   void _loadInterstitialAd() {
     if (_isAdLoading || kIsWeb) return;
-    
+
     setState(() => _isAdLoading = true);
 
     final String adUnitId = Platform.isAndroid
@@ -147,12 +147,12 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     if (_isAdLoaded && _interstitialAd != null) {
       // Bloquear doble tap preventivamente
       setState(() {
-        _isAdLoaded = false; 
-        _isWaitingForAd = true; 
+        _isAdLoaded = false;
+        _isWaitingForAd = true;
       });
-      
+
       _interstitialAd!.setImmersiveMode(true);
-      
+
       // Pequeño delay para asegurar que el SDK de AdMob y el Activity estén sincronizados
       // (evita el error de "The ad can not be shown when app is not in foreground")
       Future.delayed(const Duration(milliseconds: 100), () {

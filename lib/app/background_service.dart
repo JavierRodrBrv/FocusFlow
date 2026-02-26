@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -14,12 +15,15 @@ import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow_notification/focus_flow_notification.dart';
 import '../features/focus_mode/data/models/sound_mix_model.dart';
+import '../features/session_history/data/models/focus_session_model.dart';
 import '../core/services/local_notification_service.dart';
 
 const String notificationChannelId = 'focus_flow_channel';
 const int notificationId = 888;
 const String _controlPortName = 'focus_flow_control_port';
-const MethodChannel _notificationChannel = MethodChannel('com.example.focus_flow/notification');
+const MethodChannel _notificationChannel = MethodChannel(
+  'com.example.focus_flow/notification',
+);
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
@@ -41,6 +45,8 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
+
+  await initializeDateFormatting('es', null);
 
   FocusBloc? bloc;
 
@@ -70,13 +76,17 @@ void onStart(ServiceInstance service) async {
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
-    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(PremiumStatusAdapter());
-    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SoundMixModelAdapter());
+    if (!Hive.isAdapterRegistered(0))
+      Hive.registerAdapter(PremiumStatusAdapter());
+    if (!Hive.isAdapterRegistered(1))
+      Hive.registerAdapter(SoundMixModelAdapter());
+    if (!Hive.isAdapterRegistered(2))
+      Hive.registerAdapter(FocusSessionModelAdapter());
     await configureDependencies();
-    
+
     // Inicializar LocalNotificationService para el Isolate de Background
     await LocalNotificationService().init();
-    
+
     bloc = getIt<FocusBloc>();
     bloc.add(InitializeApp());
   } catch (e) {
@@ -129,7 +139,9 @@ void onStart(ServiceInstance service) async {
       final minutes = event['durationMinutes'] as int;
       final seconds = event['durationSeconds'] as int?;
       bloc?.add(
-        UpdatePomodoroDuration(Duration(minutes: minutes, seconds: seconds ?? 0)),
+        UpdatePomodoroDuration(
+          Duration(minutes: minutes, seconds: seconds ?? 0),
+        ),
       );
       _forceNextUpdate = true;
     } else if (name == 'setBreakDuration') {
@@ -152,7 +164,8 @@ void onStart(ServiceInstance service) async {
   });
 
   bloc?.stream.listen((state) async {
-    final time = '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
+    final time =
+        '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
     final status = state.pomodoroStatus;
     bool isFinished = status == PomodoroStatus.finished;
     bool isPaused = status == PomodoroStatus.paused;
@@ -161,8 +174,11 @@ void onStart(ServiceInstance service) async {
     // Toggle Foreground Mode to hide notification when idle
     if (service is AndroidServiceInstance) {
       bool isCurrentlyIdle = isInitial || isFinished;
-      bool wasIdle = _lastStatus == null || _lastStatus == PomodoroStatus.initial || _lastStatus == PomodoroStatus.finished;
-      
+      bool wasIdle =
+          _lastStatus == null ||
+          _lastStatus == PomodoroStatus.initial ||
+          _lastStatus == PomodoroStatus.finished;
+
       if (isCurrentlyIdle != wasIdle || _lastStatus == null) {
         if (isCurrentlyIdle) {
           service.setAsBackgroundService();
@@ -176,8 +192,12 @@ void onStart(ServiceInstance service) async {
     service.invoke('update', state.toJson());
 
     bool statusChanged = _lastStatus != status;
-    bool timeDifference = _lastRemaining == null || (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() >= 1;
-    bool isBigTimeJump = _lastRemaining != null && (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2;
+    bool timeDifference =
+        _lastRemaining == null ||
+        (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() >= 1;
+    bool isBigTimeJump =
+        _lastRemaining != null &&
+        (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2;
 
     bool shouldUpdate = _forceNextUpdate || statusChanged;
 
@@ -185,8 +205,8 @@ void onStart(ServiceInstance service) async {
       // Android: Update every second for smooth timer
       shouldUpdate = shouldUpdate || timeDifference;
     } else if (Platform.isIOS) {
-      // iOS: Máxima estabilidad. 
-      // SOLO actualizamos si hay una orden explícita (_forceNextUpdate) 
+      // iOS: Máxima estabilidad.
+      // SOLO actualizamos si hay una orden explícita (_forceNextUpdate)
       // o un cambio de estado real (Play -> Pausa -> Break -> Focus).
       // El reloj se ve corriendo porque Apple usa el .timer nativo.
     }
@@ -198,6 +218,9 @@ void onStart(ServiceInstance service) async {
         if (statusChanged && isFinished) {
           // Mostrar notificación local cuando el temporizador finaliza
           await LocalNotificationService().showTimerCompleteNotification();
+          
+          // Avisar a la UI que hay una nueva sesión guardada en el historial
+          service.invoke('refresh_history');
         }
 
         // Revisar cambios en el modo castigo (penalty) para la notificación local
@@ -215,8 +238,10 @@ void onStart(ServiceInstance service) async {
         if (Platform.isAndroid && !isFinished && !isInitial) {
           // Si estamos en penalty, enviamos 'running' para que el plugin nativo no oculte
           // la notificación (ya que 'paused' en Kotlin quita el setOngoing(true))
-          String notificationStatus = state.isInPenaltyBox ? 'running' : (isPaused ? 'paused' : 'running');
-          
+          String notificationStatus = state.isInPenaltyBox
+              ? 'running'
+              : (isPaused ? 'paused' : 'running');
+
           await _notificationChannel.invokeMethod('updateNotification', {
             'time': time,
             'status': notificationStatus,
@@ -225,7 +250,8 @@ void onStart(ServiceInstance service) async {
 
         if (Platform.isIOS) {
           if (status == PomodoroStatus.initial || isFinished) {
-            if (isFinished) await Future.delayed(const Duration(milliseconds: 800));
+            if (isFinished)
+              await Future.delayed(const Duration(milliseconds: 800));
             await _notificationChannel.invokeMethod('endLiveActivity');
           } else {
             final now = DateTime.now();
@@ -238,7 +264,11 @@ void onStart(ServiceInstance service) async {
               'totalDuration': state.pomodoroDuration.inSeconds,
               'status': state.isResting ? 'break' : 'focus',
               'isPaused': isPaused,
-              'progress': state.pomodoroDuration.inSeconds > 0 ? (state.pomodoroDuration.inSeconds - state.remainingTime.inSeconds) / state.pomodoroDuration.inSeconds : 0.0,
+              'progress': state.pomodoroDuration.inSeconds > 0
+                  ? (state.pomodoroDuration.inSeconds -
+                            state.remainingTime.inSeconds) /
+                        state.pomodoroDuration.inSeconds
+                  : 0.0,
               'remainingSeconds': state.remainingTime.inSeconds,
             });
           }
