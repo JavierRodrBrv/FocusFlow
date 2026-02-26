@@ -1,0 +1,1 @@
+enum BackgroundEffect { solid, gradient }

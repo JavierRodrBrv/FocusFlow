@@ -42,6 +42,11 @@ class ToggleAlarmSound extends FocusEvent {}
 
 class ToggleZoomMode extends FocusEvent {}
 
+class SetBackgroundEffect extends FocusEvent {
+  final BackgroundEffect effect;
+  SetBackgroundEffect(this.effect);
+}
+
 class StartTimer extends FocusEvent {}
 
 class PauseTimer extends FocusEvent {}

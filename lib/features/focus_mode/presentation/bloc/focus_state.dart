@@ -39,6 +39,7 @@ class FocusState {
   final int penaltyCount;
   final Duration totalPenaltyTime;
   final bool isZoomMode;
+  final BackgroundEffect backgroundEffect;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -67,6 +68,7 @@ class FocusState {
     this.penaltyCount = 0,
     this.totalPenaltyTime = Duration.zero,
     this.isZoomMode = false,
+    this.backgroundEffect = BackgroundEffect.gradient,
   });
 
   factory FocusState.initial() => const FocusState();
@@ -98,6 +100,7 @@ class FocusState {
     int? penaltyCount,
     Duration? totalPenaltyTime,
     bool? isZoomMode,
+    BackgroundEffect? backgroundEffect,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -126,6 +129,7 @@ class FocusState {
       penaltyCount: penaltyCount ?? this.penaltyCount,
       totalPenaltyTime: totalPenaltyTime ?? this.totalPenaltyTime,
       isZoomMode: isZoomMode ?? this.isZoomMode,
+      backgroundEffect: backgroundEffect ?? this.backgroundEffect,
     );
   }
 
@@ -167,6 +171,7 @@ class FocusState {
       'penaltyCount': penaltyCount,
       'totalPenaltyTimeSeconds': totalPenaltyTime.inSeconds,
       'isZoomMode': isZoomMode,
+      'backgroundEffect': backgroundEffect.index,
     };
   }
 
@@ -218,6 +223,7 @@ class FocusState {
       penaltyCount: json['penaltyCount'] ?? 0,
       totalPenaltyTime: Duration(seconds: json['totalPenaltyTimeSeconds'] ?? 0),
       isZoomMode: json['isZoomMode'] ?? false,
+      backgroundEffect: BackgroundEffect.values[json['backgroundEffect'] ?? 1],
     );
   }
 }

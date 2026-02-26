@@ -48,6 +48,8 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
           onPressed: () async {
             final result = await showModalBottomSheet(
               context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
               builder: (context) =>
                   SettingsMenuBottomSheet(initialState: state),
             );

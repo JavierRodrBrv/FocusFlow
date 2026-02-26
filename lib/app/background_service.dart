@@ -9,6 +9,7 @@ import 'package:flutter_background_service_android/flutter_background_service_an
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
+import 'package:focus_flow/features/focus_mode/domain/entities/background_effect.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:focus_flow/features/premium/data/models/premium_status.dart';
@@ -114,6 +115,9 @@ void onStart(ServiceInstance service) async {
       bloc?.add(ToggleAlarmSound());
     } else if (name == 'toggleZoomMode') {
       bloc?.add(ToggleZoomMode());
+    } else if (name == 'setBackgroundEffect') {
+      final effectIndex = event['effect'] as int;
+      bloc?.add(SetBackgroundEffect(BackgroundEffect.values[effectIndex]));
     } else if (name == 'togglePremium') {
       bloc?.add(TogglePremiumStatus());
     } else if (name == 'updateConsentStatus') {

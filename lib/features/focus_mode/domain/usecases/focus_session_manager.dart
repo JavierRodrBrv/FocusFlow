@@ -8,6 +8,7 @@ import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.d
 import 'package:focus_flow/core/services/haptic/haptic_feedback_service.dart';
 import 'package:focus_flow/core/services/sensors/sensor_service.dart';
 import 'package:focus_flow/features/focus_mode/data/datasources/timer_service.dart';
+import 'package:focus_flow/features/focus_mode/domain/entities/background_effect.dart';
 
 // Definimos un estado interno simple para el manager
 class SessionState {
@@ -22,6 +23,7 @@ class SessionState {
   final bool hasBreak;
   final int penaltyCount;
   final Duration totalPenaltyTime;
+  final BackgroundEffect backgroundEffect;
 
   SessionState({
     required this.status,
@@ -35,6 +37,7 @@ class SessionState {
     required this.hasBreak,
     required this.penaltyCount,
     required this.totalPenaltyTime,
+    required this.backgroundEffect,
   });
 
   factory SessionState.initial() => SessionState(
@@ -49,6 +52,7 @@ class SessionState {
     hasBreak: false,
     penaltyCount: 0,
     totalPenaltyTime: Duration.zero,
+    backgroundEffect: BackgroundEffect.gradient,
   );
 }
 
@@ -76,6 +80,7 @@ class FocusSessionManager {
   bool _isAlarmSoundEnabled = true;
   bool _hasBeenFaceDownAtLeastOnce = false;
   PomodoroStatus? _prePauseStatus;
+  BackgroundEffect _backgroundEffect = BackgroundEffect.gradient;
 
   // Métricas de distracción
   int _penaltyCount = 0;
@@ -104,6 +109,7 @@ class FocusSessionManager {
     hasBreak: _breakDuration != null,
     penaltyCount: _penaltyCount,
     totalPenaltyTime: _totalPenaltyTime,
+    backgroundEffect: _backgroundEffect,
   );
 
   FocusSessionManager(
@@ -291,17 +297,26 @@ class FocusSessionManager {
 
       _isAlarmSoundEnabled = _settingsBox!.get(
         'alarm_sound_enabled',
-
         defaultValue: true,
       );
+
+      final effectIndex = _settingsBox!.get(
+        'background_effect',
+        defaultValue: BackgroundEffect.gradient.index,
+      );
+      _backgroundEffect = BackgroundEffect.values[effectIndex];
 
       print(
         '[FocusSessionManager] Loaded Alarm Sound Preference: $_isAlarmSoundEnabled',
       );
+      print(
+        '[FocusSessionManager] Loaded Background Effect: $_backgroundEffect',
+      );
     } catch (e) {
-      print('[FocusSessionManager] Error loading alarm preference: $e');
+      print('[FocusSessionManager] Error loading preferences: $e');
 
       _isAlarmSoundEnabled = true; // Fallback
+      _backgroundEffect = BackgroundEffect.gradient;
     }
 
     _emitState();
@@ -321,6 +336,18 @@ class FocusSessionManager {
 
   void setBreakDuration(Duration? duration) {
     _breakDuration = duration;
+  }
+
+  void setBackgroundEffect(BackgroundEffect effect) async {
+    _backgroundEffect = effect;
+    try {
+      if (_settingsBox != null) {
+        await _settingsBox!.put('background_effect', effect.index);
+      }
+    } catch (e) {
+      print('[FocusSessionManager] Error saving background effect: $e');
+    }
+    _emitState();
   }
 
   void toggleAlarmSound() async {
@@ -535,28 +562,19 @@ class FocusSessionManager {
     _stateController.add(
       SessionState(
         status: _status,
-
         remainingTime: _remainingTime,
-
         pomodoroDuration: _duration,
-
         isInPenalty: _isInPenalty,
-
         orientation: _orientation,
-
         isHardcore: _isHardcore,
-
         isAlarmSoundEnabled: _isAlarmSoundEnabled,
-
         isResting:
             _status == PomodoroStatus.resting ||
             _prePauseStatus == PomodoroStatus.resting,
-
         hasBreak: _breakDuration != null,
-
         penaltyCount: _penaltyCount,
-
         totalPenaltyTime: _totalPenaltyTime,
+        backgroundEffect: _backgroundEffect,
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:focus_flow/core/domain/result.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 import 'package:focus_flow/core/error/failures.dart';
 import 'package:focus_flow/core/usecases/usecase.dart';
+import 'package:focus_flow/features/focus_mode/domain/entities/background_effect.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/sound_mix.dart';
 import 'package:focus_flow/features/focus_mode/domain/usecases/focus_session_manager.dart';
@@ -94,6 +95,10 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     });
     on<ToggleZoomMode>((e, emit) {
       emit(state.copyWith(isZoomMode: !state.isZoomMode));
+    });
+    on<SetBackgroundEffect>((e, emit) {
+      _sessionManager.setBackgroundEffect(e.effect);
+      add(_SessionStateChanged(_sessionManager.currentState));
     });
     on<StartTimer>((e, emit) {
       _sessionManager.startTimer();
@@ -396,6 +401,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
             hasBreak: s.hasBreak,
             penaltyCount: s.penaltyCount,
             totalPenaltyTime: s.totalPenaltyTime,
+            backgroundEffect: s.backgroundEffect,
             // Update mix state to paused
             rainVolume: 0.0,
             fireVolume: 0.0,
@@ -428,6 +434,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
         hasBreak: s.hasBreak,
         penaltyCount: s.penaltyCount,
         totalPenaltyTime: s.totalPenaltyTime,
+        backgroundEffect: s.backgroundEffect,
       ),
     );
   }
