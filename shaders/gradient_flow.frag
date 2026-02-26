@@ -5,7 +5,7 @@ uniform vec2 uResolution;
 
 out vec4 fragColor;
 
-// Helper for more complex motion
+// Rotate 2D helper for dynamic motion
 mat2 rotate2D(float r) {
     return mat2(cos(r), sin(r), -sin(r), cos(r));
 }
@@ -14,42 +14,51 @@ void main() {
     vec2 uv = FlutterFragCoord().xy / uResolution.xy;
     float ratio = uResolution.x / uResolution.y;
     
-    // Slow down the base time for a more relaxing feel
-    float t = uTime * 0.15;
+    // Slow down time for a smooth, deep immersive experience
+    float t = uTime * 0.12;
     
-    // Dynamic coordinates
+    // Adjust coordinates
     vec2 p = uv * 2.0 - 1.0;
     p.x *= ratio;
     
-    // Layered noise-like motion (Plasma effect)
-    // We increase iterations and add rotation for a more "infinite" and less repetitive feel
-    for(int i = 1; i < 6; i++) {
+    // Multi-layered plasma flow for infinite immersion
+    vec2 p_flow = p;
+    for(int i = 1; i < 7; i++) {
         float fi = float(i);
-        p = p * rotate2D(t * 0.05 + fi); // Slow rotation per layer
-        p.x += 0.4 / fi * sin(fi * 2.5 * p.y + t + 0.5 * fi);
-        p.y += 0.4 / fi * sin(fi * 2.5 * p.x + t + 0.8 * fi);
+        p_flow = p_flow * rotate2D(t * 0.04 + fi * 0.2);
+        p_flow.x += 0.35 / fi * sin(fi * 2.2 * p_flow.y + t + 0.6 * fi);
+        p_flow.y += 0.35 / fi * sin(fi * 2.2 * p_flow.x + t + 0.9 * fi);
     }
     
-    // Colors based on the app's palette
-    vec3 color1 = vec3(0.05, 0.08, 0.15); // #0F172A (Base)
-    vec3 color2 = vec3(0.35, 0.15, 0.65); // Deep Purple
-    vec3 color3 = vec3(0.15, 0.45, 0.95); // Blue Accent
-    vec3 color4 = vec3(0.08, 0.12, 0.25); // Mid-tone Slate
+    // New Color Palette requested:
+    // #00E5FF (Cyan Accent)
+    // #2979FF (Blue Accent)
+    // #7C4DFF (Deep Purple Accent)
+    // #D500F9 (Purple Accent)
+    vec3 c1 = vec3(0.0, 0.898, 1.0);   // #00E5FF
+    vec3 c2 = vec3(0.161, 0.475, 1.0); // #2979FF
+    vec3 c3 = vec3(0.486, 0.302, 1.0); // #7C4DFF
+    vec3 c4 = vec3(0.835, 0.0, 0.976); // #D500F9
     
-    // Complex color mixing
-    float dist = length(p) * 0.5;
-    float m1 = 0.5 + 0.5 * sin(p.x + t * 0.5);
-    float m2 = 0.5 + 0.5 * cos(p.y - t * 0.3);
+    // Create organic mixing based on coordinates and time
+    float m1 = 0.5 + 0.5 * sin(p_flow.x + t);
+    float m2 = 0.5 + 0.5 * cos(p_flow.y - t * 0.8);
+    float m3 = 0.5 + 0.5 * sin(length(p_flow) - t * 0.5);
     
-    vec3 baseMix = mix(color1, color4, m1);
-    vec3 accentMix = mix(color2, color3, m2);
+    // Deep mixing strategy for infinite transitions
+    vec3 mixA = mix(c1, c2, m1);
+    vec3 mixB = mix(c3, c4, m2);
+    vec3 finalColor = mix(mixA, mixB, m3);
     
-    // Final composite
-    vec3 finalColor = mix(baseMix, accentMix, 0.4);
+    // Subtle background darkness to maintain contrast with UI
+    // We mix with a very dark slate to keep the immersive feeling without being too bright
+    vec3 darkBase = vec3(0.02, 0.04, 0.08); // Near black slate
+    finalColor = mix(darkBase, finalColor, 0.35); // 35% color intensity for elegance
     
-    // Add a subtle vignette to keep the center clear for the timer
-    float vignette = smoothstep(1.5, 0.5, dist / ratio);
-    finalColor *= (0.7 + 0.3 * vignette);
+    // Vignette to pull focus into the center ring
+    float dist = length(p);
+    float vignette = smoothstep(1.6, 0.4, dist / ratio);
+    finalColor *= (0.6 + 0.4 * vignette);
     
-    fragColor = vec4(finalColor * 0.5, 1.0); 
+    fragColor = vec4(finalColor, 1.0); 
 }
