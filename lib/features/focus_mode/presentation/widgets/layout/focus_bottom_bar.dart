@@ -98,7 +98,9 @@ class FocusBottomBar extends StatelessWidget {
           child: BottomActionItem(
             icon: Icons.psychology_rounded,
             label: 'Modo Foco',
-            iconColor: state.isHardcoreMode ? Colors.redAccent : Colors.blueAccent,
+            iconColor: state.isHardcoreMode
+                ? Colors.redAccent
+                : Colors.blueAccent,
             onTap: onFocusModeTap,
           ),
         ),

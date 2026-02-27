@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
-import 'dart:isolate';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
@@ -14,7 +12,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:focus_flow/features/premium/data/models/premium_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-import 'package:focus_flow_notification/focus_flow_notification.dart';
 import '../features/focus_mode/data/models/sound_mix_model.dart';
 import '../features/session_history/data/models/focus_session_model.dart';
 import '../core/services/local_notification_service.dart';
@@ -51,10 +48,10 @@ void onStart(ServiceInstance service) async {
 
   FocusBloc? bloc;
 
-  PomodoroStatus? _lastStatus;
-  Duration? _lastRemaining;
-  bool _forceNextUpdate = false;
-  bool _lastPenaltyState = false;
+  PomodoroStatus? lastStatus;
+  Duration? lastRemaining;
+  bool forceNextUpdate = false;
+  bool lastPenaltyState = false;
 
   _notificationChannel.setMethodCallHandler((call) async {
     if (call.method == 'onNotificationAction') {
@@ -70,19 +67,22 @@ void onStart(ServiceInstance service) async {
       }
       // Forzar actualización inmediata: si Dart estaba suspendido,
       // al despertar y procesar esto sobrescribirá el estado de la Isla.
-      _forceNextUpdate = true;
+      forceNextUpdate = true;
     }
   });
 
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
-    if (!Hive.isAdapterRegistered(0))
+    if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(PremiumStatusAdapter());
-    if (!Hive.isAdapterRegistered(1))
+    }
+    if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(SoundMixModelAdapter());
-    if (!Hive.isAdapterRegistered(2))
+    }
+    if (!Hive.isAdapterRegistered(2)) {
       Hive.registerAdapter(FocusSessionModelAdapter());
+    }
     await configureDependencies();
 
     // Inicializar LocalNotificationService para el Isolate de Background
@@ -99,73 +99,73 @@ void onStart(ServiceInstance service) async {
     final name = event['event'];
 
     if (name == 'startTimer') {
-      bloc?.add(StartTimer());
-      _forceNextUpdate = true;
+      bloc.add(StartTimer());
+      forceNextUpdate = true;
     } else if (name == 'pauseTimer') {
-      bloc?.add(PauseTimer());
-      _forceNextUpdate = true;
+      bloc.add(PauseTimer());
+      forceNextUpdate = true;
     } else if (name == 'resetTimer') {
-      bloc?.add(ResetTimer());
-      _forceNextUpdate = true;
+      bloc.add(ResetTimer());
+      forceNextUpdate = true;
     } else if (name == 'stopAlarm') {
-      bloc?.add(StopAlarm());
+      bloc.add(StopAlarm());
     } else if (name == 'toggleHardcore') {
-      bloc?.add(ToggleHardcoreMode());
+      bloc.add(ToggleHardcoreMode());
     } else if (name == 'toggleAlarmSound') {
-      bloc?.add(ToggleAlarmSound());
+      bloc.add(ToggleAlarmSound());
     } else if (name == 'toggleZoomMode') {
-      bloc?.add(ToggleZoomMode());
+      bloc.add(ToggleZoomMode());
     } else if (name == 'setBackgroundEffect') {
       final effectIndex = event['effect'] as int;
-      bloc?.add(SetBackgroundEffect(BackgroundEffect.values[effectIndex]));
+      bloc.add(SetBackgroundEffect(BackgroundEffect.values[effectIndex]));
     } else if (name == 'togglePremium') {
-      bloc?.add(TogglePremiumStatus());
+      bloc.add(TogglePremiumStatus());
     } else if (name == 'updateConsentStatus') {
       final canRequest = event['canRequest'] as bool;
-      bloc?.add(UpdateConsentStatus(canRequest));
+      bloc.add(UpdateConsentStatus(canRequest));
     } else if (name == 'updateRainVolume') {
       final volume = (event['volume'] as num).toDouble();
-      bloc?.add(UpdateRainVolume(volume));
+      bloc.add(UpdateRainVolume(volume));
     } else if (name == 'updateFireVolume') {
       final volume = (event['volume'] as num).toDouble();
-      bloc?.add(UpdateFireVolume(volume));
+      bloc.add(UpdateFireVolume(volume));
     } else if (name == 'updateBrownNoiseVolume') {
       final volume = (event['volume'] as num).toDouble();
-      bloc?.add(UpdateBrownNoiseVolume(volume));
+      bloc.add(UpdateBrownNoiseVolume(volume));
     } else if (name == 'saveMix') {
-      bloc?.add(SaveCurrentMix());
+      bloc.add(SaveCurrentMix());
     } else if (name == 'loadMix') {
       final mixId = event['mixId'] as String;
-      bloc?.add(LoadMix(mixId));
+      bloc.add(LoadMix(mixId));
     } else if (name == 'pauseMix') {
-      bloc?.add(PauseMix());
+      bloc.add(PauseMix());
     } else if (name == 'resumeMix') {
-      bloc?.add(ResumeMix());
+      bloc.add(ResumeMix());
     } else if (name == 'updatePomodoroDuration') {
       final minutes = event['durationMinutes'] as int;
       final seconds = event['durationSeconds'] as int?;
-      bloc?.add(
+      bloc.add(
         UpdatePomodoroDuration(
           Duration(minutes: minutes, seconds: seconds ?? 0),
         ),
       );
-      _forceNextUpdate = true;
+      forceNextUpdate = true;
     } else if (name == 'setBreakDuration') {
       final minutes = event['durationMinutes'] as int?;
-      bloc?.add(
+      bloc.add(
         SetBreakDuration(minutes != null ? Duration(minutes: minutes) : null),
       );
-      _forceNextUpdate = true;
+      forceNextUpdate = true;
     } else if (name == 'requestState') {
-      service.invoke('update', bloc?.state.toJson());
+      service.invoke('update', bloc.state.toJson());
     } else if (name == 'ui_resumed') {
-      service.invoke('update', bloc?.state.toJson());
+      service.invoke('update', bloc.state.toJson());
     } else if (name == 'ui_paused') {
       // CRÍTICO: Cuando el usuario minimiza la app, forzamos una última actualización
       // para asegurar que el widget tenga el estado final exacto y no se quede "congelado"
       // por actualizaciones descartadas mientras la app estaba abierta.
-      _forceNextUpdate = true;
-      bloc?.add(ForceLiveActivityUpdate());
+      forceNextUpdate = true;
+      bloc.add(ForceLiveActivityUpdate());
     }
   });
 
@@ -181,11 +181,11 @@ void onStart(ServiceInstance service) async {
     if (service is AndroidServiceInstance) {
       bool isCurrentlyIdle = isInitial || isFinished;
       bool wasIdle =
-          _lastStatus == null ||
-          _lastStatus == PomodoroStatus.initial ||
-          _lastStatus == PomodoroStatus.finished;
+          lastStatus == null ||
+          lastStatus == PomodoroStatus.initial ||
+          lastStatus == PomodoroStatus.finished;
 
-      if (isCurrentlyIdle != wasIdle || _lastStatus == null) {
+      if (isCurrentlyIdle != wasIdle || lastStatus == null) {
         if (isCurrentlyIdle) {
           service.setAsBackgroundService();
         } else {
@@ -197,15 +197,15 @@ void onStart(ServiceInstance service) async {
     // Siempre avisar a la UI (Isolate Principal)
     service.invoke('update', state.toJson());
 
-    bool statusChanged = _lastStatus != status;
+    bool statusChanged = lastStatus != status;
     bool timeDifference =
-        _lastRemaining == null ||
-        (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() >= 1;
+        lastRemaining == null ||
+        (lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() >= 1;
     bool isBigTimeJump =
-        _lastRemaining != null &&
-        (_lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2;
+        lastRemaining != null &&
+        (lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() > 2;
 
-    bool shouldUpdate = _forceNextUpdate || statusChanged;
+    bool shouldUpdate = forceNextUpdate || statusChanged;
 
     if (Platform.isAndroid) {
       // Android: Update every second for smooth timer
@@ -218,7 +218,7 @@ void onStart(ServiceInstance service) async {
     }
 
     if (shouldUpdate) {
-      _forceNextUpdate = false;
+      forceNextUpdate = false;
 
       try {
         if (statusChanged && isFinished) {
@@ -230,14 +230,14 @@ void onStart(ServiceInstance service) async {
         }
 
         // Revisar cambios en el modo castigo (penalty) para la notificación local
-        bool penaltyChanged = _lastPenaltyState != state.isInPenaltyBox;
+        bool penaltyChanged = lastPenaltyState != state.isInPenaltyBox;
         if (penaltyChanged) {
           if (state.isInPenaltyBox) {
             await LocalNotificationService().showPenaltyWarningNotification();
           } else {
             await LocalNotificationService().cancelPenaltyWarningNotification();
           }
-          _lastPenaltyState = state.isInPenaltyBox;
+          lastPenaltyState = state.isInPenaltyBox;
         }
 
         // Android: Solo actualizamos la notificación en primer plano si el temporizador está activo
@@ -256,8 +256,9 @@ void onStart(ServiceInstance service) async {
 
         if (Platform.isIOS) {
           if (status == PomodoroStatus.initial || isFinished) {
-            if (isFinished)
+            if (isFinished) {
               await Future.delayed(const Duration(milliseconds: 800));
+            }
             await _notificationChannel.invokeMethod('endLiveActivity');
           } else {
             final now = DateTime.now();
@@ -283,8 +284,8 @@ void onStart(ServiceInstance service) async {
         print('[BackgroundService] Sync Error: $e');
       }
 
-      _lastStatus = status;
-      _lastRemaining = state.remainingTime;
+      lastStatus = status;
+      lastRemaining = state.remainingTime;
     }
   });
 }

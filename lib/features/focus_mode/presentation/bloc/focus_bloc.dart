@@ -33,6 +33,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
 
   StreamSubscription? _sessionSubscription;
   DateTime? _sessionStartTime;
+  String? _currentSessionGroupId;
 
   FocusBloc(
     this._premiumRepository,
@@ -329,7 +330,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
           lastActivatedMixId: null, // Reset active
           persistedLastMixId: persistedId, // Set history
           backgroundEffect: _sessionManager.currentState.backgroundEffect,
-          isWaitingForFirstFlip: _sessionManager.currentState.isWaitingForFirstFlip,
+          isWaitingForFirstFlip:
+              _sessionManager.currentState.isWaitingForFirstFlip,
         ),
       );
     } catch (e) {
@@ -352,76 +354,131 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   ) {
     final s = event.sessionState;
 
-    // Detect session start to record start time
-    if (s.status == PomodoroStatus.running &&
-        (state.pomodoroStatus == PomodoroStatus.initial ||
-            _sessionStartTime == null)) {
-      _sessionStartTime = DateTime.now();
+    // --- Lógica de Guardado en Historial ---
+    bool blockFinished = false;
+    bool wasCompleted = true;
+    bool wasResting = state.isResting;
+    Duration actualD = Duration.zero;
+    Duration plannedD = state.pomodoroDuration;
+
+    // 1. Termina foco naturalmente (con o sin descanso)
+    if (state.pomodoroStatus == PomodoroStatus.running &&
+        (s.status == PomodoroStatus.finished ||
+            s.status == PomodoroStatus.resting)) {
+      blockFinished = true;
+      wasCompleted = true;
+      wasResting = false;
+      actualD = state.pomodoroDuration;
+      plannedD = state.pomodoroDuration;
     }
-
-    // Detect if the session just transitioned to 'finished'
-    final justFinished =
-        s.status == PomodoroStatus.finished &&
-        state.pomodoroStatus != PomodoroStatus.finished;
-
-    if (justFinished) {
-      // Save session to history
-      final session = FocusSession(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        startTime: _sessionStartTime ?? DateTime.now(),
-        plannedDuration: s.pomodoroDuration,
-        actualDuration: s.pomodoroDuration, // Finished means it reached the end
-        isHardcoreMode: s.isHardcore,
-        penaltyCount: s.penaltyCount,
-        totalPenaltyTime: s.totalPenaltyTime,
-        isResting: s.isResting,
-        isCompleted: true,
-      );
-      _saveSessionUseCase(session);
-      _sessionStartTime = null;
-
-      if (state.isPlayingMix) {
-        // Auto-pause mix to avoid overlapping with alarm/vibration
-        final currentRain = state.rainVolume;
-        final currentFire = state.fireVolume;
-        final currentBrown = state.brownNoiseVolume;
-
-        _sessionManager.updateRainVolume(0.0);
-        _sessionManager.updateFireVolume(0.0);
-        _sessionManager.updateBrownNoiseVolume(0.0);
-
-        emit(
-          state.copyWith(
-            pomodoroStatus: s.status,
-            remainingTime: s.remainingTime,
-            pomodoroDuration: s.pomodoroDuration,
-            isInPenaltyBox: s.isInPenalty,
-            phoneOrientation: s.orientation,
-            isHardcoreMode: s.isHardcore,
-            isAlarmSoundEnabled: s.isAlarmSoundEnabled,
-            isResting: s.isResting,
-            hasBreak: s.hasBreak,
-            penaltyCount: s.penaltyCount,
-            totalPenaltyTime: s.totalPenaltyTime,
-            backgroundEffect: s.backgroundEffect,
-            isWaitingForFirstFlip: s.isWaitingForFirstFlip,
-            // Update mix state to paused
-            rainVolume: 0.0,
-            fireVolume: 0.0,
-            brownNoiseVolume: 0.0,
-            lastRainVolume: currentRain,
-            lastFireVolume: currentFire,
-            lastBrownNoiseVolume: currentBrown,
-            isPlayingMix: false,
-          ),
-        );
-        return;
+    // 2. Termina descanso naturalmente (reinicia foco o termina final)
+    else if (state.pomodoroStatus == PomodoroStatus.resting &&
+        (s.status == PomodoroStatus.running ||
+            s.status == PomodoroStatus.finished)) {
+      blockFinished = true;
+      wasCompleted = true;
+      wasResting = true;
+      actualD = _sessionStartTime != null
+          ? DateTime.now().difference(_sessionStartTime!)
+          : Duration.zero;
+      plannedD = actualD; // En este caso usamos el real como planeado
+    }
+    // 3. Usuario finaliza la sesión manualmente (Botón Reset)
+    else if (s.status == PomodoroStatus.initial &&
+        state.pomodoroStatus != PomodoroStatus.initial) {
+      if (_sessionStartTime != null) {
+        blockFinished = true;
+        wasCompleted = false;
+        wasResting = state.isResting;
+        actualD = DateTime.now().difference(_sessionStartTime!);
+        plannedD = wasResting ? actualD : state.pomodoroDuration;
       }
     }
 
-    // Reset start time if stopped manually
-    if (s.status == PomodoroStatus.initial) {
-      _sessionStartTime = null;
+    // Guardar sesión si un bloque terminó (y duró más de 10 segundos si fue cancelado)
+    if (blockFinished && _sessionStartTime != null) {
+      if (wasCompleted || actualD.inSeconds > 10) {
+        final session = FocusSession(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          groupId: _currentSessionGroupId,
+          startTime: _sessionStartTime!,
+          plannedDuration: plannedD,
+          actualDuration: actualD,
+          isHardcoreMode: state.isHardcoreMode,
+          penaltyCount: state.penaltyCount,
+          totalPenaltyTime: state.totalPenaltyTime,
+          isResting: wasResting,
+          isCompleted: wasCompleted,
+        );
+        _saveSessionUseCase(session);
+      }
+
+      // Preparar el inicio del siguiente bloque (si es un loop)
+      if (s.status == PomodoroStatus.resting ||
+          s.status == PomodoroStatus.running) {
+        _sessionStartTime = DateTime.now();
+      } else {
+        _sessionStartTime = null;
+        _currentSessionGroupId =
+            null; // Clear group ID when completely finished or reset
+      }
+    }
+    // Si arranca por primera vez
+    else if (s.status == PomodoroStatus.running) {
+      if (state.pomodoroStatus == PomodoroStatus.initial &&
+          !s.isWaitingForFirstFlip) {
+        _sessionStartTime = DateTime.now();
+        _currentSessionGroupId ??= DateTime.now().millisecondsSinceEpoch
+            .toString();
+      } else if (state.isWaitingForFirstFlip && !s.isWaitingForFirstFlip) {
+        // Justo acaba de voltear el móvil
+        _sessionStartTime = DateTime.now();
+        _currentSessionGroupId ??= DateTime.now().millisecondsSinceEpoch
+            .toString();
+      }
+    }
+
+    // --- Lógica de Audio Automático ---
+    final justFinishedApp =
+        s.status == PomodoroStatus.finished &&
+        state.pomodoroStatus != PomodoroStatus.finished;
+
+    if (justFinishedApp && state.isPlayingMix) {
+      // Auto-pause mix to avoid overlapping with alarm/vibration
+      final currentRain = state.rainVolume;
+      final currentFire = state.fireVolume;
+      final currentBrown = state.brownNoiseVolume;
+
+      _sessionManager.updateRainVolume(0.0);
+      _sessionManager.updateFireVolume(0.0);
+      _sessionManager.updateBrownNoiseVolume(0.0);
+
+      emit(
+        state.copyWith(
+          pomodoroStatus: s.status,
+          remainingTime: s.remainingTime,
+          pomodoroDuration: s.pomodoroDuration,
+          isInPenaltyBox: s.isInPenalty,
+          phoneOrientation: s.orientation,
+          isHardcoreMode: s.isHardcore,
+          isAlarmSoundEnabled: s.isAlarmSoundEnabled,
+          isResting: s.isResting,
+          hasBreak: s.hasBreak,
+          penaltyCount: s.penaltyCount,
+          totalPenaltyTime: s.totalPenaltyTime,
+          backgroundEffect: s.backgroundEffect,
+          isWaitingForFirstFlip: s.isWaitingForFirstFlip,
+          // Update mix state to paused
+          rainVolume: 0.0,
+          fireVolume: 0.0,
+          brownNoiseVolume: 0.0,
+          lastRainVolume: currentRain,
+          lastFireVolume: currentFire,
+          lastBrownNoiseVolume: currentBrown,
+          isPlayingMix: false,
+        ),
+      );
+      return;
     }
 
     emit(

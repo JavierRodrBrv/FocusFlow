@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 
 class FocusSessionModel extends HiveObject {
   final String id;
+  final String? groupId;
   final DateTime startTime;
   final int plannedDurationSeconds;
   final int actualDurationSeconds;
@@ -14,6 +15,7 @@ class FocusSessionModel extends HiveObject {
 
   FocusSessionModel({
     required this.id,
+    this.groupId,
     required this.startTime,
     required this.plannedDurationSeconds,
     required this.actualDurationSeconds,
@@ -27,6 +29,7 @@ class FocusSessionModel extends HiveObject {
   factory FocusSessionModel.fromEntity(FocusSession entity) {
     return FocusSessionModel(
       id: entity.id,
+      groupId: entity.groupId,
       startTime: entity.startTime,
       plannedDurationSeconds: entity.plannedDuration.inSeconds,
       actualDurationSeconds: entity.actualDuration.inSeconds,
@@ -41,6 +44,7 @@ class FocusSessionModel extends HiveObject {
   FocusSession toEntity() {
     return FocusSession(
       id: id,
+      groupId: groupId,
       startTime: startTime,
       plannedDuration: Duration(seconds: plannedDurationSeconds),
       actualDuration: Duration(seconds: actualDurationSeconds),
@@ -69,6 +73,9 @@ class FocusSessionModelAdapter extends TypeAdapter<FocusSessionModel> {
       totalPenaltyTimeSeconds: reader.readInt(),
       isResting: reader.readBool(),
       isCompleted: reader.readBool(),
+      groupId: reader.readBool()
+          ? reader.readString()
+          : null, // Handle nullable read
     );
   }
 
@@ -83,5 +90,9 @@ class FocusSessionModelAdapter extends TypeAdapter<FocusSessionModel> {
     writer.writeInt(obj.totalPenaltyTimeSeconds);
     writer.writeBool(obj.isResting);
     writer.writeBool(obj.isCompleted);
+    writer.writeBool(obj.groupId != null);
+    if (obj.groupId != null) {
+      writer.writeString(obj.groupId!);
+    }
   }
 }

@@ -2,29 +2,46 @@ import 'package:flutter/material.dart';
 
 class ResetConfirmationDialog extends StatelessWidget {
   final VoidCallback onConfirm;
+  final bool hasBreak;
 
-  const ResetConfirmationDialog({super.key, required this.onConfirm});
+  const ResetConfirmationDialog({
+    super.key,
+    required this.onConfirm,
+    this.hasBreak = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final title = hasBreak ? '¿Terminar ciclo de foco?' : '¿Reiniciar sesión?';
+    final content = hasBreak
+        ? 'Estás en una sesión con descansos programados. Si reinicias ahora, se cancelará todo el ciclo actual y volverás al inicio.\n\n¿Estás seguro de que quieres terminar?'
+        : 'La sesión actual se cancelará y todo el progreso no guardado se perderá.\n\n¿Estás seguro de que quieres continuar?';
+
     return AlertDialog(
       backgroundColor: const Color(0xFF1E293B),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 28),
-          SizedBox(width: 12),
-          Text(
-            '¿Reiniciar sesión?',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.amber,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
-      content: const Text(
-        '''Estás en una sesión con descansos programados. Si reinicias ahora, la sesión actual se cancelará por completo y volverás al inicio.
-
-¿Estás seguro de que quieres continuar?''',
-        style: TextStyle(color: Colors.white70, fontSize: 15),
+      content: Text(
+        content,
+        style: const TextStyle(color: Colors.white70, fontSize: 15),
       ),
       actions: [
         TextButton(
@@ -43,7 +60,7 @@ class ResetConfirmationDialog extends StatelessWidget {
             onConfirm();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent.withOpacity(0.1),
+            backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
             foregroundColor: Colors.redAccent,
             elevation: 0,
             side: const BorderSide(color: Colors.redAccent, width: 1),

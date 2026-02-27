@@ -77,6 +77,7 @@ class TimerControls extends StatelessWidget {
         context: context,
         barrierDismissible: false,
         builder: (context) => ResetConfirmationDialog(
+          hasBreak: state.hasBreak,
           onConfirm: () {
             // Si la sesión era activa, mostramos el resumen antes de limpiar definitivamente
             if (state.penaltyCount > 0) {
@@ -137,31 +138,33 @@ class TimerControls extends StatelessWidget {
             duration: const Duration(milliseconds: 300),
             transitionBuilder: (child, animation) =>
                 ScaleTransition(scale: animation, child: child),
-                      child: BouncingButton(
-                        key: ValueKey(isActive ? 'pause_btn' : 'play_btn'),
-                        child: GestureDetector(
-                          onTap: () {
-                            if (status == PomodoroStatus.initial) {
-                              _showBreakSelectionDialog(context);
-                            } else {
-                              // Si estamos esperando el primer volteo en modo Hardcore, 
-                              // mostramos aviso en lugar de pausar/reanudar.
-                                                                  if (state.isHardcoreMode && state.isWaitingForFirstFlip) {
-                                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                                      const SnackBar(
-                                                                        content: Text(
-                                                                          'Modo Focus activo: Voltea el móvil boca abajo para que el tiempo empiece a correr.',
-                                                                        ),
-                                                                        backgroundColor: Colors.redAccent,
-                                                                        duration: Duration(seconds: 3),
-                                                                      ),
-                                                                    );
-                                                                    return;
-                                                                  }                              final event = isActive ? 'pauseTimer' : 'startTimer';
-                              service.invoke('sendEvent', {'event': event});
-                            }
-                          },
-                          child: Container(                  width: 88,
+            child: BouncingButton(
+              key: ValueKey(isActive ? 'pause_btn' : 'play_btn'),
+              child: GestureDetector(
+                onTap: () {
+                  if (status == PomodoroStatus.initial) {
+                    _showBreakSelectionDialog(context);
+                  } else {
+                    // Si estamos esperando el primer volteo en modo Hardcore,
+                    // mostramos aviso en lugar de pausar/reanudar.
+                    if (state.isHardcoreMode && state.isWaitingForFirstFlip) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Modo Focus activo: Voltea el móvil boca abajo para que el tiempo empiece a correr.',
+                          ),
+                          backgroundColor: Colors.redAccent,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                      return;
+                    }
+                    final event = isActive ? 'pauseTimer' : 'startTimer';
+                    service.invoke('sendEvent', {'event': event});
+                  }
+                },
+                child: Container(
+                  width: 88,
                   height: 88,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,

@@ -185,10 +185,12 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
       return 'Has mantenido el foco con éxito. ¡Gran trabajo!';
     }
     final seconds = widget.totalPenaltyTime.inSeconds;
-    if (seconds <= 30)
+    if (seconds <= 30) {
       return '¡Casi perfecto! Un pequeño desliz, pero lo has logrado.';
-    if (seconds <= 60)
+    }
+    if (seconds <= 60) {
       return 'No ha estado mal, pero necesitas un poco más de disciplina.';
+    }
     return '¿Necesitas una brújula? Tienes menos concentración que un mosquito. ¡A la próxima mejor!';
   }
 

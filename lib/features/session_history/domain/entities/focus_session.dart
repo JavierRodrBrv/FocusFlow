@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 class FocusSession extends Equatable {
   final String id;
+  final String? groupId;
   final DateTime startTime;
   final Duration plannedDuration;
   final Duration actualDuration;
@@ -13,6 +14,7 @@ class FocusSession extends Equatable {
 
   const FocusSession({
     required this.id,
+    this.groupId,
     required this.startTime,
     required this.plannedDuration,
     required this.actualDuration,
@@ -26,6 +28,7 @@ class FocusSession extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    groupId,
     startTime,
     plannedDuration,
     actualDuration,

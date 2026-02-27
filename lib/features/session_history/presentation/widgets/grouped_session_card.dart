@@ -1,17 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
 
-class SessionCard extends StatelessWidget {
-  final FocusSession session;
+class GroupedSessionCard extends StatelessWidget {
+  final DateTime startTime;
+  final int focusCount;
+  final int breakCount;
+  final Duration totalFocusActual;
+  final Duration totalBreakActual;
+  final bool isHardcoreMode;
   final VoidCallback onTap;
 
-  const SessionCard({super.key, required this.session, required this.onTap});
+  const GroupedSessionCard({
+    super.key,
+    required this.startTime,
+    required this.focusCount,
+    required this.breakCount,
+    required this.totalFocusActual,
+    required this.totalBreakActual,
+    required this.isHardcoreMode,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm', 'es');
-    final durationFormat = _formatDuration(session.actualDuration);
+    final totalDurationFormat = _formatDuration(
+      totalFocusActual + totalBreakActual,
+    );
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -20,9 +35,12 @@ class SessionCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         child: InkWell(
           onTap: onTap,
@@ -36,23 +54,23 @@ class SessionCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      dateFormat.format(session.startTime),
+                      dateFormat.format(startTime),
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 12,
                       ),
                     ),
-                    if (session.isHardcoreMode)
+                    if (isHardcoreMode)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.2),
+                          color: Colors.red.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.red.withOpacity(0.5),
+                            color: Colors.red.withValues(alpha: 0.5),
                           ),
                         ),
                         child: const Text(
@@ -69,33 +87,43 @@ class SessionCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(
-                      session.isResting ? Icons.coffee : Icons.psychology,
-                      color: session.isResting
-                          ? Colors.greenAccent
-                          : Colors.blueAccent,
-                      size: 20,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blueAccent.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.loop_rounded,
+                        color: Colors.blueAccent,
+                        size: 24,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            session.isResting
-                                ? 'Descanso'
-                                : 'Sesión de Enfoque',
-                            style: const TextStyle(
+                          const Text(
+                            'Ciclo de Sesiones',
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            'Duración: $durationFormat',
+                            '$focusCount Focos • $breakCount Descansos',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            'Tiempo total: $totalDurationFormat',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 12,
                             ),
                           ),
                         ],

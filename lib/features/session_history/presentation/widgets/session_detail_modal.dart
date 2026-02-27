@@ -96,7 +96,7 @@ class SessionDetailModal extends StatelessWidget {
           ),
           _buildDetailRow(
             Icons.security,
-            'Modo Hardcore',
+            'Modo FOCUS',
             session.isHardcoreMode ? 'Activado' : 'Desactivado',
             textColor: session.isHardcoreMode ? Colors.redAccent : null,
           ),

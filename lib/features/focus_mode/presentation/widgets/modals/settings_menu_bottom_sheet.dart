@@ -72,15 +72,16 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
           ),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 400),
-            layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-              return Stack(
-                alignment: Alignment.topCenter,
-                children: <Widget>[
-                  ...previousChildren,
-                  if (currentChild != null) currentChild,
-                ],
-              );
-            },
+            layoutBuilder:
+                (Widget? currentChild, List<Widget> previousChildren) {
+                  return Stack(
+                    alignment: Alignment.topCenter,
+                    children: <Widget>[
+                      ...previousChildren,
+                      if (currentChild != null) currentChild,
+                    ],
+                  );
+                },
             transitionBuilder: (Widget child, Animation<double> animation) {
               final isEntering = child.key == ValueKey(_currentView);
               double beginOffset = _currentView > _previousView ? 1.0 : -1.0;
@@ -89,13 +90,16 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
               return FadeTransition(
                 opacity: animation,
                 child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: Offset(beginOffset, 0.0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeInOutCubic,
-                  )),
+                  position:
+                      Tween<Offset>(
+                        begin: Offset(beginOffset, 0.0),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOutCubic,
+                        ),
+                      ),
                   child: child,
                 ),
               );
@@ -174,8 +178,10 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
             ),
 
             ListTile(
-              leading:
-                  const Icon(Icons.palette_outlined, color: Colors.cyanAccent),
+              leading: const Icon(
+                Icons.palette_outlined,
+                color: Colors.cyanAccent,
+              ),
               title: const Text(
                 'Fondo de Pantalla',
                 style: TextStyle(color: Colors.white),
@@ -363,12 +369,18 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
               child: Row(
                 children: [
                   Expanded(
-                    child:
-                        _buildFeedbackSegment(0, '¿Es un Bug? 🐞', activeColor),
+                    child: _buildFeedbackSegment(
+                      0,
+                      '¿Es un Bug? 🐞',
+                      activeColor,
+                    ),
                   ),
                   Expanded(
-                    child:
-                        _buildFeedbackSegment(1, '¿Una Idea? 💡', activeColor),
+                    child: _buildFeedbackSegment(
+                      1,
+                      '¿Una Idea? 💡',
+                      activeColor,
+                    ),
                   ),
                 ],
               ),
