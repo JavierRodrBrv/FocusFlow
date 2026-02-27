@@ -10,18 +10,26 @@ import 'package:injectable/injectable.dart';
 class SessionHistoryRepositoryImpl implements ISessionHistoryRepository {
   static const String _boxName = 'focus_sessions';
 
-  Future<Box<FocusSessionModel>> _getBox() async {
+  // Helper to ensure we get a fresh box every time and release it afterwards.
+  // This is critical for cross-isolate safety (Background vs UI).
+  Future<T> _withBox<T>(Future<T> Function(Box<FocusSessionModel> box) action) async {
     if (Hive.isBoxOpen(_boxName)) {
-      return Hive.box<FocusSessionModel>(_boxName);
+      await Hive.box<FocusSessionModel>(_boxName).close();
     }
-    return await Hive.openBox<FocusSessionModel>(_boxName);
+    final box = await Hive.openBox<FocusSessionModel>(_boxName);
+    try {
+      return await action(box);
+    } finally {
+      await box.close();
+    }
   }
 
   @override
   Future<Result<void, Failure>> clearAllSessions() async {
     try {
-      final box = await _getBox();
-      await box.clear();
+      await _withBox((box) async {
+        await box.clear();
+      });
       return const Success(null);
     } catch (e) {
       return Error(DatabaseFailure(message: e.toString()));
@@ -31,10 +39,10 @@ class SessionHistoryRepositoryImpl implements ISessionHistoryRepository {
   @override
   Future<Result<void, Failure>> deleteSession(String sessionId) async {
     try {
-      final box = await _getBox();
-      await box.delete(sessionId);
-      // Compact ensures that deleted records are flushed from the append-only log file in Hive.
-      await box.compact();
+      await _withBox((box) async {
+        await box.delete(sessionId);
+        await box.compact();
+      });
       return const Success(null);
     } catch (e) {
       return Error(DatabaseFailure(message: e.toString()));
@@ -44,11 +52,12 @@ class SessionHistoryRepositoryImpl implements ISessionHistoryRepository {
   @override
   Future<Result<List<FocusSession>, Failure>> getSessions() async {
     try {
-      final box = await _getBox();
-      final sessions = box.values.map((m) => m.toEntity()).toList();
-      // Ordenar por fecha descendente
-      sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
-      return Success(sessions);
+      return await _withBox((box) async {
+        final sessions = box.values.map((m) => m.toEntity()).toList();
+        // Ordenar por fecha descendente
+        sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
+        return Success(sessions);
+      });
     } catch (e) {
       return Error(DatabaseFailure(message: e.toString()));
     }
@@ -57,9 +66,9 @@ class SessionHistoryRepositoryImpl implements ISessionHistoryRepository {
   @override
   Future<Result<void, Failure>> saveSession(FocusSession session) async {
     try {
-      final box = await _getBox();
-
-      await box.put(session.id, FocusSessionModel.fromEntity(session));
+      await _withBox((box) async {
+        await box.put(session.id, FocusSessionModel.fromEntity(session));
+      });
       return const Success(null);
     } catch (e) {
       return Error(DatabaseFailure(message: e.toString()));
