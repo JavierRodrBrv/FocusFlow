@@ -6,6 +6,7 @@ import 'package:focus_flow/features/focus_mode/domain/entities/background_effect
 import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/gradient_flow_background.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsMenuBottomSheet extends StatefulWidget {
   final FocusState initialState;
@@ -26,6 +27,23 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
   int _feedbackSelectedIndex = 0; // 0 = Bug, 1 = Idea
   bool _feedbackIsLoading = false;
   bool _feedbackIsSuccess = false;
+
+  String _appVersion = 'Cargando...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appVersion = '${packageInfo.version} (${packageInfo.buildNumber})';
+      });
+    }
+  }
 
   void _goToView(int view) {
     setState(() {
@@ -220,9 +238,9 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
 
             ListTile(
               leading: const Icon(Icons.info_outline, color: Colors.white54),
-              title: const Text(
-                'Versión 0.2.0 (Beta)',
-                style: TextStyle(color: Colors.white54),
+              title: Text(
+                'Versión $_appVersion',
+                style: const TextStyle(color: Colors.white54),
               ),
               onTap: () {},
             ),
