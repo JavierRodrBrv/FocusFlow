@@ -1,66 +1,27 @@
-# ROL: SENIOR FLUTTER ARCHITECT & TECH LEAD
+# FocusFlow - Contexto de Desarrollo
 
-ESTÁS EN MODO: [ANÁLISIS DE PROYECTO Y ASISTENCIA TÉCNICA]
+## Objetivo General
+Desarrollar y escalar FocusFlow, una aplicación de productividad (Pomodoro) estricta, visualmente inmersiva (estética cyberpunk/dark) y resistente, que penaliza distracciones físicas levantando el móvil. 
 
-## 1. Arquitectura General
-El proyecto sigue los principios de **Clean Architecture**, dividiendo el código en capas claras (Presentation, Domain, Data) por cada funcionalidad (`features/focus_mode`, `features/premium`, etc.) y utilizando un directorio `core` para utilidades compartidas y plugins.
+## Arquitectura y Reglas Clave
+- **Clean Architecture:** Estricta separación en capas (Presentation -> Domain -> Data).
+- **Gestión de Estado (UI):** `flutter_bloc` con estados inmutables (`copyWith`, `Equatable`).
+- **Inyección de Dependencias:** `get_it` e `injectable`. *Obligatorio ejecutar `dart run build_runner build --delete-conflicting-outputs` tras modificar dependencias o modelos de base de datos.*
+- **Servicio en Segundo Plano:** El temporizador principal y la lógica estricta (acelerómetro, audio) viven en un **Isolate secundario** gestionado por `flutter_background_service`.
+- **Persistencia y Sincronización (Hive):** Los datos (Ajustes, Historial) se guardan en Hive. **Regla de Oro para el Historial:** Para evitar bloqueos de archivo y corrupción de caché entre la UI y el Background Isolate, el repositorio (`SessionHistoryRepositoryImpl`) debe abrir la caja, realizar la operación (CRUD) y cerrarla inmediatamente en la misma transacción (ver método `_withBox`). Al borrar, siempre usar `box.compact()`.
 
-- **Inyección de Dependencias (DI):** Se utiliza `get_it` junto con `injectable`. La configuración principal se genera en `lib/app/injection.config.dart` y se inicializa mediante `configureDependencies()` en `lib/app/injection.dart`.
-- **Estructura de Directorios:**
-  - `lib/app/`: Configuración global, inyección y servicio de background (`flutter_background_service`).
-  - `lib/core/`: Componentes comunes, manejo de errores, servicios de audio/háptica, notificaciones locales y plugins nativos personalizados (`focus_flow_notification`).
-  - `lib/features/`: Módulos principales del negocio organizados por funcionalidad.
-  - `lib/bootstrap.dart`: Archivo de arranque para inicializar Hive, anuncios, permisos, notificaciones locales y el Background Service antes de lanzar la app.
+## Archivos Clave y Flujos
+- **`FocusSessionManager`** (`lib/features/focus_mode/domain/usecases/focus_session_manager.dart`): El "Single Source of Truth" del temporizador. Vive en el Isolate secundario. Gestiona los cambios de estado del sensor y los castigos.
+- **`FocusBloc`** (`lib/features/focus_mode/presentation/bloc/focus_bloc.dart`): Actúa como puente en el Isolate Principal (UI). Recibe actualizaciones del manager vía Event Bus, maneja la lógica de cuándo registrar una sesión en el historial (agrupación de ciclos, regla de >10 segundos) y notifica a la UI.
+- **`SessionHistoryRepositoryImpl`**: Maneja el guardado transaccional de sesiones.
+- **`SettingsMenuBottomSheet`**: Modal deslizante de múltiples vistas (Main, Fondo, Feedback) con alturas mínimas fijas (`minHeight: 480`) para evitar problemas de layout con el teclado.
 
----
+## Estado Actual y Bugs Solucionados Hoy
+1. **Historial de Ciclos (Agrupación):** Las sesiones de Foco y Descanso continuas ahora comparten un `groupId`. Se guardan todas automáticamente si el primer bloque de foco dura más de 10 segundos o se completa.
+2. **Sincronización de Base de Datos (Hive):** Solucionado el bug crítico donde las sesiones eliminadas reaparecían, o las nuevas sesiones no se mostraban hasta reiniciar la app. Se logró aislando las transacciones de lectura/escritura en Hive.
+3. **Modo Focus (Hardcore) Restricciones de Inicio:** El modo estricto ahora requiere físicamente voltear el móvil para iniciar el contador y empezar a registrar penalizaciones. Si se pulsa Play antes, muestra un `SnackBar` rojo eléctrico.
+4. **Modo Inmersivo (Zoom):** Minimiza la interfaz para máxima concentración. Integrado correctamente en el widget `Showcase` de tutorial.
+5. **Modernización de UI:** Actualización masiva de `withOpacity` a `withValues(alpha: X)` según las nuevas directrices de Flutter.
 
-## 2. Gestión de Estado
-El estado principal del temporizador y la aplicación es manejado a través del patrón **BLoC** usando `flutter_bloc`.
-
-- **FocusBloc** (`lib/features/focus_mode/presentation/bloc/focus_bloc.dart`): Cerebro de la UI. Recibe eventos y emite `FocusState`.
-- **FocusSessionManager**: El BLoC no ejecuta la cuenta regresiva directamente, delega la lógica del dominio a este manager. El BLoC escucha un Stream de estado de este manager para reaccionar a los ticks del reloj y los cambios de fase (Focus/Break/Penalty).
-- **Flujo de Datos UI ↔ Background:** La UI no mantiene el temporizador en memoria principal si la app se cierra. El estado real vive en un **Isolate de Background**. La UI se comunica con este isolate enviando comandos vía `FlutterBackgroundService().invoke('sendEvent', ...)` y recibe el estado actualizado escuchando el canal `update`.
-
----
-
-## 3. Integraciones Nativas (iOS & Android)
-- **iOS (Live Activities):** Integración mediante WidgetKit y ActivityKit (`FocusFlowLiveActivity.swift`). Se actualiza enviando fechas absolutas (`targetEndTime`, `startDate`) desde Dart para que iOS interpole el progreso sin pings por segundo. Los botones nativos usan `AppIntents` que se comunican de vuelta a Dart.
-- **Android (Foreground Service):** Se usa `flutter_background_service` para mantener vivo el temporizador en un Isolate independiente. El servicio actualiza una notificación persistente nativa personalizada. 
-- **Notificaciones Locales (Dart):** Añadido `flutter_local_notifications` en `LocalNotificationService` para manejar avisos netamente informativos (Temporizador completado, advertencias de castigo en Hardcore mode, y recordatorios de 24 horas).
-
----
-
-## 4. Almacenamiento Local
-Se utiliza **Hive** como la base de datos persistente clave-valor.
-- Requiere inicialización doble (`Hive.initFlutter()`): tanto en el Isolate de la UI (`bootstrap.dart`) como en el Isolate del Background (`background_service.dart`).
-- Se usan `TypeAdapters` personalizados para guardar configuraciones de usuario, historiales de mezcla de sonidos y el estado premium.
-
----
-
-## 5. Reglas de Oro del Proyecto (CRÍTICO)
-1. **Flutter es la única fuente de la verdad para el temporizador:** El Isolate de Background en Dart corre el BLoC, decide cuándo termina un Pomodoro o cambia de fase, y notifica al sistema nativo para actualizar su UI.
-2. **Doble Inicialización Obligatoria:** Servicios base (GetIt, Hive, LocalNotifications, plugins globales) DEBEN inicializarse dos veces: en el main/bootstrap para la UI, y dentro de `onStart()` de `flutter_background_service` para el background.
-3. **Isolate Communication:** La UI NUNCA modifica el estado directamente. Usa `FlutterBackgroundService().invoke('sendEvent', {...})`.
-4. **Optimización de Servicios de Background:**
-   - **iOS:** Enviar actualizaciones de Live Activity solo en cambios drásticos de estado (Play/Pause/Skip), no cada segundo.
-   - **Android:** Llamar a `setAsForegroundService()` o `setAsBackgroundService()` **únicamente** cuando hay transiciones reales entre inactividad y actividad, para evitar resetear el UI de la notificación nativa y perder el flag inamovible (`setOngoing`).
-   - El estado "Castigo/Penalty" en Focus Mode en Android fuerza el envío del status `running` al plugin nativo para asegurar que la notificación no se oculte de la pantalla de bloqueo.
-5. **Comportamiento de Pantalla de Bloqueo (Android):** La app ya NO usa `showWhenLocked` o `turnScreenOn` de forma agresiva. Se comporta como una app normal en background, confiando en su Foreground Notification.
-6. **Sincronización AdMob:** Para evitar el error `The ad can not be shown when app is not in foreground` al mostrar Interstitials instantáneos tras un tap, usar `setImmersiveMode(true)` y envolver el `show()` en un pequeño `Future.delayed(100ms)`.
-
----
-
-## 6. Registro de Cambios Recientes (Última Sesión)
-- **Implementadas Notificaciones Locales (Dart-only):** Se añadió `LocalNotificationService` para avisos de fin de timer, recordatorio de 24h, y advertencias al voltear el móvil en modo Hardcore.
-- **Arreglado Flujo de AdMob (Interstitial):** 
-  - Manejo correcto del Spinner de carga en `SessionCompletionDialog`.
-  - Agregado Test Device ID en `bootstrap.dart` para evitar "Error 3 (No Fill)" en desarrollo.
-  - Corrección del crasheo por "App not in foreground" al mostrar el anuncio tras hacer tap rápido.
-  - Se eliminó la restricción rígida de `canRequestAds` que bloqueaba la precarga del anuncio en background.
-- **Correcciones UI/UX Android Nativo:**
-  - Eliminado el agresivo "mostrar sobre pantalla de bloqueo" en el `AndroidManifest.xml` y `MainActivity.kt`.
-  - La notificación nativa de Android ya no parpadea ni se pierde al voltear el dispositivo (entrar en penalty), gracias a la optimización de las llamadas al Foreground Service.
-  - Eliminado el molesto texto por defecto "Iniciando..." del servicio en background.
-
-## 7. Próximos Pasos (Siguiente Sesión)
-*(Espacio reservado para definir la siguiente feature, bugfix o refactor de la próxima sesión)*.
+## Próximos Pasos (Mañana)
+- [ ] A espera de instrucción del usuario. (Posibles caminos: Mejorar las métricas/gráficas del historial, añadir gamificación por evitar distracciones, o refinar animaciones del Modo Zoom).

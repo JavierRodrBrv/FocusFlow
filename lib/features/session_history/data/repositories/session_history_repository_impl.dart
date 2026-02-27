@@ -12,7 +12,9 @@ class SessionHistoryRepositoryImpl implements ISessionHistoryRepository {
 
   // Helper to ensure we get a fresh box every time and release it afterwards.
   // This is critical for cross-isolate safety (Background vs UI).
-  Future<T> _withBox<T>(Future<T> Function(Box<FocusSessionModel> box) action) async {
+  Future<T> _withBox<T>(
+    Future<T> Function(Box<FocusSessionModel> box) action,
+  ) async {
     if (Hive.isBoxOpen(_boxName)) {
       await Hive.box<FocusSessionModel>(_boxName).close();
     }

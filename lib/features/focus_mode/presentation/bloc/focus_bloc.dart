@@ -34,6 +34,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   StreamSubscription? _sessionSubscription;
   DateTime? _sessionStartTime;
   String? _currentSessionGroupId;
+  bool _hasSavedAtLeastOneSessionInCurrentGroup = false;
 
   FocusBloc(
     this._premiumRepository,
@@ -397,7 +398,10 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
 
     // Guardar sesión si un bloque terminó (y duró más de 10 segundos si fue cancelado)
     if (blockFinished && _sessionStartTime != null) {
-      if (wasCompleted || actualD.inSeconds > 10) {
+      if (wasCompleted ||
+          actualD.inSeconds > 10 ||
+          wasResting ||
+          _hasSavedAtLeastOneSessionInCurrentGroup) {
         final session = FocusSession(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           groupId: _currentSessionGroupId,
@@ -411,6 +415,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
           isCompleted: wasCompleted,
         );
         _saveSessionUseCase(session);
+        _hasSavedAtLeastOneSessionInCurrentGroup = true;
       }
 
       // Preparar el inicio del siguiente bloque (si es un loop)
@@ -421,6 +426,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
         _sessionStartTime = null;
         _currentSessionGroupId =
             null; // Clear group ID when completely finished or reset
+        _hasSavedAtLeastOneSessionInCurrentGroup = false;
       }
     }
     // Si arranca por primera vez
