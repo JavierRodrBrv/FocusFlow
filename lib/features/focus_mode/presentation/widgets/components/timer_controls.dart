@@ -10,8 +10,14 @@ import '../../bloc/focus_bloc.dart';
 class TimerControls extends StatelessWidget {
   final FocusState state;
   final FlutterBackgroundService service;
+  final GlobalKey? zoomKey;
 
-  const TimerControls({super.key, required this.state, required this.service});
+  const TimerControls({
+    super.key,
+    required this.state,
+    required this.service,
+    this.zoomKey,
+  });
 
   void _showBreakSelectionDialog(BuildContext context) {
     showDialog(

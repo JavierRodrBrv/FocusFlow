@@ -425,13 +425,16 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     }
     // Si arranca por primera vez
     else if (s.status == PomodoroStatus.running) {
+      // 1. Caso normal: arranca sin restricciones
       if (state.pomodoroStatus == PomodoroStatus.initial &&
           !s.isWaitingForFirstFlip) {
         _sessionStartTime = DateTime.now();
         _currentSessionGroupId ??= DateTime.now().millisecondsSinceEpoch
             .toString();
-      } else if (state.isWaitingForFirstFlip && !s.isWaitingForFirstFlip) {
-        // Justo acaba de voltear el móvil
+      }
+      // 2. Caso Hardcore: pasa de 'esperando volteo' a 'no esperando'
+      else if (state.isWaitingForFirstFlip && !s.isWaitingForFirstFlip) {
+        // Justo acaba de voltear el móvil, por fin empieza la sesión de verdad
         _sessionStartTime = DateTime.now();
         _currentSessionGroupId ??= DateTime.now().millisecondsSinceEpoch
             .toString();

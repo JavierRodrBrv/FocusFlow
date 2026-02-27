@@ -129,7 +129,7 @@ class GroupDetailModal extends StatelessWidget {
                   const SizedBox(height: 16),
                   ...group
                       .map((session) => _buildTimelineItem(session))
-                      .toList(),
+                      ,
                 ],
               ),
             ),

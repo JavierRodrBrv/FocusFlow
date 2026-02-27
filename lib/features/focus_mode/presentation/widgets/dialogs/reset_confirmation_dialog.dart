@@ -15,7 +15,7 @@ class ResetConfirmationDialog extends StatelessWidget {
     final title = hasBreak ? '¿Terminar ciclo de foco?' : '¿Reiniciar sesión?';
     final content = hasBreak
         ? 'Estás en una sesión con descansos programados. Si reinicias ahora, se cancelará todo el ciclo actual y volverás al inicio.\n\n¿Estás seguro de que quieres terminar?'
-        : 'La sesión actual se cancelará y todo el progreso no guardado se perderá.\n\n¿Estás seguro de que quieres continuar?';
+        : 'La sesión actual se cancelará.\n\n¿Estás seguro de que quieres continuar?';
 
     return AlertDialog(
       backgroundColor: const Color(0xFF1E293B),

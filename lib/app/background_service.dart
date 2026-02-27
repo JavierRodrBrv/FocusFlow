@@ -225,6 +225,8 @@ void onStart(ServiceInstance service) async {
           // Mostrar notificación local cuando el temporizador finaliza
           await LocalNotificationService().showTimerCompleteNotification();
 
+          // Damos un pequeño respiro para asegurar que el Bloc haya escrito en Hive
+          await Future.delayed(const Duration(milliseconds: 100));
           // Avisar a la UI que hay una nueva sesión guardada en el historial
           service.invoke('refresh_history');
         }

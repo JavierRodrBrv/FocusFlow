@@ -32,6 +32,7 @@ class _FocusViewState extends State<FocusView> {
   final GlobalKey _tutorialKey = GlobalKey();
   final GlobalKey _mixerKey = GlobalKey();
   final GlobalKey _focusModeKey = GlobalKey();
+  final GlobalKey _historyKey = GlobalKey();
 
   Timer? _handshakeTimer;
   Timer? _heartbeatTimer;
@@ -212,8 +213,9 @@ class _FocusViewState extends State<FocusView> {
       _controlsKey,
       _mixerKey,
       _focusModeKey,
-      _premiumKey,
       _tutorialKey,
+      _historyKey,
+      _premiumKey,
     ]);
   }
 
@@ -287,6 +289,7 @@ class _FocusViewState extends State<FocusView> {
                           state: state,
                           tutorialKey: _tutorialKey,
                           premiumKey: _premiumKey,
+                          historyKey: _historyKey,
                           onTutorialResult: (result) {
                             if (result == 'tutorial') _startShowcase();
                           },

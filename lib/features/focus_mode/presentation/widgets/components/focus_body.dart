@@ -79,7 +79,7 @@ class FocusBody extends StatelessWidget {
                         key: controlsKey,
                         title: 'Controles de Sesión',
                         description:
-                            'Inicia, pausa o reinicia tu sesión. Al pulsar Play, podrás elegir si quieres añadir un tiempo de descanso al finalizar el foco.',
+                            'Inicia, pausa o reinicia tu sesión. Usa el botón de Modo Inmersivo (derecha) para ocultar distracciones.',
                         child: TimerControls(state: state, service: service),
                       ),
                     ),

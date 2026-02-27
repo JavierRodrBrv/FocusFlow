@@ -493,6 +493,13 @@ class FocusSessionManager {
       _isWaitingForFirstFlip = false;
       _hasBeenFaceDownAtLeastOnce = true;
       _timerService.start(startDuration: _remainingTime);
+
+      // Aseguramos que las métricas de penalización partan de cero ahora que la sesión realmente empieza
+      _penaltyCount = 0;
+      _totalPenaltyTime = Duration.zero;
+      _penaltyStartTime = null;
+      _lastPenaltyIncrementTime = DateTime.fromMillisecondsSinceEpoch(0);
+
       _emitState();
       return;
     }

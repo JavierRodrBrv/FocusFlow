@@ -11,11 +11,8 @@ class SessionHistoryRepositoryImpl implements ISessionHistoryRepository {
   static const String _boxName = 'focus_sessions';
 
   Future<Box<FocusSessionModel>> _getBox() async {
-    // Si la caja ya está abierta, la cerramos primero para forzar a Hive
-    // a leer la versión más reciente del disco duro, sincronizando así
-    // los cambios realizados por el Isolate de Background.
     if (Hive.isBoxOpen(_boxName)) {
-      await Hive.box<FocusSessionModel>(_boxName).close();
+      return Hive.box<FocusSessionModel>(_boxName);
     }
     return await Hive.openBox<FocusSessionModel>(_boxName);
   }
@@ -36,6 +33,8 @@ class SessionHistoryRepositoryImpl implements ISessionHistoryRepository {
     try {
       final box = await _getBox();
       await box.delete(sessionId);
+      // Compact ensures that deleted records are flushed from the append-only log file in Hive.
+      await box.compact();
       return const Success(null);
     } catch (e) {
       return Error(DatabaseFailure(message: e.toString()));
@@ -58,10 +57,7 @@ class SessionHistoryRepositoryImpl implements ISessionHistoryRepository {
   @override
   Future<Result<void, Failure>> saveSession(FocusSession session) async {
     try {
-      // Al guardar, usamos openBox normal pero nos aseguramos de que persista
-      final box = Hive.isBoxOpen(_boxName)
-          ? Hive.box<FocusSessionModel>(_boxName)
-          : await Hive.openBox<FocusSessionModel>(_boxName);
+      final box = await _getBox();
 
       await box.put(session.id, FocusSessionModel.fromEntity(session));
       return const Success(null);

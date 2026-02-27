@@ -11,6 +11,7 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
   final FocusState state;
   final GlobalKey tutorialKey;
   final GlobalKey premiumKey;
+  final GlobalKey historyKey;
   final Function(dynamic result)? onTutorialResult;
 
   const FocusAppBar({
@@ -18,6 +19,7 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.state,
     required this.tutorialKey,
     required this.premiumKey,
+    required this.historyKey,
     this.onTutorialResult,
   });
 
@@ -41,8 +43,7 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: Showcase(
         key: tutorialKey,
         title: 'Ajustes y Ayuda',
-        description:
-            'Gestiona tus preferencias de sonido, vuelve a ver este tutorial cuando lo necesites o envíanos tus comentarios para seguir mejorando.',
+        description: 'Gestiona las preferencias de la app a tu gusto.',
         child: IconButton(
           icon: const Icon(Icons.notes_rounded, color: Colors.white70),
           onPressed: () async {
@@ -58,16 +59,22 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.history_rounded, color: Colors.white70),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const SessionHistoryPage(),
-              ),
-            );
-          },
+        Showcase(
+          key: historyKey,
+          title: 'Historial de Sesiones',
+          description:
+              'Revisa tu rendimiento, tiempo enfocado y ciclos completados.',
+          child: IconButton(
+            icon: const Icon(Icons.history_rounded, color: Colors.white70),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SessionHistoryPage(),
+                ),
+              );
+            },
+          ),
         ),
         Showcase(
           key: premiumKey,
