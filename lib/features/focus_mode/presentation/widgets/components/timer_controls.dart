@@ -5,7 +5,7 @@ import 'package:focus_flow/features/focus_mode/presentation/widgets/components/b
 import 'package:focus_flow/features/focus_mode/presentation/widgets/dialogs/reset_confirmation_dialog.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/dialogs/session_completion_dialog.dart';
 
-import '../../bloc/focus_bloc.dart';
+import '../../models/focus_state.dart';
 
 class TimerControls extends StatelessWidget {
   final FocusState state;

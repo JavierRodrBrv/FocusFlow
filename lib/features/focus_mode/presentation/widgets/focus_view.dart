@@ -9,7 +9,7 @@ import 'package:showcaseview/showcaseview.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/premium/presentation/utils/ad_consent_manager.dart';
 
-import '../bloc/focus_bloc.dart';
+import '../models/focus_state.dart';
 import 'dialogs/session_completion_dialog.dart';
 import 'components/focus_body.dart';
 import 'components/confetti_overlay.dart';

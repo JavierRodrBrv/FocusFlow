@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/background_effect.dart';
-import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/gradient_flow_background.dart';
 import 'package:http/http.dart' as http;
+
+import '../../models/focus_state.dart';
 
 class SettingsMenuBottomSheet extends StatefulWidget {
   final FocusState initialState;

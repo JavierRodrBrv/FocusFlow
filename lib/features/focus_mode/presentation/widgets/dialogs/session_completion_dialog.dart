@@ -176,7 +176,6 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   void _dismissDialog() {
     FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
     FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
-    FlutterBackgroundService().invoke('sendEvent', {'event': 'resumeMix'});
     if (mounted) Navigator.of(context).pop();
   }
 

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings_menu_bottom_sheet.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
 import 'package:focus_flow/features/session_history/presentation/pages/session_history_page.dart';
 import 'package:focus_flow/flavors.dart';
 import 'package:showcaseview/showcaseview.dart';
+
+import '../../models/focus_state.dart';
 
 class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
   final FocusState state;

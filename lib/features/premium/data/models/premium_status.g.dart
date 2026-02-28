@@ -16,7 +16,9 @@ class PremiumStatusAdapter extends TypeAdapter<PremiumStatus> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return PremiumStatus(isPremium: fields[0] as bool);
+    return PremiumStatus(
+      isPremium: fields[0] as bool,
+    );
   }
 
   @override

@@ -25,17 +25,24 @@ import '../features/focus_mode/domain/repositories/i_audio_manager.dart'
     as _i507;
 import '../features/focus_mode/domain/repositories/sound_mix_repository.dart'
     as _i72;
-import '../features/focus_mode/domain/usecases/focus_session_manager.dart'
-    as _i582;
+import '../features/focus_mode/domain/services/focus_session_manager.dart'
+    as _i63;
 import '../features/focus_mode/domain/usecases/get_last_played_mix_usecase.dart'
     as _i1064;
 import '../features/focus_mode/domain/usecases/get_saved_mixes_usecase.dart'
     as _i438;
+import '../features/focus_mode/domain/usecases/process_session_usecase.dart'
+    as _i648;
 import '../features/focus_mode/domain/usecases/save_last_played_mix_usecase.dart'
     as _i657;
 import '../features/focus_mode/domain/usecases/save_sound_mix_usecase.dart'
     as _i676;
-import '../features/focus_mode/presentation/bloc/focus_bloc.dart' as _i176;
+import '../features/focus_mode/presentation/bloc/audio_mix/audio_mix_bloc.dart'
+    as _i724;
+import '../features/focus_mode/presentation/bloc/settings/settings_bloc.dart'
+    as _i477;
+import '../features/focus_mode/presentation/bloc/timer/timer_bloc.dart'
+    as _i661;
 import '../features/premium/data/models/premium_status.dart' as _i434;
 import '../features/premium/data/repositories/premium_repository_impl.dart'
     as _i380;
@@ -60,7 +67,11 @@ Future<_i174.GetIt> $initGetIt(
   String? environment,
   _i526.EnvironmentFilter? environmentFilter,
 }) async {
-  final gh = _i526.GetItHelper(getIt, environment, environmentFilter);
+  final gh = _i526.GetItHelper(
+    getIt,
+    environment,
+    environmentFilter,
+  );
   final hiveModule = _$HiveModule();
   gh.factory<_i150.TimerService>(() => _i150.TimerService());
   gh.lazySingleton<_i48.SoundEffectService>(
@@ -82,67 +93,55 @@ Future<_i174.GetIt> $initGetIt(
     preResolve: true,
   );
   gh.lazySingleton<_i72.SoundMixRepository>(
-    () => _i910.SoundMixRepositoryImpl(),
-  );
-  gh.lazySingleton<_i507.IAudioManager>(
-    () => _i171.UnifiedAudioManager(
-      gh<_i582.SoundMixerService>(),
-      gh<_i48.SoundEffectService>(),
-    ),
-  );
+      () => _i910.SoundMixRepositoryImpl());
+  gh.lazySingleton<_i507.IAudioManager>(() => _i171.UnifiedAudioManager(
+        gh<_i582.SoundMixerService>(),
+        gh<_i48.SoundEffectService>(),
+      ));
   gh.factory<_i438.GetSavedMixesUseCase>(
-    () => _i438.GetSavedMixesUseCase(gh<_i72.SoundMixRepository>()),
-  );
+      () => _i438.GetSavedMixesUseCase(gh<_i72.SoundMixRepository>()));
   gh.factory<_i676.SaveSoundMixUseCase>(
-    () => _i676.SaveSoundMixUseCase(gh<_i72.SoundMixRepository>()),
-  );
+      () => _i676.SaveSoundMixUseCase(gh<_i72.SoundMixRepository>()));
   gh.lazySingleton<_i1064.GetLastPlayedMixUseCase>(
-    () => _i1064.GetLastPlayedMixUseCase(gh<_i72.SoundMixRepository>()),
-  );
+      () => _i1064.GetLastPlayedMixUseCase(gh<_i72.SoundMixRepository>()));
   gh.lazySingleton<_i657.SaveLastPlayedMixUseCase>(
-    () => _i657.SaveLastPlayedMixUseCase(gh<_i72.SoundMixRepository>()),
-  );
+      () => _i657.SaveLastPlayedMixUseCase(gh<_i72.SoundMixRepository>()));
   gh.lazySingleton<_i506.ISessionHistoryRepository>(
-    () => _i777.SessionHistoryRepositoryImpl(),
-  );
+      () => _i777.SessionHistoryRepositoryImpl());
   gh.lazySingleton<_i843.PremiumRepository>(
-    () => _i380.PremiumRepositoryImpl(gh<_i979.Box<_i434.PremiumStatus>>()),
-  );
-  gh.lazySingleton<_i582.FocusSessionManager>(
-    () => _i582.FocusSessionManager(
-      gh<_i507.IAudioManager>(),
-      gh<_i350.SensorService>(),
-      gh<_i150.TimerService>(),
-      gh<_i182.HapticFeedbackService>(),
-      gh<_i579.DndService>(),
-    ),
-  );
+      () => _i380.PremiumRepositoryImpl(gh<_i979.Box<_i434.PremiumStatus>>()));
+  gh.lazySingleton<_i63.FocusSessionManager>(() => _i63.FocusSessionManager(
+        gh<_i507.IAudioManager>(),
+        gh<_i350.SensorService>(),
+        gh<_i150.TimerService>(),
+        gh<_i182.HapticFeedbackService>(),
+        gh<_i579.DndService>(),
+      ));
   gh.lazySingleton<_i684.DeleteSessionUseCase>(
-    () => _i684.DeleteSessionUseCase(gh<_i506.ISessionHistoryRepository>()),
-  );
-  gh.lazySingleton<_i37.GetSessionHistoryUseCase>(
-    () => _i37.GetSessionHistoryUseCase(gh<_i506.ISessionHistoryRepository>()),
-  );
+      () => _i684.DeleteSessionUseCase(gh<_i506.ISessionHistoryRepository>()));
+  gh.lazySingleton<_i37.GetSessionHistoryUseCase>(() =>
+      _i37.GetSessionHistoryUseCase(gh<_i506.ISessionHistoryRepository>()));
   gh.lazySingleton<_i415.SaveSessionUseCase>(
-    () => _i415.SaveSessionUseCase(gh<_i506.ISessionHistoryRepository>()),
-  );
-  gh.factory<_i120.SessionHistoryBloc>(
-    () => _i120.SessionHistoryBloc(
-      gh<_i37.GetSessionHistoryUseCase>(),
-      gh<_i684.DeleteSessionUseCase>(),
-    ),
-  );
-  gh.factory<_i176.FocusBloc>(
-    () => _i176.FocusBloc(
-      gh<_i843.PremiumRepository>(),
-      gh<_i582.FocusSessionManager>(),
-      gh<_i676.SaveSoundMixUseCase>(),
-      gh<_i438.GetSavedMixesUseCase>(),
-      gh<_i1064.GetLastPlayedMixUseCase>(),
-      gh<_i657.SaveLastPlayedMixUseCase>(),
-      gh<_i415.SaveSessionUseCase>(),
-    ),
-  );
+      () => _i415.SaveSessionUseCase(gh<_i506.ISessionHistoryRepository>()));
+  gh.lazySingleton<_i648.ProcessSessionUseCase>(
+      () => _i648.ProcessSessionUseCase(gh<_i415.SaveSessionUseCase>()));
+  gh.factory<_i120.SessionHistoryBloc>(() => _i120.SessionHistoryBloc(
+        gh<_i37.GetSessionHistoryUseCase>(),
+        gh<_i684.DeleteSessionUseCase>(),
+      ));
+  gh.factory<_i477.SettingsBloc>(
+      () => _i477.SettingsBloc(gh<_i63.FocusSessionManager>()));
+  gh.factory<_i724.AudioMixBloc>(() => _i724.AudioMixBloc(
+        gh<_i63.FocusSessionManager>(),
+        gh<_i676.SaveSoundMixUseCase>(),
+        gh<_i438.GetSavedMixesUseCase>(),
+        gh<_i1064.GetLastPlayedMixUseCase>(),
+        gh<_i657.SaveLastPlayedMixUseCase>(),
+      ));
+  gh.factory<_i661.TimerBloc>(() => _i661.TimerBloc(
+        gh<_i63.FocusSessionManager>(),
+        gh<_i648.ProcessSessionUseCase>(),
+      ));
   return getIt;
 }
 

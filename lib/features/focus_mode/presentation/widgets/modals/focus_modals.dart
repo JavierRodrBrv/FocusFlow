@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import '../../bloc/focus_bloc.dart';
+import '../../models/focus_state.dart';
 import '../components/sound_mixer_content.dart';
 import '../components/hardcore_mode_card.dart';
 

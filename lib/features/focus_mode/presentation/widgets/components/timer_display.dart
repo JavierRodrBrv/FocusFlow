@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/bouncing_button.dart';
-import '../../bloc/focus_bloc.dart';
+import '../../models/focus_state.dart';
 
 class TimerDisplay extends StatelessWidget {
   final FocusState state;

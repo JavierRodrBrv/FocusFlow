@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/background_effect.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/gradient_flow_background.dart';
+
+import '../../models/focus_state.dart';
 
 class TimerShaderBackground extends StatelessWidget {
   final FocusState state;

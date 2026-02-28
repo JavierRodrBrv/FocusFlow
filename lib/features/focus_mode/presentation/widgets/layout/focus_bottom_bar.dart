@@ -1,9 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-import 'package:focus_flow/features/focus_mode/presentation/bloc/focus_bloc.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/bottom_action_item.dart';
 import 'package:showcaseview/showcaseview.dart';
+
+import '../../models/focus_state.dart';
 
 class FocusBottomBar extends StatelessWidget {
   final FocusState state;
