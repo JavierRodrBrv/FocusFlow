@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-import 'package:focus_flow/features/focus_mode/presentation/widgets/components/bouncing_button.dart';
+import 'package:focus_flow/features/focus_mode/presentation/widgets/components/shared/bouncing_button.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/dialogs/reset_confirmation_dialog.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/dialogs/session_completion_dialog.dart';
 
-import '../../models/focus_state.dart';
+import '../../../models/focus_state.dart';
 
 class TimerControls extends StatelessWidget {
   final FocusState state;

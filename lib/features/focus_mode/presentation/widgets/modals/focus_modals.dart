@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import '../../models/focus_state.dart';
-import '../components/sound_mixer_content.dart';
-import '../components/hardcore_mode_card.dart';
+import '../components/sound_mixer/sound_mixer_content.dart';
+import '../components/special_modes/hardcore_mode_card.dart';
 
 class SoundMixerModal extends StatelessWidget {
   final FocusState state;

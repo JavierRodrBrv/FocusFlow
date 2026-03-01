@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-import 'package:focus_flow/features/focus_mode/presentation/widgets/components/bouncing_button.dart';
-import '../../models/focus_state.dart';
+import 'package:focus_flow/features/focus_mode/presentation/widgets/components/shared/bouncing_button.dart';
+import '../../../models/focus_state.dart';
 
 class TimerDisplay extends StatelessWidget {
   final FocusState state;
@@ -146,14 +146,5 @@ class TimerDisplay extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _updateDuration(int newMinutes) {
-    // Lógica centralizada de límites (Mínimo 5 minutos)
-    final targetMinutes = newMinutes < 5 ? 5 : newMinutes;
-    service.invoke('sendEvent', {
-      'event': 'updatePomodoroDuration',
-      'durationMinutes': targetMinutes,
-    });
   }
 }

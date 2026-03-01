@@ -1,10 +1,13 @@
 # FocusFlow - Contexto de Desarrollo
 
 ## Objetivo General
-Desarrollar y escalar FocusFlow, una aplicación de productividad (Pomodoro) estricta, visualmente inmersiva (estética cyberpunk/dark) y resistente, que penaliza distracciones físicas levantando el móvil. 
+Desarrollar y escalar FocusFlow, una aplicación de productividad (Pomodoro) estricta, visualmente inmersiva (estética cyberpunk/dark) y resistente, que penaliza distracciones físicas levantando el móvil.
 
-## Arquitectura y Reglas Clave
+## Arquitectura y Reglas Clave (Estrictas)
 - **Clean Architecture:** Estricta separación en capas (Presentation -> Domain -> Data).
+- **Desacoplamiento Máximo (SOLID):** Todas las clases y componentes deben ser independientes y tener una única responsabilidad.
+- **Archivos Separados para la UI:** Los subwidgets y subclases NO deben declararse en el mismo archivo que el widget principal. Todo componente de UI que complique la lectura debe extraerse a su propio archivo independiente para facilitar el mantenimiento futuro.
+- **PROHIBIDO Lógica en la UI:** Está terminantemente prohibido implementar lógica de negocio, cálculos complejos o llamadas a repositorios directamente dentro de los archivos de la interfaz gráfica (Widgets). La UI debe ser 100% pasiva: solo pinta el estado actual y delega los eventos al Bloc correspondiente.
 - **Gestión de Estado (UI):** `flutter_bloc` con estados inmutables (`copyWith`, `Equatable`).
 - **Inyección de Dependencias:** `get_it` e `injectable`. *Obligatorio ejecutar `dart run build_runner build --delete-conflicting-outputs` tras modificar dependencias o modelos de base de datos.*
 - **Servicio en Segundo Plano:** El temporizador principal y la lógica estricta (acelerómetro, audio) viven en un **Isolate secundario** gestionado por `flutter_background_service`.

@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-import 'package:focus_flow/features/focus_mode/presentation/widgets/components/bottom_action_item.dart';
+import 'package:focus_flow/features/focus_mode/presentation/widgets/components/shared/bottom_action_item.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import '../../models/focus_state.dart';

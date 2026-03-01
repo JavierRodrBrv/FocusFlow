@@ -11,12 +11,12 @@ import 'package:focus_flow/features/premium/presentation/utils/ad_consent_manage
 
 import '../models/focus_state.dart';
 import 'dialogs/session_completion_dialog.dart';
-import 'components/focus_body.dart';
-import 'components/confetti_overlay.dart';
+import 'components/layout/focus_body.dart';
+import 'components/overlays/confetti_overlay.dart';
 import 'layout/focus_app_bar.dart';
 import 'layout/focus_bottom_bar.dart';
 import 'modals/focus_modals.dart';
-import 'components/timer_shader_background.dart';
+import 'components/background/timer_shader_background.dart';
 
 class FocusView extends StatefulWidget {
   const FocusView({super.key});

@@ -3,9 +3,9 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import 'package:focus_flow/features/premium/presentation/widgets/ad_banner_widget.dart';
-import '../../models/focus_state.dart';
-import 'timer_display.dart';
-import 'timer_controls.dart';
+import '../../../models/focus_state.dart';
+import '../timer/timer_display.dart';
+import '../timer/timer_controls.dart';
 
 class FocusBody extends StatelessWidget {
   final FocusState state;
