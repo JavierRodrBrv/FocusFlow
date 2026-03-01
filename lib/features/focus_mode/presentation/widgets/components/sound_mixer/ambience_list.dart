@@ -15,6 +15,11 @@ class AmbienceList extends StatelessWidget {
   Widget build(BuildContext context) {
     final ambiences = [
       {
+        'name': 'Ninguno',
+        'path': null,
+        'icon': Icons.music_off_outlined,
+      },
+      {
         'name': 'Ranas',
         'path': 'assets/audio/frogs_sound.mp3',
         'svgPath': 'assets/icons/frog.svg'
@@ -41,8 +46,6 @@ class AmbienceList extends StatelessWidget {
       },
     ];
 
-    final isPlayingAmbience = state.selectedAmbiencePath != null;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -53,26 +56,31 @@ class AmbienceList extends StatelessWidget {
           itemBuilder: (context, index) {
             final item = ambiences[index];
             final isSelected = state.selectedAmbiencePath == item['path'];
-            final String? svgPath = item['svgPath'] as String?;
 
             return ListTile(
               dense: true,
               visualDensity: VisualDensity.compact,
-              leading: svgPath != null
-                  ? SvgPicture.asset(
-                      svgPath,
-                      width: 20,
-                      height: 20,
-                      colorFilter: ColorFilter.mode(
-                        isSelected ? Colors.blueAccent : Colors.white38,
-                        BlendMode.srcIn,
-                      ),
-                    )
-                  : Icon(
-                      item['icon'] as IconData,
+              leading: item['path'] == null 
+                  ? Icon(
+                      Icons.music_off_outlined,
                       color: isSelected ? Colors.blueAccent : Colors.white38,
                       size: 20,
-                    ),
+                    )
+                  : (item['svgPath'] != null
+                      ? SvgPicture.asset(
+                          item['svgPath'] as String,
+                          width: 20,
+                          height: 20,
+                          colorFilter: ColorFilter.mode(
+                            isSelected ? Colors.blueAccent : Colors.white38,
+                            BlendMode.srcIn,
+                          ),
+                        )
+                      : Icon(
+                          (item['icon'] as IconData?) ?? Icons.music_note_outlined,
+                          color: isSelected ? Colors.blueAccent : Colors.white38,
+                          size: 20,
+                        )),
               title: Text(
                 item['name'] as String,
                 style: TextStyle(
@@ -87,56 +95,11 @@ class AmbienceList extends StatelessWidget {
               onTap: () {
                 service.invoke('sendEvent', {
                   'event': 'setAmbienceSound',
-                  'path': isSelected ? null : item['path'],
+                  'path': item['path'],
                 });
               },
             );
           },
-        ),
-        const SizedBox(height: 24),
-        Center(
-          child: BouncingButton(
-            onPressed: isPlayingAmbience 
-                ? () => service.invoke('sendEvent', {
-                    'event': 'setAmbienceSound',
-                    'path': state.selectedAmbiencePath, // Toggle off
-                  })
-                : null, // No hace nada si no hay selección previa
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isPlayingAmbience
-                    ? Colors.blueAccent
-                    : Colors.white.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-                boxShadow: isPlayingAmbience
-                    ? [
-                        BoxShadow(
-                          color: Colors.blueAccent.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Icon(
-                isPlayingAmbience ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: isPlayingAmbience ? Colors.white : Colors.white24,
-                size: 32,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          isPlayingAmbience ? "DETENER AMBIENTE" : "SELECCIONA UN SONIDO",
-          style: TextStyle(
-            color: isPlayingAmbience ? Colors.blueAccent : Colors.white24,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
         ),
       ],
     );

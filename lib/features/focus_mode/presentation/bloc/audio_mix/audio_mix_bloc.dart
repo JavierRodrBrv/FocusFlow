@@ -79,7 +79,7 @@ class AudioMixBloc extends Bloc<AudioMixEvent, AudioMixState> {
   }
 
   void _onSetAmbienceSound(SetAmbienceSound event, Emitter<AudioMixState> emit) {
-    if (event.path == state.selectedAmbiencePath) {
+    if (event.path == null || event.path == state.selectedAmbiencePath) {
       _sessionManager.updateAmbienceSound(null);
       emit(state.copyWith(clearAmbience: true));
     } else {
