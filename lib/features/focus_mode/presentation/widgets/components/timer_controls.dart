@@ -149,7 +149,15 @@ class TimerControls extends StatelessWidget {
               child: GestureDetector(
                 onTap: () {
                   if (status == PomodoroStatus.initial) {
-                    _showBreakSelectionDialog(context);
+                    if (state.defaultBreakDuration != null) {
+                      service.invoke('sendEvent', {
+                        'event': 'setBreakDuration',
+                        'durationMinutes': state.defaultBreakDuration!.inMinutes,
+                      });
+                      service.invoke('sendEvent', {'event': 'startTimer'});
+                    } else {
+                      _showBreakSelectionDialog(context);
+                    }
                   } else {
                     // Si estamos esperando el primer volteo en modo Hardcore,
                     // mostramos aviso en lugar de pausar/reanudar.

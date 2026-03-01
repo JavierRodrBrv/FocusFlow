@@ -91,6 +91,7 @@ void onStart(ServiceInstance service) async {
       persistedLastMixId: ams.persistedLastMixId,
       backgroundEffect: ss.backgroundEffect,
       isWaitingForFirstFlip: ts.isWaitingForFirstFlip,
+      defaultBreakDuration: ss.defaultBreakDuration,
     );
   }
 
@@ -179,6 +180,9 @@ void onStart(ServiceInstance service) async {
     } else if (name == 'updateConsentStatus') {
       final canRequest = event['canRequest'] as bool;
       settingsBloc.add(UpdateConsentStatus(canRequest));
+    } else if (name == 'setDefaultBreakDuration') {
+      final minutes = event['durationMinutes'] as int?;
+      settingsBloc.add(SetDefaultBreakDuration(minutes != null ? Duration(minutes: minutes) : null));
     } else if (name == 'updateRainVolume') {
       final volume = (event['volume'] as num).toDouble();
       audioBloc.add(UpdateRainVolume(volume));
@@ -224,19 +228,16 @@ void onStart(ServiceInstance service) async {
     bool isPaused = status == PomodoroStatus.paused;
     bool isInitial = status == PomodoroStatus.initial;
 
-    // --- ORQUESTACIÓN DE AUDIO ---
-    // 1. Auto-pausa del mix al terminar la sesión para no solapar con la alarma
-    if (isFinished && lastStatus != PomodoroStatus.finished && audioBloc?.state.isPlayingMix == true) {
-      audioBloc?.add(PauseMix());
-    }
-
-    // 2. Sincronización de notificaciones y servicios
+    // --- ORQUESTACIÓN DE SERVICIOS ---
     if (service is AndroidServiceInstance) {
       bool isCurrentlyIdle = isInitial || isFinished;
       bool wasIdle = lastStatus == null || lastStatus == PomodoroStatus.initial || lastStatus == PomodoroStatus.finished;
       if (isCurrentlyIdle != wasIdle || lastStatus == null) {
-        if (isCurrentlyIdle) service.setAsBackgroundService();
-        else service.setAsForegroundService();
+        if (isCurrentlyIdle) {
+          service.setAsBackgroundService();
+        } else {
+          service.setAsForegroundService();
+        }
       }
     }
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -118,6 +119,8 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
         return _buildFondoMenu(context, state);
       case 2:
         return _buildFeedbackMenu(context);
+      case 3:
+        return _buildDescansosMenu(context, state);
       default:
         return _buildMainMenu(context, state);
     }
@@ -180,6 +183,25 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
 
             ListTile(
               leading: const Icon(
+                Icons.coffee,
+                color: Colors.orangeAccent,
+              ),
+              title: const Text(
+                'Descansos',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                state.defaultBreakDuration != null
+                    ? '${state.defaultBreakDuration!.inMinutes} min preestablecidos'
+                    : 'Configura tus descansos automáticos',
+                style: const TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+              onTap: () => _goToView(3),
+            ),
+
+            ListTile(
+              leading: const Icon(
                 Icons.palette_outlined,
                 color: Colors.cyanAccent,
               ),
@@ -231,6 +253,116 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
             const SizedBox(height: 20),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDescansosMenu(BuildContext context, FocusState state) {
+    return Container(
+      key: const ValueKey(3),
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      constraints: const BoxConstraints(minHeight: 480),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white70,
+                ),
+                onPressed: () => _goToView(0),
+              ),
+              const Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 48.0),
+                    child: Text(
+                      'Descansos',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.0),
+            child: Text(
+              'Configura un tiempo de descanso predeterminado. Si lo haces, las sesiones comenzarán automáticamente sin preguntar cada vez.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 30),
+          SizedBox(
+            height: 180,
+            child: CupertinoPicker(
+              scrollController: FixedExtentScrollController(
+                initialItem: (state.defaultBreakDuration?.inMinutes ?? 5) - 1,
+              ),
+              itemExtent: 44,
+              onSelectedItemChanged: (int index) {
+                final minutes = index + 1;
+                FlutterBackgroundService().invoke('sendEvent', {
+                  'event': 'setDefaultBreakDuration',
+                  'durationMinutes': minutes,
+                });
+              },
+              children: List.generate(60, (index) => Center(
+                child: Text(
+                  '${index + 1} min',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                  ),
+                ),
+              )),
+            ),
+          ),
+          const SizedBox(height: 30),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () => _goToView(0),
+              child: const Text(
+                'Aceptar',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (state.defaultBreakDuration != null)
+            TextButton(
+              onPressed: () {
+                FlutterBackgroundService().invoke('sendEvent', {
+                  'event': 'setDefaultBreakDuration',
+                  'durationMinutes': null,
+                });
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'Eliminar preajuste',
+                style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+              ),
+            ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

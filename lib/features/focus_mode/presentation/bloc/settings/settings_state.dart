@@ -6,6 +6,7 @@ class SettingsState extends Equatable {
   final bool isAlarmSoundEnabled;
   final bool canRequestAds;
   final bool isPremium;
+  final Duration? defaultBreakDuration;
 
   const SettingsState({
     required this.isZoomMode,
@@ -13,6 +14,7 @@ class SettingsState extends Equatable {
     required this.isAlarmSoundEnabled,
     required this.canRequestAds,
     required this.isPremium,
+    this.defaultBreakDuration,
   });
 
   factory SettingsState.initial() => const SettingsState(
@@ -21,6 +23,7 @@ class SettingsState extends Equatable {
         isAlarmSoundEnabled: true,
         canRequestAds: false,
         isPremium: false,
+        defaultBreakDuration: null,
       );
 
   SettingsState copyWith({
@@ -29,6 +32,8 @@ class SettingsState extends Equatable {
     bool? isAlarmSoundEnabled,
     bool? canRequestAds,
     bool? isPremium,
+    Duration? defaultBreakDuration,
+    bool clearDefaultBreakDuration = false,
   }) {
     return SettingsState(
       isZoomMode: isZoomMode ?? this.isZoomMode,
@@ -36,6 +41,7 @@ class SettingsState extends Equatable {
       isAlarmSoundEnabled: isAlarmSoundEnabled ?? this.isAlarmSoundEnabled,
       canRequestAds: canRequestAds ?? this.canRequestAds,
       isPremium: isPremium ?? this.isPremium,
+      defaultBreakDuration: clearDefaultBreakDuration ? null : (defaultBreakDuration ?? this.defaultBreakDuration),
     );
   }
 
@@ -46,5 +52,6 @@ class SettingsState extends Equatable {
         isAlarmSoundEnabled,
         canRequestAds,
         isPremium,
+        defaultBreakDuration,
       ];
 }

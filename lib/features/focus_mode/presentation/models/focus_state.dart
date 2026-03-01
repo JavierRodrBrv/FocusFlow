@@ -35,6 +35,7 @@ class FocusState extends Equatable {
   final String? persistedLastMixId;
   final BackgroundEffect backgroundEffect;
   final bool isWaitingForFirstFlip;
+  final Duration? defaultBreakDuration;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -65,6 +66,7 @@ class FocusState extends Equatable {
     this.persistedLastMixId,
     this.backgroundEffect = BackgroundEffect.gradient,
     this.isWaitingForFirstFlip = false,
+    this.defaultBreakDuration,
   });
 
   Map<String, dynamic> toJson() {
@@ -106,6 +108,7 @@ class FocusState extends Equatable {
       'persistedLastMixId': persistedLastMixId,
       'backgroundEffect': backgroundEffect.index,
       'isWaitingForFirstFlip': isWaitingForFirstFlip,
+      'defaultBreakDuration': defaultBreakDuration?.inSeconds,
     };
   }
 
@@ -151,6 +154,9 @@ class FocusState extends Equatable {
       persistedLastMixId: json['persistedLastMixId'] as String?,
       backgroundEffect: BackgroundEffect.values[json['backgroundEffect'] as int],
       isWaitingForFirstFlip: json['isWaitingForFirstFlip'] as bool,
+      defaultBreakDuration: json['defaultBreakDuration'] != null
+          ? Duration(seconds: json['defaultBreakDuration'] as int)
+          : null,
     );
   }
 
@@ -183,6 +189,7 @@ class FocusState extends Equatable {
     String? persistedLastMixId,
     BackgroundEffect? backgroundEffect,
     bool? isWaitingForFirstFlip,
+    Duration? defaultBreakDuration,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -213,6 +220,7 @@ class FocusState extends Equatable {
       persistedLastMixId: persistedLastMixId ?? this.persistedLastMixId,
       backgroundEffect: backgroundEffect ?? this.backgroundEffect,
       isWaitingForFirstFlip: isWaitingForFirstFlip ?? this.isWaitingForFirstFlip,
+      defaultBreakDuration: defaultBreakDuration ?? this.defaultBreakDuration,
     );
   }
 
@@ -246,5 +254,6 @@ class FocusState extends Equatable {
         persistedLastMixId,
         backgroundEffect,
         isWaitingForFirstFlip,
+        defaultBreakDuration,
       ];
 }

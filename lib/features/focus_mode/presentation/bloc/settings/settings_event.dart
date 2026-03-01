@@ -30,3 +30,8 @@ class UpdateSettingsPremiumStatus extends SettingsEvent {
   final bool isPremium;
   const UpdateSettingsPremiumStatus(this.isPremium);
 }
+
+class SetDefaultBreakDuration extends SettingsEvent {
+  final Duration? duration;
+  const SetDefaultBreakDuration(this.duration);
+}
