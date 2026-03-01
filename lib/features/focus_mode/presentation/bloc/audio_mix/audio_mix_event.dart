@@ -42,6 +42,16 @@ class PauseMix extends AudioMixEvent {}
 
 class StopAllAudio extends AudioMixEvent {}
 
+class SetAmbienceSound extends AudioMixEvent {
+  final String? path;
+  const SetAmbienceSound(this.path);
+}
+
+class UpdateAmbienceVolume extends AudioMixEvent {
+  final double volume;
+  const UpdateAmbienceVolume(this.volume);
+}
+
 class UpdatePremiumStatus extends AudioMixEvent {
   final bool isPremium;
   const UpdatePremiumStatus(this.isPremium);

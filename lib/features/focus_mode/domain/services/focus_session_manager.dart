@@ -624,4 +624,6 @@ class FocusSessionManager {
   void updateRainVolume(double v) => _audioManager.setRainVolume(v);
   void updateFireVolume(double v) => _audioManager.setFireVolume(v);
   void updateBrownNoiseVolume(double v) => _audioManager.setBrownNoiseVolume(v);
+  void updateAmbienceSound(String? path) => _audioManager.setAmbienceSound(path);
+  void updateAmbienceVolume(double v) => _audioManager.setAmbienceVolume(v);
 }

@@ -41,6 +41,8 @@ class AudioMixBloc extends Bloc<AudioMixEvent, AudioMixState> {
     on<PauseMix>(_onPauseMix);
     on<StopAllAudio>(_onStopAllAudio);
     on<UpdatePremiumStatus>(_onUpdatePremiumStatus);
+    on<SetAmbienceSound>(_onSetAmbienceSound);
+    on<UpdateAmbienceVolume>(_onUpdateAmbienceVolume);
   }
 
   Future<void> _onInitializeAudio(InitializeAudio event, Emitter<AudioMixState> emit) async {
@@ -62,6 +64,7 @@ class AudioMixBloc extends Bloc<AudioMixEvent, AudioMixState> {
     _sessionManager.updateRainVolume(0.0);
     _sessionManager.updateFireVolume(0.0);
     _sessionManager.updateBrownNoiseVolume(0.0);
+    _sessionManager.updateAmbienceSound(null);
 
     emit(state.copyWith(
       status: AudioStatus.loaded,
@@ -70,34 +73,80 @@ class AudioMixBloc extends Bloc<AudioMixEvent, AudioMixState> {
       rainVolume: 0.0,
       fireVolume: 0.0,
       brownNoiseVolume: 0.0,
+      ambienceVolume: 0.5,
       isPlayingMix: false,
     ));
   }
 
+  void _onSetAmbienceSound(SetAmbienceSound event, Emitter<AudioMixState> emit) {
+    if (event.path == state.selectedAmbiencePath) {
+      _sessionManager.updateAmbienceSound(null);
+      emit(state.copyWith(clearAmbience: true));
+    } else {
+      // Activar Ambiente -> Detener Mezclador
+      _sessionManager.updateRainVolume(0.0);
+      _sessionManager.updateFireVolume(0.0);
+      _sessionManager.updateBrownNoiseVolume(0.0);
+      _sessionManager.updateAmbienceSound(event.path);
+
+      emit(state.copyWith(
+        selectedAmbiencePath: event.path,
+        rainVolume: 0.0,
+        fireVolume: 0.0,
+        brownNoiseVolume: 0.0,
+        isPlayingMix: false,
+      ));
+    }
+  }
+
+  void _onUpdateAmbienceVolume(UpdateAmbienceVolume event, Emitter<AudioMixState> emit) {
+    _sessionManager.updateAmbienceVolume(event.volume);
+    emit(state.copyWith(
+      ambienceVolume: event.volume,
+      lastAmbienceVolume: event.volume,
+    ));
+  }
+
   void _onUpdateRainVolume(UpdateRainVolume event, Emitter<AudioMixState> emit) {
+    // Al mover el slider del mezclador, detenemos el ambiente si estaba sonando
+    if (state.selectedAmbiencePath != null) {
+      _sessionManager.updateAmbienceSound(null);
+    }
+
     _sessionManager.updateRainVolume(event.volume);
     emit(state.copyWith(
       rainVolume: event.volume,
       lastRainVolume: event.volume,
       isPlayingMix: true,
+      clearAmbience: true,
     ));
   }
 
   void _onUpdateFireVolume(UpdateFireVolume event, Emitter<AudioMixState> emit) {
+    if (state.selectedAmbiencePath != null) {
+      _sessionManager.updateAmbienceSound(null);
+    }
+
     _sessionManager.updateFireVolume(event.volume);
     emit(state.copyWith(
       fireVolume: event.volume,
       lastFireVolume: event.volume,
       isPlayingMix: true,
+      clearAmbience: true,
     ));
   }
 
   void _onUpdateBrownNoiseVolume(UpdateBrownNoiseVolume event, Emitter<AudioMixState> emit) {
+    if (state.selectedAmbiencePath != null) {
+      _sessionManager.updateAmbienceSound(null);
+    }
+
     _sessionManager.updateBrownNoiseVolume(event.volume);
     emit(state.copyWith(
       brownNoiseVolume: event.volume,
       lastBrownNoiseVolume: event.volume,
       isPlayingMix: true,
+      clearAmbience: true,
     ));
   }
 
@@ -142,6 +191,9 @@ class AudioMixBloc extends Bloc<AudioMixEvent, AudioMixState> {
   }
 
   void _applyMix(SoundMix mix, Emitter<AudioMixState> emit) {
+    // Al cargar mix, detener ambiente
+    _sessionManager.updateAmbienceSound(null);
+
     _sessionManager.updateRainVolume(mix.rainVolume);
     _sessionManager.updateFireVolume(mix.fireVolume);
     _sessionManager.updateBrownNoiseVolume(mix.brownNoiseVolume);
@@ -156,6 +208,7 @@ class AudioMixBloc extends Bloc<AudioMixEvent, AudioMixState> {
       lastActivatedMixId: mix.id,
       persistedLastMixId: mix.id,
       isPlayingMix: true,
+      clearAmbience: true,
     ));
   }
 
@@ -163,6 +216,9 @@ class AudioMixBloc extends Bloc<AudioMixEvent, AudioMixState> {
     if (state.lastRainVolume == 0 && state.lastFireVolume == 0 && state.lastBrownNoiseVolume == 0) {
       return;
     }
+
+    // Detener ambiente al reanudar mezclador
+    _sessionManager.updateAmbienceSound(null);
 
     _sessionManager.updateRainVolume(state.lastRainVolume);
     _sessionManager.updateFireVolume(state.lastFireVolume);
@@ -173,6 +229,7 @@ class AudioMixBloc extends Bloc<AudioMixEvent, AudioMixState> {
       fireVolume: state.lastFireVolume,
       brownNoiseVolume: state.lastBrownNoiseVolume,
       isPlayingMix: true,
+      clearAmbience: true,
     ));
   }
 
@@ -193,11 +250,14 @@ class AudioMixBloc extends Bloc<AudioMixEvent, AudioMixState> {
     _sessionManager.updateRainVolume(0.0);
     _sessionManager.updateFireVolume(0.0);
     _sessionManager.updateBrownNoiseVolume(0.0);
+    _sessionManager.updateAmbienceSound(null);
 
     emit(state.copyWith(
       rainVolume: 0.0,
       fireVolume: 0.0,
       brownNoiseVolume: 0.0,
+      selectedAmbiencePath: null,
+      clearAmbience: true,
       isPlayingMix: false,
     ));
   }

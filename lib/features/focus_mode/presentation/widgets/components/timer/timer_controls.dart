@@ -22,7 +22,7 @@ class TimerControls extends StatelessWidget {
   void _showBreakSelectionDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey.shade900,
         title: const Text(

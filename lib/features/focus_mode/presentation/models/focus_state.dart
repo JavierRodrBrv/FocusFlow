@@ -36,6 +36,7 @@ class FocusState extends Equatable {
   final BackgroundEffect backgroundEffect;
   final bool isWaitingForFirstFlip;
   final Duration? defaultBreakDuration;
+  final String? selectedAmbiencePath;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -67,6 +68,7 @@ class FocusState extends Equatable {
     this.backgroundEffect = BackgroundEffect.gradient,
     this.isWaitingForFirstFlip = false,
     this.defaultBreakDuration,
+    this.selectedAmbiencePath,
   });
 
   Map<String, dynamic> toJson() {
@@ -109,6 +111,7 @@ class FocusState extends Equatable {
       'backgroundEffect': backgroundEffect.index,
       'isWaitingForFirstFlip': isWaitingForFirstFlip,
       'defaultBreakDuration': defaultBreakDuration?.inSeconds,
+      'selectedAmbiencePath': selectedAmbiencePath,
     };
   }
 
@@ -157,6 +160,7 @@ class FocusState extends Equatable {
       defaultBreakDuration: json['defaultBreakDuration'] != null
           ? Duration(seconds: json['defaultBreakDuration'] as int)
           : null,
+      selectedAmbiencePath: json['selectedAmbiencePath'] as String?,
     );
   }
 
@@ -190,6 +194,8 @@ class FocusState extends Equatable {
     BackgroundEffect? backgroundEffect,
     bool? isWaitingForFirstFlip,
     Duration? defaultBreakDuration,
+    String? selectedAmbiencePath,
+    bool clearSelectedAmbience = false,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -221,6 +227,7 @@ class FocusState extends Equatable {
       backgroundEffect: backgroundEffect ?? this.backgroundEffect,
       isWaitingForFirstFlip: isWaitingForFirstFlip ?? this.isWaitingForFirstFlip,
       defaultBreakDuration: defaultBreakDuration ?? this.defaultBreakDuration,
+      selectedAmbiencePath: clearSelectedAmbience ? null : (selectedAmbiencePath ?? this.selectedAmbiencePath),
     );
   }
 
@@ -255,5 +262,6 @@ class FocusState extends Equatable {
         backgroundEffect,
         isWaitingForFirstFlip,
         defaultBreakDuration,
+        selectedAmbiencePath,
       ];
 }

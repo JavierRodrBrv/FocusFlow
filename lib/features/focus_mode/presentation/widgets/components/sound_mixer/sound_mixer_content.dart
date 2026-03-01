@@ -4,6 +4,7 @@ import 'package:focus_flow/features/premium/presentation/widgets/premium_feature
 import '../../../models/focus_state.dart';
 import '../shared/bouncing_button.dart';
 import '../../modals/saved_mixes_bottom_sheet.dart';
+import 'ambience_list.dart';
 import 'circular_action_button.dart';
 import 'mixer_slider.dart';
 
@@ -24,6 +25,7 @@ class SoundMixerContent extends StatefulWidget {
 class _SoundMixerContentState extends State<SoundMixerContent>
     with TickerProviderStateMixin {
   late AnimationController _iconController;
+  int _selectedTabIndex = 0; // 0: Mezclador, 1: Sonido de Fondo
 
   @override
   void initState() {
@@ -64,133 +66,182 @@ class _SoundMixerContentState extends State<SoundMixerContent>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        MixerSlider(
-          label: 'Lluvia',
-          icon: Icons.water_drop,
-          value: state.rainVolume,
-          onChanged: (value) {
-            service.invoke('sendEvent', {
-              'event': 'updateRainVolume',
-              'volume': value,
-            });
-          },
+        // Tab Selector
+        Padding(
+          padding: const EdgeInsets.only(bottom: 20.0),
+          child: Row(
+            children: [
+              _buildTabButton('Mezclador', 0),
+              const SizedBox(width: 8),
+              _buildTabButton('Sonido de fondo', 1),
+            ],
+          ),
         ),
-        MixerSlider(
-          label: 'Fuego',
-          icon: Icons.local_fire_department,
-          value: state.fireVolume,
-          onChanged: (value) {
-            service.invoke('sendEvent', {
-              'event': 'updateFireVolume',
-              'volume': value,
-            });
-          },
-        ),
-        MixerSlider(
-          label: 'Olas',
-          icon: Icons.waves,
-          value: state.brownNoiseVolume,
-          onChanged: (value) {
-            service.invoke('sendEvent', {
-              'event': 'updateBrownNoiseVolume',
-              'volume': value,
-            });
-          },
-        ),
-        const SizedBox(height: 24),
 
-        // CONTROLS ROW
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // LOAD MIX BUTTON
-            CircularActionButton(
-              icon: Icons.queue_music,
-              isPremium: state.isPremium,
-              color: Colors.white70,
-              onPressed: () {
-                if (state.isPremium) {
-                  SavedMixesBottomSheet.show(context, state, service);
-                } else {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const PremiumFeatureDialog(
-                      featureName: 'Cargar mezclas guardadas',
-                      featureDescription:
-                          'Accede y carga al instante tus mezclas de sonido personalizadas que has guardado previamente.',
-                    ),
-                  );
-                }
-              },
-            ),
+        if (_selectedTabIndex == 0) ...[
+          MixerSlider(
+            label: 'Lluvia',
+            icon: Icons.water_drop,
+            value: state.rainVolume,
+            onChanged: (value) {
+              service.invoke('sendEvent', {
+                'event': 'updateRainVolume',
+                'volume': value,
+              });
+            },
+          ),
+          MixerSlider(
+            label: 'Fuego',
+            icon: Icons.local_fire_department,
+            value: state.fireVolume,
+            onChanged: (value) {
+              service.invoke('sendEvent', {
+                'event': 'updateFireVolume',
+                'volume': value,
+              });
+            },
+          ),
+          MixerSlider(
+            label: 'Olas',
+            icon: Icons.waves,
+            value: state.brownNoiseVolume,
+            onChanged: (value) {
+              service.invoke('sendEvent', {
+                'event': 'updateBrownNoiseVolume',
+                'volume': value,
+              });
+            },
+          ),
+          const SizedBox(height: 24),
 
-            const SizedBox(width: 24),
+          // CONTROLS ROW
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // LOAD MIX BUTTON
+              CircularActionButton(
+                icon: Icons.queue_music,
+                isPremium: state.isPremium,
+                color: Colors.white70,
+                onPressed: () {
+                  if (state.isPremium) {
+                    SavedMixesBottomSheet.show(context, state, service);
+                  } else {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const PremiumFeatureDialog(
+                        featureName: 'Cargar mezclas guardadas',
+                        featureDescription:
+                            'Accede y carga al instante tus mezclas de sonido personalizadas que has guardado previamente.',
+                      ),
+                    );
+                  }
+                },
+              ),
 
-            // PLAY/PAUSE BUTTON
-            BouncingButton(
-              onPressed: () {
-                service.invoke('sendEvent', {
-                  'event': isPlaying ? 'pauseMix' : 'resumeMix',
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isPlaying
-                      ? Colors.blueAccent
-                      : Colors.white.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                  boxShadow: isPlaying
-                      ? [
-                          BoxShadow(
-                            color: Colors.blueAccent.withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            spreadRadius: 2,
-                          ),
-                        ]
-                      : [],
-                ),
-                child: AnimatedIcon(
-                  icon: AnimatedIcons.play_pause,
-                  progress: _iconController,
-                  color: Colors.white,
-                  size: 32,
+              const SizedBox(width: 24),
+
+              // PLAY/PAUSE BUTTON
+              BouncingButton(
+                onPressed: () {
+                  service.invoke('sendEvent', {
+                    'event': isPlaying ? 'pauseMix' : 'resumeMix',
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isPlaying
+                        ? Colors.blueAccent
+                        : Colors.white.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    boxShadow: isPlaying
+                        ? [
+                            BoxShadow(
+                              color: Colors.blueAccent.withValues(alpha: 0.4),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: AnimatedIcon(
+                    icon: AnimatedIcons.play_pause,
+                    progress: _iconController,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
               ),
-            ),
 
-            const SizedBox(width: 24),
+              const SizedBox(width: 24),
 
-            // SAVE MIX BUTTON
-            CircularActionButton(
-              icon: Icons.save_alt,
-              isPremium: state.isPremium,
-              color: Colors.blueAccent,
-              onPressed: () {
-                if (state.isPremium) {
-                  service.invoke('sendEvent', {'event': 'saveMix'});
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Mix guardado.'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                } else {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const PremiumFeatureDialog(
-                      featureName: 'Guardar mezclas de sonido',
-                      featureDescription:
-                          'Guarda tus configuraciones de sonido ambientale para usarlas más tarde.',
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
-        ),
+              // SAVE MIX BUTTON
+              CircularActionButton(
+                icon: Icons.save_alt,
+                isPremium: state.isPremium,
+                color: Colors.blueAccent,
+                onPressed: () {
+                  if (state.isPremium) {
+                    service.invoke('sendEvent', {'event': 'saveMix'});
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Mix guardado.'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  } else {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const PremiumFeatureDialog(
+                        featureName: 'Guardar mezclas de sonido',
+                        featureDescription:
+                            'Guarda tus configuraciones de sonido ambientale para usarlas más tarde.',
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ] else ...[
+          AmbienceList(state: state, service: service),
+        ],
       ],
+    );
+  }
+
+  Widget _buildTabButton(String label, int index) {
+    final isSelected = _selectedTabIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTabIndex = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.blueAccent.withValues(alpha: 0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.blueAccent.withValues(alpha: 0.3)
+                  : Colors.white.withValues(alpha: 0.05),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.blueAccent : Colors.white38,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

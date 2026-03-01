@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/core/services/audio/sound_mixer_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/timer/timer_bloc.dart';
@@ -51,6 +52,7 @@ void onStart(ServiceInstance service) async {
   TimerBloc? timerBloc;
   AudioMixBloc? audioBloc;
   SettingsBloc? settingsBloc;
+  SoundMixerService? soundMixerService;
 
   PomodoroStatus? lastStatus;
   Duration? lastRemaining;
@@ -92,6 +94,7 @@ void onStart(ServiceInstance service) async {
       backgroundEffect: ss.backgroundEffect,
       isWaitingForFirstFlip: ts.isWaitingForFirstFlip,
       defaultBreakDuration: ss.defaultBreakDuration,
+      selectedAmbiencePath: ams.selectedAmbiencePath,
     );
   }
 
@@ -128,6 +131,7 @@ void onStart(ServiceInstance service) async {
     timerBloc = getIt<TimerBloc>();
     audioBloc = getIt<AudioMixBloc>();
     settingsBloc = getIt<SettingsBloc>();
+    soundMixerService = getIt<SoundMixerService>();
 
     final focusManager = getIt<FocusSessionManager>();
     await focusManager.init();
@@ -192,6 +196,12 @@ void onStart(ServiceInstance service) async {
     } else if (name == 'updateBrownNoiseVolume') {
       final volume = (event['volume'] as num).toDouble();
       audioBloc.add(UpdateBrownNoiseVolume(volume));
+    } else if (name == 'setAmbienceSound') {
+      final path = event['path'] as String?;
+      audioBloc.add(SetAmbienceSound(path));
+    } else if (name == 'updateAmbienceVolume') {
+      final volume = (event['volume'] as num).toDouble();
+      audioBloc.add(UpdateAmbienceVolume(volume));
     } else if (name == 'saveMix') {
       audioBloc.add(SaveCurrentMix());
     } else if (name == 'loadMix') {

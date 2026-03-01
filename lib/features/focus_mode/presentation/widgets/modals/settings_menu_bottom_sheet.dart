@@ -354,7 +354,7 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
                   'event': 'setDefaultBreakDuration',
                   'durationMinutes': null,
                 });
-                Navigator.pop(context);
+                _goToView(0);
               },
               child: const Text(
                 'Eliminar preajuste',

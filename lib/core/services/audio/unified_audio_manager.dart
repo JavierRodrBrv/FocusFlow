@@ -28,6 +28,14 @@ class UnifiedAudioManager implements IAudioManager {
       _mixerService.setBrownNoiseVolume(volume);
 
   @override
+  Future<void> setAmbienceSound(String? assetPath) async =>
+      _mixerService.setAmbienceSound(assetPath);
+
+  @override
+  Future<void> setAmbienceVolume(double volume) async =>
+      _mixerService.setAmbienceVolume(volume);
+
+  @override
   Future<void> playFailSound() async => _effectService.playFailSoundOnce();
 
   @override

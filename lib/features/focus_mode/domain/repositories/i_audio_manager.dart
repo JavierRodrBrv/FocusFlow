@@ -3,6 +3,8 @@ abstract class IAudioManager {
   Future<void> setRainVolume(double volume);
   Future<void> setFireVolume(double volume);
   Future<void> setBrownNoiseVolume(double volume);
+  Future<void> setAmbienceSound(String? assetPath);
+  Future<void> setAmbienceVolume(double volume);
   Future<void> playFailSound();
   Future<void> startAlarmLoop();
   Future<void> stopAlarm();

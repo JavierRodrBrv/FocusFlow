@@ -7,9 +7,13 @@ class SoundMixerService {
   final AudioPlayer _rainPlayer = AudioPlayer();
   final AudioPlayer _firePlayer = AudioPlayer();
   final AudioPlayer _brownNoisePlayer = AudioPlayer();
+  final AudioPlayer _ambiencePlayer = AudioPlayer();
   final AudioPlayer _keepAlivePlayer = AudioPlayer();
 
   bool _isInitialized = false;
+  String? _currentAmbiencePath;
+
+  String? get currentAmbiencePath => _currentAmbiencePath;
 
   Future<void> init() async {
     if (_isInitialized) {
@@ -25,13 +29,10 @@ class SoundMixerService {
       await session.configure(
         const AudioSessionConfiguration(
           avAudioSessionCategory: AVAudioSessionCategory.playback,
-          avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions
-              .mixWithOthers, // Para no cortar otros audios si no queremos, o .none para cortar
+          avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
           avAudioSessionMode: AVAudioSessionMode.defaultMode,
-          avAudioSessionRouteSharingPolicy:
-              AVAudioSessionRouteSharingPolicy.defaultPolicy,
-          avAudioSessionSetActiveOptions:
-              AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
+          avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+          avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
           androidAudioAttributes: AndroidAudioAttributes(
             contentType: AndroidAudioContentType.music,
             flags: AndroidAudioFlags.none,
@@ -43,31 +44,68 @@ class SoundMixerService {
       );
 
       print('[SoundMixerService] Loading assets...');
-      // Solo cargar y preparar, NO reproducir.
       await _rainPlayer.setAsset('assets/audio/rain.mp3');
       await _firePlayer.setAsset('assets/audio/fire.mp3');
       await _brownNoisePlayer.setAsset('assets/audio/brown.mp3');
-      await _keepAlivePlayer.setAsset(
-        'assets/audio/silence.mp3',
-      ); // Usamos el archivo de silencio real
+      await _keepAlivePlayer.setAsset('assets/audio/silence.mp3');
       print('[SoundMixerService] Assets loaded.');
 
       await _rainPlayer.setLoopMode(LoopMode.one);
       await _firePlayer.setLoopMode(LoopMode.one);
       await _brownNoisePlayer.setLoopMode(LoopMode.one);
+      await _ambiencePlayer.setLoopMode(LoopMode.one);
       await _keepAlivePlayer.setLoopMode(LoopMode.one);
-      await _keepAlivePlayer.setVolume(
-        1.0,
-      ); // Volumen al máximo (es silencio grabado, no se oirá nada)
+      
+      await _keepAlivePlayer.setVolume(1.0);
+      await _ambiencePlayer.setVolume(0.5);
 
       _isInitialized = true;
-      print(
-        '[SoundMixerService] Initialized successfully and players are ready.',
-      );
+      print('[SoundMixerService] Initialized successfully.');
     } catch (e) {
       print('[SoundMixerService] ERROR initializing: $e');
       rethrow;
     }
+  }
+
+  void setAmbienceSound(String? assetPath) async {
+    if (!_isInitialized) return;
+    
+    if (assetPath == null) {
+      await _ambiencePlayer.stop();
+      _currentAmbiencePath = null;
+      return;
+    }
+
+    if (_currentAmbiencePath == assetPath) return;
+
+    try {
+      await _ambiencePlayer.setAsset(assetPath);
+      if (!_ambiencePlayer.playing) {
+        _ambiencePlayer.play();
+      }
+      _currentAmbiencePath = assetPath;
+    } catch (e) {
+      print('[SoundMixerService] Error loading ambience: $e');
+    }
+  }
+
+  void setAmbienceVolume(double volume) {
+    if (!_isInitialized) return;
+    _ambiencePlayer.setVolume(volume.clamp(0.0, 1.0));
+  }
+
+  void stopAll() {
+    _rainPlayer.pause();
+    _firePlayer.pause();
+    _brownNoisePlayer.pause();
+    _ambiencePlayer.pause();
+  }
+
+  void resumeAll(double rain, double fire, double brown, double ambience) {
+    if (rain > 0) _rainPlayer.play();
+    if (fire > 0) _firePlayer.play();
+    if (brown > 0) _brownNoisePlayer.play();
+    if (_currentAmbiencePath != null) _ambiencePlayer.play();
   }
 
   /// Inicia un reproductor silencioso en segundo plano para evitar que iOS
