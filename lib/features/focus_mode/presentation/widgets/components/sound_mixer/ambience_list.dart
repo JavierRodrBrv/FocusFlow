@@ -17,13 +17,11 @@ class AmbienceList extends StatelessWidget {
       {
         'name': 'Ranas',
         'path': 'assets/audio/frogs_sound.mp3',
-        'icon': Icons.nature,
         'svgPath': 'assets/icons/frog.svg'
       },
       {
         'name': 'Biblioteca',
         'path': 'assets/audio/library_sound.wav',
-        'icon': Icons.library_books,
         'svgPath': 'assets/icons/library.svg'
       },
       {
@@ -33,8 +31,7 @@ class AmbienceList extends StatelessWidget {
       },
       {
         'name': 'Arroyo',
-        'path': 'assets/audio/stream_ambience.wav',
-        'icon': Icons.water,
+        'path': 'assets/audio/stream_ambience.mp3',
         'svgPath': 'assets/icons/arroyo.svg'
       },
       {
