@@ -1,0 +1,31 @@
+{
+    "configurations": [
+        {
+            "name": "FocusFlow (Flutter M2007J20CG)",
+            "program": "lib/main.dart",
+            "deviceId": "2547f38c",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "🚀 Lanzar Dev",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_dev.dart",
+            "args": [
+                "--flavor",
+                "dev"
+            ]
+        },
+        {
+            "name": "🌟 Lanzar Prod",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_pro.dart",
+            "args": [
+                "--flavor",
+                "pro"
+            ]
+        }
+    ]
+}

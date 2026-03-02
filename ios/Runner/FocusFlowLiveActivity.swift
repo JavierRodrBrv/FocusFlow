@@ -131,6 +131,23 @@ struct PauseIntent: LiveActivityIntent {
     init() {}
     
     func perform() async throws -> some IntentResult {
+        if #available(iOS 16.1, *) {
+            for activity in Activity<FocusFlowAttributes>.activities {
+                var newState = activity.contentState
+                newState.isPaused = true
+                
+                let remaining = Int(newState.targetEndDate.timeIntervalSince(Date()))
+                newState.remainingSeconds = remaining > 0 ? remaining : 0
+                
+                if #available(iOS 16.2, *) {
+                    let content = ActivityContent(state: newState, staleDate: nil)
+                    await activity.update(content)
+                } else {
+                    await activity.update(using: newState)
+                }
+            }
+        }
+        
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.pause" as CFString), nil, nil, true)
         return .result()
@@ -140,11 +157,27 @@ struct PauseIntent: LiveActivityIntent {
 @available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
 struct ResumeIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Reanudar Timer"
-    static var openAppWhenRun: Bool = true // Force open to ensure resume works from suspension
+    static var openAppWhenRun: Bool = false
     
     init() {}
     
     func perform() async throws -> some IntentResult {
+        if #available(iOS 16.1, *) {
+            for activity in Activity<FocusFlowAttributes>.activities {
+                var newState = activity.contentState
+                newState.isPaused = false
+                
+                newState.targetEndDate = Date().addingTimeInterval(TimeInterval(newState.remainingSeconds))
+                
+                if #available(iOS 16.2, *) {
+                    let content = ActivityContent(state: newState, staleDate: nil)
+                    await activity.update(content)
+                } else {
+                    await activity.update(using: newState)
+                }
+            }
+        }
+        
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.play" as CFString), nil, nil, true)
         return .result()

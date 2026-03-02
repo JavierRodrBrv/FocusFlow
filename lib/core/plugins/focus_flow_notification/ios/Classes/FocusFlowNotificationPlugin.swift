@@ -40,17 +40,23 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     
     CFNotificationCenterRemoveObserver(center, observer, CFNotificationName(pauseName), object)
     CFNotificationCenterAddObserver(center, observer, { center, observer, name, object, userInfo in
-        FocusFlowNotificationPlugin.channels.forEach { $0.invokeMethod("onNotificationAction", arguments: "PAUSE_ACTION") }
+        DispatchQueue.main.async {
+            FocusFlowNotificationPlugin.channels.forEach { $0.invokeMethod("onNotificationAction", arguments: "PAUSE_ACTION") }
+        }
     }, pauseName, object, .deliverImmediately)
     
     CFNotificationCenterRemoveObserver(center, observer, CFNotificationName(playName), object)
     CFNotificationCenterAddObserver(center, observer, { center, observer, name, object, userInfo in
-        FocusFlowNotificationPlugin.channels.forEach { $0.invokeMethod("onNotificationAction", arguments: "PLAY_ACTION") }
+        DispatchQueue.main.async {
+            FocusFlowNotificationPlugin.channels.forEach { $0.invokeMethod("onNotificationAction", arguments: "PLAY_ACTION") }
+        }
     }, playName, object, .deliverImmediately)
     
     CFNotificationCenterRemoveObserver(center, observer, CFNotificationName(stopName), object)
     CFNotificationCenterAddObserver(center, observer, { center, observer, name, object, userInfo in
-        FocusFlowNotificationPlugin.channels.forEach { $0.invokeMethod("onNotificationAction", arguments: "STOP_ACTION") }
+        DispatchQueue.main.async {
+            FocusFlowNotificationPlugin.channels.forEach { $0.invokeMethod("onNotificationAction", arguments: "STOP_ACTION") }
+        }
     }, stopName, object, .deliverImmediately)
   }
 
