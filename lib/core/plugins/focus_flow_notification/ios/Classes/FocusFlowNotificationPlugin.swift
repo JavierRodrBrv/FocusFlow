@@ -104,11 +104,16 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
   private func manageActivity(args: [String: Any]) {
       let startDateMillis = args["startDate"] as? Int ?? Int(Date().timeIntervalSince1970 * 1000)
       let targetEndTimeMillis = args["targetEndTime"] as? Int ?? 0
+      let staleDateMillis = args["staleDate"] as? Int
       let totalDuration = args["totalDuration"] as? Int ?? 0
       let status = args["status"] as? String ?? "focus"
       let isPaused = args["isPaused"] as? Bool ?? false
       let progress = args["progress"] as? Double ?? 0.0
       let remainingSeconds = args["remainingSeconds"] as? Int ?? 0
+      
+      let staleDate: Date? = staleDateMillis.map {
+          Date(timeIntervalSince1970: TimeInterval($0) / 1000)
+      }
       
       let state = FocusFlowAttributes.ContentState(
           startDate: Date(timeIntervalSince1970: TimeInterval(startDateMillis) / 1000),
@@ -125,7 +130,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           Task {
               for activity in activities {
                   if #available(iOS 16.2, *) {
-                      let content = ActivityContent(state: state, staleDate: nil)
+                      let content = ActivityContent(state: state, staleDate: staleDate)
                       await activity.update(content)
                   } else {
                       await activity.update(using: state)
@@ -135,7 +140,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       } else {
           do {
               if #available(iOS 16.2, *) {
-                  let content = ActivityContent(state: state, staleDate: nil)
+                  let content = ActivityContent(state: state, staleDate: staleDate)
                   _ = try Activity<FocusFlowAttributes>.request(
                       attributes: FocusFlowAttributes(name: "Focus Timer"),
                       content: content,
@@ -148,7 +153,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
                       pushType: nil
                   )
               }
-          } catch { print("[FocusFlow] Error: \(error)") }
+          } catch { print("[FocusFlow] Error al iniciar LiveActivity: \(error)") }
       }
   }
 }
