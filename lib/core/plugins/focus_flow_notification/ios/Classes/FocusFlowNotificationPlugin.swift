@@ -2,6 +2,7 @@ import Flutter
 import UIKit
 import ActivityKit
 import CoreFoundation
+import os
 
 public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotificationCenterDelegate {
   // Use an array to store multiple channels (Main + Background Isolates)
@@ -104,9 +105,16 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       let progress = args["progress"] as? Double ?? 0.0
       let remainingSeconds = args["remainingSeconds"] as? Int ?? 0
       
+      let targetEndDate = Date(timeIntervalSince1970: TimeInterval(targetEndTimeMillis) / 1000)
+      // FIX: staleDate debe cubrir toda la vida útil del timer.
+      // Con nil, iOS asignaba ~8 min por defecto y congelaba el componente al expirar.
+      let staleDate = isPaused
+          ? Date.distantFuture              // pausado: sin caducidad definida
+          : targetEndDate.addingTimeInterval(60) // +60s de margen tras el fin
+      
       let state = FocusFlowAttributes.ContentState(
           startDate: Date(timeIntervalSince1970: TimeInterval(startDateMillis) / 1000),
-          targetEndDate: Date(timeIntervalSince1970: TimeInterval(targetEndTimeMillis) / 1000),
+          targetEndDate: targetEndDate,
           isPaused: isPaused,
           totalDuration: Double(totalDuration),
           progress: progress,
@@ -118,18 +126,22 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       if !activities.isEmpty {
           Task {
               for activity in activities {
-                  if #available(iOS 16.2, *) {
-                      let content = ActivityContent(state: state, staleDate: nil)
-                      await activity.update(content)
-                  } else {
-                      await activity.update(using: state)
+                  do {
+                      if #available(iOS 16.2, *) {
+                          let content = ActivityContent(state: state, staleDate: staleDate)
+                          try await activity.update(content)
+                      } else {
+                          await activity.update(using: state)
+                      }
+                  } catch {
+                      os_log("[FocusFlow] Error updating Live Activity: %@", log: .default, type: .error, error.localizedDescription)
                   }
               }
           }
       } else {
           do {
               if #available(iOS 16.2, *) {
-                  let content = ActivityContent(state: state, staleDate: nil)
+                  let content = ActivityContent(state: state, staleDate: staleDate)
                   _ = try Activity<FocusFlowAttributes>.request(
                       attributes: FocusFlowAttributes(name: "Focus Timer"),
                       content: content,
@@ -142,7 +154,9 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
                       pushType: nil
                   )
               }
-          } catch { print("[FocusFlow] Error: \(error)") }
+          } catch {
+              os_log("[FocusFlow] Error starting Live Activity: %@", log: .default, type: .error, error.localizedDescription)
+          }
       }
   }
 }
