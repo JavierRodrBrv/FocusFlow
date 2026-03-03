@@ -289,13 +289,11 @@ void onStart(ServiceInstance service) async {
         (lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() >= 1;
     bool shouldUpdate = forceNextUpdate || statusChanged;
 
-    // Android: actualiza notificación cada segundo para el contador visible
+    // Android: actualiza la notificación cada segundo para el contador visible.
+    // iOS NO actualiza cada segundo — el estilo .timer de SwiftUI cuenta de forma
+    // nativa hasta targetEndDate. Enviar updates/seg supera el rate limit de
+    // ActivityKit y causa drops silenciosos → Dynamic Island congelado.
     if (Platform.isAndroid) shouldUpdate = shouldUpdate || timeDifference;
-    // FIX iOS #1: iOS también necesita actualización periódica para que
-    // targetEndDate se recalcule y el Dynamic Island no quede desfasado
-    // si el background service estuvo suspendido o fue lento.
-    if (Platform.isIOS && !isPaused)
-      shouldUpdate = shouldUpdate || timeDifference;
 
     if (shouldUpdate) {
       forceNextUpdate = false;
