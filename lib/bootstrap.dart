@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -46,9 +47,9 @@ Future<void> bootstrap() async {
 
     await configureDependencies();
 
-    print('[Bootstrap] Hive Initialized (UI Isolate).');
+    debugPrint('[Bootstrap] Hive Initialized (UI Isolate).');
   } catch (e) {
-    print('[Bootstrap] Hive Error: $e');
+    debugPrint('[Bootstrap] Hive Error: $e');
   }
 
   // 4. Anuncios (Solo funciona en UI Isolate)
@@ -61,9 +62,9 @@ Future<void> bootstrap() async {
     );
     await MobileAds.instance.updateRequestConfiguration(configuration);
 
-    print('[Bootstrap] Mobile Ads Initialized.');
+    debugPrint('[Bootstrap] Mobile Ads Initialized.');
   } catch (e) {
-    print('[Bootstrap] Mobile Ads Error: $e');
+    debugPrint('[Bootstrap] Mobile Ads Error: $e');
   }
 
   // 5. Inicializar Notificaciones Locales Informativas
@@ -72,7 +73,20 @@ Future<void> bootstrap() async {
   await localNotifications.scheduleReminderNotification();
 
   // 6. Servicio en Segundo Plano
-  await initializeService();
+  // GUARD: Si el servicio ya está corriendo (p.ej. la app se abrió desde el
+  // Dynamic Island), NO lo reiniciamos. Reiniciar en iOS lanzaría onStart de
+  // nuevo con PomodoroStatus.initial, lo que dispararía endLiveActivity y
+  // mataría la Live Activity activa.
+  final bgService = FlutterBackgroundService();
+  final isAlreadyRunning = await bgService.isRunning();
+  if (!isAlreadyRunning) {
+    await initializeService();
+    debugPrint('[Bootstrap] Background service started.');
+  } else {
+    debugPrint(
+      '[Bootstrap] Background service already running — skipped re-init.',
+    );
+  }
 
   // RELAY: Recibir eventos del isolate de la notificación (u otros) y enviarlos al servicio de fondo
   FlutterBackgroundService().on('sendEvent').listen((event) {
@@ -81,5 +95,5 @@ Future<void> bootstrap() async {
     }
   });
 
-  print('[Bootstrap] System initialized successfully.');
+  debugPrint('[Bootstrap] System initialized successfully.');
 }
