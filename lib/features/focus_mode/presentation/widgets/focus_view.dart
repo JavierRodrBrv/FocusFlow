@@ -1,13 +1,14 @@
 import 'dart:async';
 
-import 'package:app_links/app_links.dart'; // Added
+import 'package:app_links/app_links.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:get_it/get_it.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-import 'package:focus_flow/features/premium/presentation/utils/ad_consent_manager.dart';
+import 'package:focus_flow/features/focus_mode/domain/services/focus_coordinator_service.dart';
 
 import '../models/focus_state.dart';
 import 'dialogs/session_completion_dialog.dart';
@@ -34,11 +35,12 @@ class _FocusViewState extends State<FocusView> {
   final GlobalKey _focusModeKey = GlobalKey();
   final GlobalKey _historyKey = GlobalKey();
 
+  late final FocusCoordinatorService _coordinator;
   Timer? _handshakeTimer;
   Timer? _heartbeatTimer;
   late ConfettiController _confettiController;
-  late AppLinks _appLinks; // Added
-  StreamSubscription<Uri>? _linkSubscription; // Added
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
   bool _completionDialogShown = false;
   FocusState? _lastKnownState;
   late Stream<Map<String, dynamic>?> _updateStream;
@@ -52,12 +54,13 @@ class _FocusViewState extends State<FocusView> {
   @override
   void initState() {
     super.initState();
+    _coordinator = GetIt.instance<FocusCoordinatorService>();
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 3),
     );
     _updateStream = FlutterBackgroundService().on('update');
 
-    _initDeepLinks(); // Added
+    _initDeepLinks();
 
     _requestState();
     _startHeartbeat();
@@ -69,7 +72,7 @@ class _FocusViewState extends State<FocusView> {
       }
     });
 
-    _checkConsent();
+    _coordinator.checkConsent();
     _isResuming = true;
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() => _isResuming = false);
@@ -116,38 +119,19 @@ class _FocusViewState extends State<FocusView> {
     });
   }
 
-  // Added method
   Future<void> _initDeepLinks() async {
     _appLinks = AppLinks();
-
-    // Check initial link
     try {
       final initialLink = await _appLinks.getInitialLink();
       if (initialLink != null) {
-        _handleDeepLink(initialLink);
+        _coordinator.handleDeepLink(initialLink);
       }
     } catch (e) {
-      debugPrint('Error getting initial link: $e');
+      debugPrint('[FocusView] Error getting initial link: $e');
     }
-
-    // Listen to link stream
-    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
-      _handleDeepLink(uri);
-    });
-  }
-
-  // Added method
-  void _handleDeepLink(Uri uri) {
-    if (uri.scheme == 'focusflow') {
-      final host = uri.host;
-      if (host == 'pause') {
-        FlutterBackgroundService().invoke('sendEvent', {'event': 'pauseTimer'});
-      } else if (host == 'resume') {
-        FlutterBackgroundService().invoke('sendEvent', {'event': 'startTimer'});
-      } else if (host == 'stop') {
-        FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
-      }
-    }
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+      _coordinator.handleDeepLink,
+    );
   }
 
   @override
@@ -217,15 +201,6 @@ class _FocusViewState extends State<FocusView> {
       _historyKey,
       _premiumKey,
     ]);
-  }
-
-  Future<void> _checkConsent() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final canRequest = await AdConsentManager().requestConsent();
-    FlutterBackgroundService().invoke('sendEvent', {
-      'event': 'updateConsentStatus',
-      'canRequest': canRequest,
-    });
   }
 
   void _showMixerModal(FocusState state) {

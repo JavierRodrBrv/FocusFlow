@@ -2,7 +2,7 @@ import 'package:focus_flow/core/domain/result.dart';
 import 'package:focus_flow/core/error/failures.dart';
 import '../entities/sound_mix.dart';
 
-abstract class SoundMixRepository {
+abstract class ISoundMixRepository {
   Future<Result<void, Failure>> saveMix(SoundMix mix);
   Future<Result<List<SoundMix>, Failure>> getSavedMixes();
   Future<Result<void, Failure>> deleteMix(String id);

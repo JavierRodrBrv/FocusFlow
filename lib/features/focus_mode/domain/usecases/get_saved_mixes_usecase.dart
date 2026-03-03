@@ -7,7 +7,7 @@ import '../repositories/sound_mix_repository.dart';
 
 @injectable
 class GetSavedMixesUseCase implements UseCase<List<SoundMix>, NoParams> {
-  final SoundMixRepository _repository;
+  final ISoundMixRepository _repository;
 
   GetSavedMixesUseCase(this._repository);
 

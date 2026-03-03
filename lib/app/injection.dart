@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/features/premium/presentation/utils/ad_consent_manager.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
@@ -11,7 +14,14 @@ final getIt = GetIt.instance;
   asExtension: false, // default
 )
 Future<void> configureDependencies() async {
-  print('[Injection] Running generated initializer...');
+  debugPrint('[Injection] Registering external singletons...');
+  // Servicios de infraestructura que no son instanciables por injectable
+  getIt.registerLazySingleton<FlutterBackgroundService>(
+    () => FlutterBackgroundService(),
+  );
+  getIt.registerLazySingleton<AdConsentManager>(() => AdConsentManager());
+
+  debugPrint('[Injection] Running generated initializer...');
   await $initGetIt(getIt);
-  print('[Injection] Dependencies initialized.');
+  debugPrint('[Injection] Dependencies initialized.');
 }

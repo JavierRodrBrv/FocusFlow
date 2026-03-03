@@ -5,42 +5,66 @@ import 'package:injectable/injectable.dart';
 import 'package:focus_flow/features/focus_mode/data/models/sound_mix_model.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/sound_mix.dart';
 import 'package:focus_flow/features/focus_mode/domain/repositories/sound_mix_repository.dart';
+import 'package:flutter/foundation.dart';
 
-@LazySingleton(as: SoundMixRepository)
-class SoundMixRepositoryImpl implements SoundMixRepository {
+@LazySingleton(as: ISoundMixRepository)
+class SoundMixRepositoryImpl implements ISoundMixRepository {
   static const String _boxName = 'sound_mixes_box';
+  static const String _settingsBoxName = 'mix_settings';
 
-  Future<Box<SoundMixModel>> _getBox() async {
-    if (Hive.isBoxOpen(_boxName)) {
-      return Hive.box<SoundMixModel>(_boxName);
+  // Abre la caja, ejecuta la acción y la cierra: seguro entre isolates.
+  Future<T> _withBox<T>(String name, Future<T> Function(Box box) action) async {
+    if (Hive.isBoxOpen(name)) {
+      await Hive.box(name).close();
     }
-
+    final box = await Hive.openBox(name);
     try {
-      return await Hive.openBox<SoundMixModel>(_boxName);
-    } catch (e) {
-      print('[SoundMixRepository] Error crítico abriendo Hive box: $e');
+      return await action(box);
+    } finally {
+      await box.close();
+    }
+  }
 
-      // Intento de recuperación destructiva
+  // Versión tipada con recuperación destructiva ante corrupción de caja.
+  Future<T> _withTypedBox<T, E>({
+    required String name,
+    required Future<T> Function(Box<E> box) action,
+  }) async {
+    if (Hive.isBoxOpen(name)) {
+      await Hive.box<E>(name).close();
+    }
+    Box<E> box;
+    try {
+      box = await Hive.openBox<E>(name);
+    } catch (e) {
+      debugPrint('[SoundMixRepository] Error crítico abriendo box "$name": $e');
       try {
-        if (await Hive.boxExists(_boxName)) {
-          await Hive.deleteBoxFromDisk(_boxName);
-          // Pequeña pausa para dar tiempo al sistema de archivos
+        if (await Hive.boxExists(name)) {
+          await Hive.deleteBoxFromDisk(name);
           await Future.delayed(const Duration(milliseconds: 200));
         }
-        return await Hive.openBox<SoundMixModel>(_boxName);
+        box = await Hive.openBox<E>(name);
       } catch (e2) {
-        print('[SoundMixRepository] Falló la recuperación de la caja: $e2');
-        rethrow; // Propagamos para que el método llamador decida (retornar Failure)
+        debugPrint(
+          '[SoundMixRepository] Falló la recuperación de la caja: $e2',
+        );
+        rethrow;
       }
+    }
+    try {
+      return await action(box);
+    } finally {
+      await box.close();
     }
   }
 
   @override
   Future<Result<void, Failure>> saveMix(SoundMix mix) async {
     try {
-      final box = await _getBox();
-      final model = SoundMixModel.fromEntity(mix);
-      await box.put(mix.id, model);
+      await _withTypedBox<void, SoundMixModel>(
+        name: _boxName,
+        action: (box) async => box.put(mix.id, SoundMixModel.fromEntity(mix)),
+      );
       return const Success(null);
     } catch (e) {
       return Error(CacheFailure('Error al guardar la mezcla: $e'));
@@ -50,14 +74,19 @@ class SoundMixRepositoryImpl implements SoundMixRepository {
   @override
   Future<Result<List<SoundMix>, Failure>> getSavedMixes() async {
     try {
-      final box = await _getBox();
-      final mixes = box.values.map((model) => model.toEntity()).toList();
-      return Success(mixes);
-    } catch (e) {
-      print(
-        '[SoundMixRepository] Error recuperando mezclas: $e. Retornando lista vacía por seguridad.',
+      return await _withTypedBox(
+        name: _boxName,
+        action: (box) async {
+          final mixes = (box as Box<SoundMixModel>).values
+              .map((m) => m.toEntity())
+              .toList();
+          return Success(mixes);
+        },
       );
-      // En lugar de error, devolvemos lista vacía para no bloquear la app
+    } catch (e) {
+      debugPrint(
+        '[SoundMixRepository] Error recuperando mezclas: $e. Retornando lista vacía.',
+      );
       return const Success([]);
     }
   }
@@ -65,8 +94,10 @@ class SoundMixRepositoryImpl implements SoundMixRepository {
   @override
   Future<Result<void, Failure>> deleteMix(String id) async {
     try {
-      final box = await _getBox();
-      await box.delete(id);
+      await _withTypedBox<void, SoundMixModel>(
+        name: _boxName,
+        action: (box) async => box.delete(id),
+      );
       return const Success(null);
     } catch (e) {
       return Error(CacheFailure('Error al eliminar la mezcla: $e'));
@@ -76,8 +107,9 @@ class SoundMixRepositoryImpl implements SoundMixRepository {
   @override
   Future<Result<void, Failure>> saveLastPlayedMixId(String id) async {
     try {
-      final box = await Hive.openBox('mix_settings');
-      await box.put('last_played_mix_id', id);
+      await _withBox(_settingsBoxName, (box) async {
+        await box.put('last_played_mix_id', id);
+      });
       return const Success(null);
     } catch (e) {
       return Error(
@@ -89,9 +121,10 @@ class SoundMixRepositoryImpl implements SoundMixRepository {
   @override
   Future<Result<String?, Failure>> getLastPlayedMixId() async {
     try {
-      final box = await Hive.openBox('mix_settings');
-      final id = box.get('last_played_mix_id') as String?;
-      return Success(id);
+      return await _withBox(_settingsBoxName, (box) async {
+        final id = box.get('last_played_mix_id') as String?;
+        return Success(id);
+      });
     } catch (e) {
       return Error(
         CacheFailure('Error al recuperar el ID de la última mezcla: $e'),

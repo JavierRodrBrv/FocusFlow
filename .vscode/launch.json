@@ -1,0 +1,59 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "FocusFlow — DEV (debug)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_dev.dart",
+            "args": [
+                "--flavor",
+                "dev"
+            ]
+        },
+        {
+            "name": "FocusFlow — DEV (profile)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_dev.dart",
+            "flutterMode": "profile",
+            "args": [
+                "--flavor",
+                "dev"
+            ]
+        },
+        {
+            "name": "FocusFlow — PRO (debug)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_pro.dart",
+            "args": [
+                "--flavor",
+                "pro"
+            ]
+        },
+        {
+            "name": "FocusFlow — PRO (release)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_pro.dart",
+            "flutterMode": "release",
+            "args": [
+                "--flavor",
+                "pro"
+            ]
+        },
+        {
+            "name": "FocusFlow — Tests",
+            "request": "launch",
+            "type": "dart",
+            "program": "test/"
+        },
+        {
+            "name": "focus_flow_notification",
+            "cwd": "lib\\core\\plugins\\focus_flow_notification",
+            "request": "launch",
+            "type": "dart"
+        }
+    ]
+}

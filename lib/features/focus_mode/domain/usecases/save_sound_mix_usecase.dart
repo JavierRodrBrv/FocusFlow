@@ -7,7 +7,7 @@ import '../repositories/sound_mix_repository.dart';
 
 @injectable
 class SaveSoundMixUseCase implements UseCase<void, SoundMix> {
-  final SoundMixRepository _repository;
+  final ISoundMixRepository _repository;
 
   SaveSoundMixUseCase(this._repository);
 

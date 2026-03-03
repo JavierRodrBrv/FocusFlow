@@ -1,5 +1,6 @@
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/services/focus_session_manager.dart';
+import 'package:focus_flow/features/focus_mode/domain/usecases/i_process_session_usecase.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:focus_flow/features/session_history/domain/usecases/save_session_usecase.dart';
 import 'package:injectable/injectable.dart';
@@ -40,8 +41,8 @@ class ProcessSessionParams {
   });
 }
 
-@lazySingleton
-class ProcessSessionUseCase {
+@LazySingleton(as: IProcessSessionUseCase)
+class ProcessSessionUseCase implements IProcessSessionUseCase {
   final SaveSessionUseCase _saveSessionUseCase;
 
   ProcessSessionUseCase(this._saveSessionUseCase);
@@ -49,7 +50,7 @@ class ProcessSessionUseCase {
   Future<ProcessSessionResult> call(ProcessSessionParams params) async {
     final s = params.newState;
     final prevStatus = params.prevStatus;
-    
+
     bool blockFinished = false;
     bool wasCompleted = true;
     bool wasResting = prevStatus == PomodoroStatus.resting;
@@ -57,10 +58,11 @@ class ProcessSessionUseCase {
     Duration plannedD = params.plannedDuration;
 
     // 1. Detección de fin de bloque (Lógica de Negocio)
-    
+
     // Termina foco naturalmente
     if (prevStatus == PomodoroStatus.running &&
-        (s.status == PomodoroStatus.finished || s.status == PomodoroStatus.resting)) {
+        (s.status == PomodoroStatus.finished ||
+            s.status == PomodoroStatus.resting)) {
       blockFinished = true;
       wasCompleted = true;
       wasResting = false;
@@ -68,7 +70,8 @@ class ProcessSessionUseCase {
     }
     // Termina descanso naturalmente
     else if (prevStatus == PomodoroStatus.resting &&
-        (s.status == PomodoroStatus.running || s.status == PomodoroStatus.finished)) {
+        (s.status == PomodoroStatus.running ||
+            s.status == PomodoroStatus.finished)) {
       blockFinished = true;
       wasCompleted = true;
       wasResting = true;
@@ -78,7 +81,8 @@ class ProcessSessionUseCase {
       plannedD = actualD;
     }
     // Usuario finaliza manualmente (Reset)
-    else if (s.status == PomodoroStatus.initial && prevStatus != PomodoroStatus.initial) {
+    else if (s.status == PomodoroStatus.initial &&
+        prevStatus != PomodoroStatus.initial) {
       if (params.startTime != null) {
         blockFinished = true;
         wasCompleted = false;
@@ -92,7 +96,11 @@ class ProcessSessionUseCase {
 
     // 2. Validación de Reglas de Guardado (Regla de Oro: >10s o completado)
     if (blockFinished && params.startTime != null) {
-      final meetsMinimumTime = wasCompleted || actualD.inSeconds > 10 || wasResting || params.hasSavedAtLeastOneInGroup;
+      final meetsMinimumTime =
+          wasCompleted ||
+          actualD.inSeconds > 10 ||
+          wasResting ||
+          params.hasSavedAtLeastOneInGroup;
 
       if (meetsMinimumTime) {
         sessionToSave = FocusSession(
@@ -107,13 +115,14 @@ class ProcessSessionUseCase {
           isResting: wasResting,
           isCompleted: wasCompleted,
         );
-        
+
         await _saveSessionUseCase(sessionToSave);
         updatedHasSaved = true;
       }
 
       // Preparar retorno según el siguiente estado
-      if (s.status == PomodoroStatus.resting || s.status == PomodoroStatus.running) {
+      if (s.status == PomodoroStatus.resting ||
+          s.status == PomodoroStatus.running) {
         return ProcessSessionResult(
           sessionToSave: sessionToSave,
           nextSessionStartTime: DateTime.now(),
@@ -133,11 +142,13 @@ class ProcessSessionUseCase {
     // 3. Lógica de Inicio de Sesión
     if (s.status == PomodoroStatus.running) {
       bool shouldStartRecording = false;
-      
+
       // Caso normal o tras flip en Hardcore
       if (prevStatus == PomodoroStatus.initial && !s.isWaitingForFirstFlip) {
         shouldStartRecording = true;
-      } else if (prevStatus == PomodoroStatus.running && s.isWaitingForFirstFlip == false && params.startTime == null) {
+      } else if (prevStatus == PomodoroStatus.running &&
+          s.isWaitingForFirstFlip == false &&
+          params.startTime == null) {
         // Acaba de ocurrir el flip en hardcore
         shouldStartRecording = true;
       }
@@ -145,7 +156,9 @@ class ProcessSessionUseCase {
       if (shouldStartRecording) {
         return ProcessSessionResult(
           nextSessionStartTime: DateTime.now(),
-          nextGroupId: params.groupId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          nextGroupId:
+              params.groupId ??
+              DateTime.now().millisecondsSinceEpoch.toString(),
           hasSavedInCurrentGroup: updatedHasSaved,
         );
       }

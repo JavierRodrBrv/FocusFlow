@@ -6,7 +6,7 @@ import 'package:injectable/injectable.dart';
 
 @lazySingleton
 class GetLastPlayedMixUseCase implements UseCase<String?, NoParams> {
-  final SoundMixRepository _repository;
+  final ISoundMixRepository _repository;
 
   GetLastPlayedMixUseCase(this._repository);
 

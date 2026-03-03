@@ -1,0 +1,10 @@
+{
+    // Fuerza el idioma de las respuestas de Copilot (incluye generación de commits)
+    "github.copilot.chat.localeOverride": "es",
+    // Instrucciones adicionales para la generación del mensaje de commit
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "text": "Genera el mensaje de commit en español. Sigue el formato Conventional Commits: <tipo>(<scope opcional>): <descripción breve en español>. Tipos permitidos: feat, fix, refactor, chore, docs, test, style, perf. La descripción debe ser corta, clara y en imperativo (ej: 'añade soporte para...', 'corrige error en...', 'refactoriza...'). Si hay cambios relevantes, añade un cuerpo explicativo también en español."
+        }
+    ]
+}

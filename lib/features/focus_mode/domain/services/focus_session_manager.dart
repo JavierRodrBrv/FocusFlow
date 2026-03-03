@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:focus_flow/core/services/dnd_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:injectable/injectable.dart';
@@ -263,10 +264,12 @@ class FocusSessionManager {
       if (!isDnd) {
         alarmWillPlay = true;
       } else {
-        print('[FocusSessionManager] DND Active: Silencing alarm sound.');
+        debugPrint('[FocusSessionManager] DND Active: Silencing alarm sound.');
       }
     } else {
-      print('[FocusSessionManager] Alarm sound disabled by user preference.');
+      debugPrint(
+        '[FocusSessionManager] Alarm sound disabled by user preference.',
+      );
     }
 
     if (alarmWillPlay) {
@@ -282,7 +285,7 @@ class FocusSessionManager {
 
       // sonando. Esto es CRÍTICO para que el Timer de vibración siga ejecutándose en background.
 
-      print(
+      debugPrint(
         '[FocusSessionManager] Keeping silence audio active to support vibration.',
       );
     }
@@ -313,14 +316,14 @@ class FocusSessionManager {
       );
       _backgroundEffect = BackgroundEffect.values[effectIndex];
 
-      print(
+      debugPrint(
         '[FocusSessionManager] Loaded Alarm Sound Preference: $_isAlarmSoundEnabled',
       );
-      print(
+      debugPrint(
         '[FocusSessionManager] Loaded Background Effect: $_backgroundEffect',
       );
     } catch (e) {
-      print('[FocusSessionManager] Error loading preferences: $e');
+      debugPrint('[FocusSessionManager] Error loading preferences: $e');
 
       _isAlarmSoundEnabled = true; // Fallback
       _backgroundEffect = BackgroundEffect.gradient;
@@ -352,7 +355,7 @@ class FocusSessionManager {
         await _settingsBox!.put('background_effect', effect.index);
       }
     } catch (e) {
-      print('[FocusSessionManager] Error saving background effect: $e');
+      debugPrint('[FocusSessionManager] Error saving background effect: $e');
     }
     _emitState();
   }
@@ -365,7 +368,7 @@ class FocusSessionManager {
         await _settingsBox!.put('alarm_sound_enabled', _isAlarmSoundEnabled);
       }
     } catch (e) {
-      print('[FocusSessionManager] Error saving alarm preference: $e');
+      debugPrint('[FocusSessionManager] Error saving alarm preference: $e');
     }
 
     _emitState();
@@ -475,7 +478,7 @@ class FocusSessionManager {
   }
 
   Future<void> stopAlarm() async {
-    print('[FocusSessionManager] Stopping Alarm and Vibration...');
+    debugPrint('[FocusSessionManager] Stopping Alarm and Vibration...');
 
     await _audioManager.stopAlarm();
 
@@ -624,6 +627,7 @@ class FocusSessionManager {
   void updateRainVolume(double v) => _audioManager.setRainVolume(v);
   void updateFireVolume(double v) => _audioManager.setFireVolume(v);
   void updateBrownNoiseVolume(double v) => _audioManager.setBrownNoiseVolume(v);
-  void updateAmbienceSound(String? path) => _audioManager.setAmbienceSound(path);
+  void updateAmbienceSound(String? path) =>
+      _audioManager.setAmbienceSound(path);
   void updateAmbienceVolume(double v) => _audioManager.setAmbienceVolume(v);
 }

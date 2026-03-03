@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/services/focus_session_manager.dart';
+import 'package:focus_flow/features/focus_mode/domain/usecases/i_process_session_usecase.dart';
 import 'package:focus_flow/features/focus_mode/domain/usecases/process_session_usecase.dart';
 import 'package:injectable/injectable.dart';
 
@@ -13,17 +14,15 @@ part 'timer_state.dart';
 @injectable
 class TimerBloc extends Bloc<TimerEvent, TimerState> {
   final FocusSessionManager _sessionManager;
-  final ProcessSessionUseCase _processSessionUseCase;
+  final IProcessSessionUseCase _processSessionUseCase;
 
   StreamSubscription? _sessionSubscription;
   DateTime? _sessionStartTime;
   String? _currentSessionGroupId;
   bool _hasSavedAtLeastOneSessionInCurrentGroup = false;
 
-  TimerBloc(
-    this._sessionManager,
-    this._processSessionUseCase,
-  ) : super(TimerState.initial()) {
+  TimerBloc(this._sessionManager, this._processSessionUseCase)
+    : super(TimerState.initial()) {
     on<InitializeTimer>(_onInitializeTimer);
     on<StartTimer>(_onStartTimer);
     on<PauseTimer>(_onPauseTimer);
@@ -47,13 +46,15 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
   }
 
   void _onInitializeTimer(InitializeTimer event, Emitter<TimerState> emit) {
-    emit(state.copyWith(
-      status: TimerStatus.loaded,
-      isPremium: event.isPremium,
-      pomodoroStatus: _sessionManager.currentState.status,
-      remainingTime: _sessionManager.currentState.remainingTime,
-      pomodoroDuration: _sessionManager.currentState.pomodoroDuration,
-    ));
+    emit(
+      state.copyWith(
+        status: TimerStatus.loaded,
+        isPremium: event.isPremium,
+        pomodoroStatus: _sessionManager.currentState.status,
+        remainingTime: _sessionManager.currentState.remainingTime,
+        pomodoroDuration: _sessionManager.currentState.pomodoroDuration,
+      ),
+    );
   }
 
   void _onStartTimer(StartTimer event, Emitter<TimerState> emit) {
@@ -72,7 +73,10 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
     await _sessionManager.stopAlarm();
   }
 
-  void _onUpdateDuration(UpdatePomodoroDuration event, Emitter<TimerState> emit) {
+  void _onUpdateDuration(
+    UpdatePomodoroDuration event,
+    Emitter<TimerState> emit,
+  ) {
     _sessionManager.setDuration(event.newDuration);
   }
 
@@ -84,39 +88,49 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
     _sessionManager.toggleHardcore();
   }
 
-  void _onUpdatePremiumStatus(UpdateTimerPremiumStatus event, Emitter<TimerState> emit) {
+  void _onUpdatePremiumStatus(
+    UpdateTimerPremiumStatus event,
+    Emitter<TimerState> emit,
+  ) {
     emit(state.copyWith(isPremium: event.isPremium));
   }
 
-  Future<void> _onSessionStateChanged(_SessionStateChanged event, Emitter<TimerState> emit) async {
+  Future<void> _onSessionStateChanged(
+    _SessionStateChanged event,
+    Emitter<TimerState> emit,
+  ) async {
     final s = event.sessionState;
 
-    final result = await _processSessionUseCase(ProcessSessionParams(
-      prevStatus: state.pomodoroStatus,
-      newState: s,
-      startTime: _sessionStartTime,
-      groupId: _currentSessionGroupId,
-      hasSavedAtLeastOneInGroup: _hasSavedAtLeastOneSessionInCurrentGroup,
-      plannedDuration: state.pomodoroDuration,
-      isHardcore: state.isHardcoreMode,
-    ));
+    final result = await _processSessionUseCase(
+      ProcessSessionParams(
+        prevStatus: state.pomodoroStatus,
+        newState: s,
+        startTime: _sessionStartTime,
+        groupId: _currentSessionGroupId,
+        hasSavedAtLeastOneInGroup: _hasSavedAtLeastOneSessionInCurrentGroup,
+        plannedDuration: state.pomodoroDuration,
+        isHardcore: state.isHardcoreMode,
+      ),
+    );
 
     _sessionStartTime = result.nextSessionStartTime;
     _currentSessionGroupId = result.nextGroupId;
     _hasSavedAtLeastOneSessionInCurrentGroup = result.hasSavedInCurrentGroup;
 
-    emit(state.copyWith(
-      pomodoroStatus: s.status,
-      remainingTime: s.remainingTime,
-      pomodoroDuration: s.pomodoroDuration,
-      isInPenaltyBox: s.isInPenalty,
-      phoneOrientation: s.orientation,
-      isHardcoreMode: s.isHardcore,
-      isResting: s.isResting,
-      hasBreak: s.hasBreak,
-      penaltyCount: s.penaltyCount,
-      totalPenaltyTime: s.totalPenaltyTime,
-      isWaitingForFirstFlip: s.isWaitingForFirstFlip,
-    ));
+    emit(
+      state.copyWith(
+        pomodoroStatus: s.status,
+        remainingTime: s.remainingTime,
+        pomodoroDuration: s.pomodoroDuration,
+        isInPenaltyBox: s.isInPenalty,
+        phoneOrientation: s.orientation,
+        isHardcoreMode: s.isHardcore,
+        isResting: s.isResting,
+        hasBreak: s.hasBreak,
+        penaltyCount: s.penaltyCount,
+        totalPenaltyTime: s.totalPenaltyTime,
+        isWaitingForFirstFlip: s.isWaitingForFirstFlip,
+      ),
+    );
   }
 }
