@@ -246,10 +246,15 @@ void onStart(ServiceInstance service) async {
     } else if (name == 'requestState') {
       broadcastState();
     } else if (name == 'ui_resumed') {
+      // FIX iOS #3: Al volver a primer plano, forzar sincronización del Live Activity
+      if (Platform.isIOS) forceNextUpdate = true;
       broadcastState();
+    } else if (name == 'ui_heartbeat') {
+      // FIX iOS #3: Heartbeat de UI activa → forzar actualización del Live Activity
+      // Android no lo necesita porque ya actualiza cada segundo por timeDifference
+      if (Platform.isIOS) forceNextUpdate = true;
     } else if (name == 'ui_paused') {
       forceNextUpdate = true;
-      // Trigger a sync update for Live Activities if needed
       broadcastState();
     }
   });
@@ -284,7 +289,13 @@ void onStart(ServiceInstance service) async {
         (lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() >= 1;
     bool shouldUpdate = forceNextUpdate || statusChanged;
 
+    // Android: actualiza notificación cada segundo para el contador visible
     if (Platform.isAndroid) shouldUpdate = shouldUpdate || timeDifference;
+    // FIX iOS #1: iOS también necesita actualización periódica para que
+    // targetEndDate se recalcule y el Dynamic Island no quede desfasado
+    // si el background service estuvo suspendido o fue lento.
+    if (Platform.isIOS && !isPaused)
+      shouldUpdate = shouldUpdate || timeDifference;
 
     if (shouldUpdate) {
       forceNextUpdate = false;
@@ -322,7 +333,12 @@ void onStart(ServiceInstance service) async {
             await _notificationChannel.invokeMethod('endLiveActivity');
           } else {
             final now = DateTime.now();
-            final targetEndTime = now.add(state.remainingTime);
+            // FIX iOS #2: cuando está pausado, enviamos una fecha muy lejana
+            // para que SwiftUI no siga contando hacia atrás mientras está en pausa.
+            // Al reanudar, se recalcula con el tiempo restante real.
+            final targetEndTime = isPaused
+                ? now.add(const Duration(days: 1)) // placeholder: no cuenta
+                : now.add(state.remainingTime); // cuenta regresiva real
             final startDate = targetEndTime.subtract(state.pomodoroDuration);
             await _notificationChannel.invokeMethod('updateLiveActivity', {
               'startDate': startDate.millisecondsSinceEpoch,
