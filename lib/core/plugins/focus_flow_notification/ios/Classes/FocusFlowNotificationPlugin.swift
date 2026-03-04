@@ -5,9 +5,16 @@ import CoreFoundation
 import os
 
 public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotificationCenterDelegate {
-  // Use an array to store multiple channels (Main + Background Isolates)
+  // Channels para todos los Flutter engines activos (background + main)
   private static var channels: [FlutterMethodChannel] = []
   
+  // CRÍTICO: Los observers de Darwin se registran UNA SOLA VEZ.
+  // Cada llamada a register() con observer=nil en CFNotificationCenterRemoveObserver
+  // no elimina nada (documentado por Apple: "If observer is nil, does nothing").
+  // Sin este flag, cada apertura de app desde el DI añadía un observer duplicado,
+  // causando que cada botón disparase N eventos simultáneos al TimerBloc.
+  private static var darwinObserversRegistered = false
+
   @available(iOS 16.1, *)
   private static var currentActivity: Activity<FocusFlowAttributes>? {
     return Activity<FocusFlowAttributes>.activities.first
@@ -24,38 +31,36 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     registrar.addApplicationDelegate(instance)
     
     UNUserNotificationCenter.current().delegate = instance
+
+    // Registrar observers de Darwin una única vez.
+    // Las closures acceden a channels[] dinámicamente, por lo que siempre
+    // usarán los canales más recientes aunque channels cambie después.
+    guard !darwinObserversRegistered else { return }
+    darwinObserversRegistered = true
     
     let center = CFNotificationCenterGetDarwinNotifyCenter()
-    
     let pauseName = "com.andaluzcode.focusflow.pause" as CFString
-    let playName = "com.andaluzcode.focusflow.play" as CFString
-    let stopName = "com.andaluzcode.focusflow.stop" as CFString
+    let playName  = "com.andaluzcode.focusflow.play"  as CFString
+    let stopName  = "com.andaluzcode.focusflow.stop"  as CFString
     
-    // Explicit casts to help type inference
-    let observer: UnsafeRawPointer? = nil
-    let object: UnsafeRawPointer? = nil
+    CFNotificationCenterAddObserver(center, nil, { _, _, _, _, _ in
+      FocusFlowNotificationPlugin.channels.forEach {
+        $0.invokeMethod("onNotificationAction", arguments: "PAUSE_ACTION")
+      }
+    }, pauseName, nil, .deliverImmediately)
     
-    // -----------------------------------------------------------
-    // SOLUCIÓN: Usar closures literales en lugar de funciones static
-    // -----------------------------------------------------------
+    CFNotificationCenterAddObserver(center, nil, { _, _, _, _, _ in
+      FocusFlowNotificationPlugin.channels.forEach {
+        $0.invokeMethod("onNotificationAction", arguments: "PLAY_ACTION")
+      }
+    }, playName, nil, .deliverImmediately)
     
-    CFNotificationCenterRemoveObserver(center, observer, CFNotificationName(pauseName), object)
-    CFNotificationCenterAddObserver(center, observer, { center, observer, name, object, userInfo in
-        FocusFlowNotificationPlugin.channels.forEach { $0.invokeMethod("onNotificationAction", arguments: "PAUSE_ACTION") }
-    }, pauseName, object, .deliverImmediately)
-    
-    CFNotificationCenterRemoveObserver(center, observer, CFNotificationName(playName), object)
-    CFNotificationCenterAddObserver(center, observer, { center, observer, name, object, userInfo in
-        FocusFlowNotificationPlugin.channels.forEach { $0.invokeMethod("onNotificationAction", arguments: "PLAY_ACTION") }
-    }, playName, object, .deliverImmediately)
-    
-    CFNotificationCenterRemoveObserver(center, observer, CFNotificationName(stopName), object)
-    CFNotificationCenterAddObserver(center, observer, { center, observer, name, object, userInfo in
-        FocusFlowNotificationPlugin.channels.forEach { $0.invokeMethod("onNotificationAction", arguments: "STOP_ACTION") }
-    }, stopName, object, .deliverImmediately)
+    CFNotificationCenterAddObserver(center, nil, { _, _, _, _, _ in
+      FocusFlowNotificationPlugin.channels.forEach {
+        $0.invokeMethod("onNotificationAction", arguments: "STOP_ACTION")
+      }
+    }, stopName, nil, .deliverImmediately)
   }
-
-  // (Las funciones static onPause, onPlay y onStop han sido eliminadas)
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
@@ -97,21 +102,21 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
 
   @available(iOS 16.1, *)
   private func manageActivity(args: [String: Any]) {
-      let startDateMillis = args["startDate"] as? Int ?? Int(Date().timeIntervalSince1970 * 1000)
+      let startDateMillis    = args["startDate"]     as? Int ?? Int(Date().timeIntervalSince1970 * 1000)
       let targetEndTimeMillis = args["targetEndTime"] as? Int ?? 0
-      let totalDuration = args["totalDuration"] as? Int ?? 0
-      let status = args["status"] as? String ?? "focus"
-      let isPaused = args["isPaused"] as? Bool ?? false
-      let progress = args["progress"] as? Double ?? 0.0
-      let remainingSeconds = args["remainingSeconds"] as? Int ?? 0
+      let totalDuration      = args["totalDuration"] as? Int ?? 0
+      let status             = args["status"]        as? String ?? "focus"
+      let isPaused           = args["isPaused"]      as? Bool ?? false
+      let progress           = args["progress"]      as? Double ?? 0.0
+      let remainingSeconds   = args["remainingSeconds"] as? Int ?? 0
       
       let targetEndDate = Date(timeIntervalSince1970: TimeInterval(targetEndTimeMillis) / 1000)
-      // FIX: staleDate debe cubrir toda la vida útil del timer.
-      // Con nil, iOS asignaba ~8 min por defecto y congelaba el componente al expirar.
+      // staleDate cubre toda la vida del timer para evitar que iOS lo marque stale
+      // y deje de aceptar actualizaciones (el bug original de congelamiento).
       let staleDate = isPaused
-          ? Date.distantFuture              // pausado: sin caducidad definida
-          : targetEndDate.addingTimeInterval(60) // +60s de margen tras el fin
-      
+          ? Date.distantFuture                        // pausa: sin caducidad
+          : targetEndDate.addingTimeInterval(60)      // corriendo: fin + 60s
+
       let state = FocusFlowAttributes.ContentState(
           startDate: Date(timeIntervalSince1970: TimeInterval(startDateMillis) / 1000),
           targetEndDate: targetEndDate,
@@ -134,7 +139,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
                           await activity.update(using: state)
                       }
                   } catch {
-                      os_log("[FocusFlow] Error updating Live Activity: %@", log: .default, type: .error, error.localizedDescription)
+                      os_log("[FocusFlow] Error updating Live Activity: %@",
+                             log: .default, type: .error, error.localizedDescription)
                   }
               }
           }
@@ -155,7 +161,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
                   )
               }
           } catch {
-              os_log("[FocusFlow] Error starting Live Activity: %@", log: .default, type: .error, error.localizedDescription)
+              os_log("[FocusFlow] Error starting Live Activity: %@",
+                     log: .default, type: .error, error.localizedDescription)
           }
       }
   }
