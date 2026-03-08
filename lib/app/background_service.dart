@@ -62,7 +62,6 @@ void onStart(ServiceInstance service) async {
 
   // --- FIX iOS: Tracking limits variables ---
   bool? lastIsPaused;
-  DateTime? lastTargetEndTime;
 
   FocusState getCombinedState() {
     final ts = timerBloc?.state ?? TimerState.initial();
@@ -109,7 +108,7 @@ void onStart(ServiceInstance service) async {
     service.invoke('update', getCombinedState().toJson());
   }
 
-  // --- LOGICA DE SINCRONIZACIÓN IOS (Arquitectura Autónoma) ---
+  // --- LOGICA DE SINCRONIZACIÓN IOS (Stage & Commit) ---
   Future<void> syncIosWidget(
     TimerState state,
     PomodoroStatus status,
@@ -119,6 +118,7 @@ void onStart(ServiceInstance service) async {
     bool isPaused,
     bool wasForcedUpdate,
   ) async {
+    // 1. GESTIÓN DE FINALIZACIÓN
     if (status == PomodoroStatus.initial || isFinished) {
       if (isFinished) {
         await Future.delayed(const Duration(milliseconds: 800));
@@ -127,40 +127,55 @@ void onStart(ServiceInstance service) async {
       return;
     }
 
+    // 2. GUARDA DE RECIÉN ACTUADO (Evitar "Fuego Amigo")
+    try {
+      final widgetState =
+          await _notificationChannel.invokeMethod('syncWidgetState') as Map?;
+      if (widgetState != null) {
+        final lastActionTime =
+            widgetState['lastWidgetActionTime'] as double? ?? 0;
+        final nowSeconds = DateTime.now().millisecondsSinceEpoch / 1000;
+        // NOTA: Eliminamos el silencio de 20s para adoptar la estrategia "Activity Rebirth".
+        // Con la recreación de actividades, no hay riesgo de agotar presupuesto.
+        if (lastActionTime > 0 && (nowSeconds - lastActionTime) < 20) {
+          // Ya no retornamos early. Dejamos que Dart fluya.
+        }
+      }
+    } catch (_) {}
+
     final now = DateTime.now();
     final targetEndTime = now.add(state.remainingTime);
     final startDate = targetEndTime.subtract(state.pomodoroDuration);
 
-    bool iosShouldUpdate = wasForcedUpdate;
+    final Map<String, dynamic> activityData = {
+      'startDate': startDate.millisecondsSinceEpoch,
+      'targetEndTime': targetEndTime.millisecondsSinceEpoch,
+      'totalDuration': state.pomodoroDuration.inSeconds,
+      'status': customStatus,
+      'isPaused': isPaused,
+      'remainingSeconds': state.remainingTime.inSeconds,
+    };
 
-    if (!iosShouldUpdate && isAppInForeground) {
+    // 3. STAGE (Guardado ligero en UserDefaults)
+    // Siempre "staged" para que al minimizar la app, Swift tenga el dato fresco para el COMMIT
+    await _notificationChannel.invokeMethod('stageLiveActivity', activityData);
+
+    // 4. COMMIT (Solo en cambios significativos si estamos en foreground)
+    bool shouldCommitNow = wasForcedUpdate;
+    if (!shouldCommitNow && isAppInForeground) {
       if (lastIsPaused != isPaused || lastStatus != status) {
-        iosShouldUpdate = true;
-      } else if (!isPaused) {
-        if (lastTargetEndTime == null ||
-            (targetEndTime.difference(lastTargetEndTime!).inSeconds.abs() >
-                2)) {
-          iosShouldUpdate = true;
-        }
+        shouldCommitNow = true;
       }
+      // NOTA: No enviamos updates por drift (tiempo cada segundo) porque iOS usa su contador nativo.
     }
 
-    if (iosShouldUpdate) {
-      await _notificationChannel.invokeMethod('updateLiveActivity', {
-        'startDate': startDate.millisecondsSinceEpoch,
-        'targetEndTime': targetEndTime.millisecondsSinceEpoch,
-        'totalDuration': state.pomodoroDuration.inSeconds,
-        'status': customStatus,
-        'isPaused': isPaused,
-        'progress': state.pomodoroDuration.inSeconds > 0
-            ? (state.pomodoroDuration.inSeconds -
-                      state.remainingTime.inSeconds) /
-                  state.pomodoroDuration.inSeconds
-            : 0.0,
-        'remainingSeconds': state.remainingTime.inSeconds,
-      });
-
-      lastTargetEndTime = targetEndTime;
+    if (shouldCommitNow) {
+      // Solo llamamos a ActivityKit.update si hay un cambio real de estado mientras la app está abierta.
+      // Al cerrar la app, el Plugin (Swift) disparará su propio manageActivity(args: nil).
+      await _notificationChannel.invokeMethod(
+        'updateLiveActivity',
+        activityData,
+      );
       lastIsPaused = isPaused;
     }
   }
@@ -196,7 +211,11 @@ void onStart(ServiceInstance service) async {
   _notificationChannel.setMethodCallHandler((call) async {
     if (call.method == 'onNotificationAction') {
       final action = call.arguments as String;
-      if (timerBloc == null) return;
+      print('[BackgroundService] Action received from Widget: $action');
+      if (timerBloc == null) {
+        print('[BackgroundService] Warning: TimerBloc is NULL');
+        return;
+      }
 
       if (action == 'PAUSE_ACTION') {
         timerBloc.add(PauseTimer());
@@ -374,10 +393,10 @@ void onStart(ServiceInstance service) async {
     } else if (name == 'ui_paused') {
       isAppInForeground = false;
       forceNextUpdate = true;
-      // HANDOFF INSTANTÁNEO: No esperar al siguiente tick del timer
-      if (Platform.isIOS) {
-        await runImmediateIosSync();
-      }
+      // HANDOFF OPTIMIZADO: No forzamos ráfaga de MethodChannel.
+      // El plugin nativo detectará applicationDidEnterBackground y hará el COMMIT solo.
+      // Solo aseguramos que el estado esté STAGED.
+      await runImmediateIosSync();
       broadcastState();
     }
   });

@@ -17,6 +17,9 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
   // --- Timestamp del último Intent para logging ---
   private static var lastIntentActionTime: Date = .distantPast
 
+  // --- Flag para forzar rebirth al volver de background (Reset de presupuesto) ---
+  private static var pendingRebirthOnForeground = false
+
   @available(iOS 16.1, *)
   private static var currentActivity: Activity<FocusFlowAttributes>? {
     return Activity<FocusFlowAttributes>.activities.first
@@ -55,9 +58,29 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     }, playName, nil, .deliverImmediately)
     
     CFNotificationCenterAddObserver(center, nil, { _, _, _, _, _ in
-      FocusFlowNotificationPlugin.lastIntentActionTime = Date()
       FocusFlowNotificationPlugin.notifyFlutter("STOP_ACTION")
     }, stopName, nil, .deliverImmediately)
+  }
+
+  // --- ESCUCHA DE CICLO DE VIDA ---
+  public func applicationWillEnterForeground(_ application: UIApplication) {
+      os_log("[FocusFlow] applicationWillEnterForeground - Marking pending rebirth for budget reset", log: .default, type: .info)
+      FocusFlowNotificationPlugin.pendingRebirthOnForeground = true
+  }
+
+  public func applicationDidBecomeActive(_ application: UIApplication) {
+      os_log("[FocusFlow] applicationDidBecomeActive - Triggering immediate sync/rebirth", log: .default, type: .info)
+      if #available(iOS 16.1, *) {
+          self.manageActivity(args: nil)
+      }
+  }
+
+  public func applicationDidEnterBackground(_ application: UIApplication) {
+      os_log("[FocusFlow] applicationDidEnterBackground - Performing Handoff", log: .default, type: .info)
+      if #available(iOS 16.1, *) {
+          // Realizamos el COMMIT final al entrar en segundo plano
+          self.manageActivity(args: nil)
+      }
   }
 
   // --- FIX #A3: Notificar solo canales vivos ---
@@ -89,9 +112,13 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
         manageActivity(args: args)
         result(nil)
       }
+    case "stageLiveActivity":
+      if let args = call.arguments as? [String: Any] {
+        stageStateInUserDefaults(args: args)
+        result(nil)
+      }
     case "endLiveActivity":
       if #available(iOS 16.1, *) {
-        // Serializar el end con la misma cola que los updates
         FocusFlowNotificationPlugin.updateQueue.async {
           Task {
             for activity in Activity<FocusFlowAttributes>.activities {
@@ -110,6 +137,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       }
     case "syncWidgetState":
       if let defaults = UserDefaults(suiteName: "group.com.andaluzcode.focusFlow") {
+          defaults.synchronize() // Forzar lectura de disco/AppGroup
           let isPaused = defaults.bool(forKey: "isPaused")
           let remainingSeconds = defaults.integer(forKey: "remainingSeconds")
           let isStopped = defaults.bool(forKey: "isStopped")
@@ -140,23 +168,50 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       UNUserNotificationCenter.current().add(request)
   }
 
+  private func stageStateInUserDefaults(args: [String: Any]) {
+      if let defaults = UserDefaults(suiteName: "group.com.andaluzcode.focusFlow") {
+          defaults.set(args["isPaused"] as? Bool ?? false, forKey: "isPaused")
+          defaults.set(args["remainingSeconds"] as? Int ?? 0, forKey: "remainingSeconds")
+          defaults.set(args["startDate"] as? Int ?? 0, forKey: "startDate")
+          defaults.set(args["targetEndTime"] as? Int ?? 0, forKey: "targetEndTime")
+          defaults.set(args["totalDuration"] as? Int ?? 0, forKey: "totalDuration")
+          defaults.set(args["status"] as? String ?? "focus", forKey: "status")
+          defaults.set(false, forKey: "isStopped")
+          defaults.synchronize()
+          os_log("[FocusFlow] State STAGED in UserDefaults", log: .default, type: .info)
+      }
+  }
+
   @available(iOS 16.1, *)
-  private func manageActivity(args: [String: Any]) {
-      os_log("[FocusFlow] manageActivity called with arguments: %{public}@", log: .default, type: .info, String(describing: args))
+  private func manageActivity(args: [String: Any]?) {
+      var finalArgs: [String: Any] = [:]
       
-      let startDateMillis    = args["startDate"]     as? Int ?? Int(Date().timeIntervalSince1970 * 1000)
-      let targetEndTimeMillis = args["targetEndTime"] as? Int ?? 0
-      let totalDuration      = args["totalDuration"] as? Int ?? 0
-      let status             = args["status"]        as? String ?? "focus"
-      let isPaused           = args["isPaused"]      as? Bool ?? false
-      let progress           = args["progress"]      as? Double ?? 0.0
-      let remainingSeconds   = args["remainingSeconds"] as? Int ?? 0
+      if let inputArgs = args {
+          finalArgs = inputArgs
+      } else if let defaults = UserDefaults(suiteName: "group.com.andaluzcode.focusFlow") {
+          // Reclaiming staged state
+          finalArgs["startDate"] = defaults.integer(forKey: "startDate")
+          finalArgs["targetEndTime"] = defaults.integer(forKey: "targetEndTime")
+          finalArgs["totalDuration"] = defaults.integer(forKey: "totalDuration")
+          finalArgs["status"] = defaults.string(forKey: "status") ?? "focus"
+          finalArgs["isPaused"] = defaults.bool(forKey: "isPaused")
+          finalArgs["remainingSeconds"] = defaults.integer(forKey: "remainingSeconds")
+          os_log("[FocusFlow] Reclaiming staged state from UserDefaults for COMMIT", log: .default, type: .info)
+      }
+      
+      if finalArgs.isEmpty { return }
+      
+      os_log("[FocusFlow] manageActivity executing with: %{public}@", log: .default, type: .info, String(describing: finalArgs))
+      
+      let startDateMillis    = finalArgs["startDate"]     as? Int ?? Int(Date().timeIntervalSince1970 * 1000)
+      let targetEndTimeMillis = finalArgs["targetEndTime"] as? Int ?? 0
+      let totalDuration      = finalArgs["totalDuration"] as? Int ?? 0
+      let status             = finalArgs["status"]        as? String ?? "focus"
+      let isPaused           = finalArgs["isPaused"]      as? Bool ?? false
+      let remainingSeconds   = finalArgs["remainingSeconds"] as? Int ?? 0
       
       let targetEndDate = Date(timeIntervalSince1970: TimeInterval(targetEndTimeMillis) / 1000)
-      // staleDate cubre toda la vida del timer
-      let staleDate: Date? = isPaused
-          ? nil                        // pausa: sin caducidad
-          : targetEndDate.addingTimeInterval(60)      // corriendo: fin + 60s
+      let staleDate: Date? = isPaused ? nil : targetEndDate.addingTimeInterval(60)
 
       let state = FocusFlowAttributes.ContentState(
           isPaused: isPaused,
@@ -167,60 +222,43 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           pauseDate: isPaused ? Date() : nil
       )
       
-      // FIX #E: Arquitectura Indestructible - Sincronizar hacia el App Group
+      // --- GUARDA DE COLISIÓN (Proceso vs Proceso) ---
+      if args == nil, let defaults = UserDefaults(suiteName: "group.com.andaluzcode.focusFlow") {
+          let lastAction = defaults.double(forKey: "lastWidgetActionTime")
+          let now = Date().timeIntervalSince1970
+          // Solo bloqueamos el COMMIT automático de fondo si el widget acaba de actuar.
+          // Si Dart nos llama explícitamente con args, es porque quiere forzar la sincronía (ej: app abierta).
+          if lastAction > 0 && (now - lastAction) < 2.0 {
+              os_log("[FocusFlow] Skipping background COMMIT: Recent Widget interaction detected", log: .default, type: .info)
+              return
+          }
+      }
+      
+      // Sincronizar hacia el App Group (redundante si venimos de stage, pero necesario si venimos de direct call)
       if let defaults = UserDefaults(suiteName: "group.com.andaluzcode.focusFlow") {
           defaults.set(isPaused, forKey: "isPaused")
           defaults.set(remainingSeconds, forKey: "remainingSeconds")
           defaults.set(false, forKey: "isStopped")
-          // No actualizamos lastWidgetActionTime porque esta orden viene de Dart (Master)
+          defaults.synchronize()
       }
       
       os_log("[FocusFlow] New ContentState created. isPaused: %d, targetEndDate: %{public}@", log: .default, type: .info, isPaused, String(describing: targetEndDate))
       
-      let activities = Activity<FocusFlowAttributes>.activities
-      os_log("[FocusFlow] Found %d active activities", log: .default, type: .info, activities.count)
-      
-      if !activities.isEmpty {
-          FocusFlowNotificationPlugin.updateQueue.async {
-              let group = DispatchGroup()
-              group.enter()
+      FocusFlowNotificationPlugin.updateQueue.async {
+          let semaphore = DispatchSemaphore(value: 0)
+          Task {
+              defer { semaphore.signal() }
               
-              Task {
-                  defer { group.leave() }
-                  for activity in activities {
-                      guard activity.activityState == .active else { continue }
-                      
-                      do {
-                          os_log("[FocusFlow] Starting UPDATE for activity %{public}@", log: .default, type: .info, activity.id)
-                          if #available(iOS 16.2, *) {
-                              let content = ActivityContent(state: state, staleDate: staleDate)
-                              try await activity.update(content)
-                          } else {
-                              await activity.update(using: state)
-                          }
-                          os_log("[FocusFlow] Update activity successful", log: .default, type: .info)
-                      } catch {
-                          os_log("[FocusFlow] Error updating Live Activity: %{public}@",
-                                 log: .default, type: .error, error.localizedDescription)
-                      }
-                  }
-              }
-              group.wait()
-          }
-      } else {
-          FocusFlowNotificationPlugin.updateQueue.async {
-              let group = DispatchGroup()
-              group.enter()
+              let activities = Activity<FocusFlowAttributes>.activities
               
-              Task {
-                  defer { group.leave() }
+              if activities.isEmpty {
+                  // Caso 1: No hay actividad -> Crear una nueva
                   do {
-                      os_log("[FocusFlow] Starting REQUEST NEW activity", log: .default, type: .info)
+                      os_log("[FocusFlow] Case: No active activity. Requesting NEW.", log: .default, type: .info)
                       if #available(iOS 16.2, *) {
-                          let content = ActivityContent(state: state, staleDate: staleDate)
                           _ = try Activity<FocusFlowAttributes>.request(
                               attributes: FocusFlowAttributes(name: "Focus Timer"),
-                              content: content,
+                              content: ActivityContent(state: state, staleDate: staleDate),
                               pushType: nil
                           )
                       } else {
@@ -230,14 +268,93 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
                               pushType: nil
                           )
                       }
-                      os_log("[FocusFlow] Request new activity successful", log: .default, type: .info)
                   } catch {
-                      os_log("[FocusFlow] Error starting Live Activity: %{public}@",
-                             log: .default, type: .error, error.localizedDescription)
+                      os_log("[FocusFlow] Error requesting NEW: %{public}@", log: .default, type: .error, error.localizedDescription)
+                  }
+                  return
+              }
+              
+              // Caso 2: ¿Necesitamos REBIRTH?
+              // Estrategia Híbrida: Solo recreamos si hay cambio de Play/Pause Y estamos en PRIMER PLANO.
+              // O si acabamos de volver de background (pendindRebirthOnForeground).
+              let isForeground = UIApplication.shared.applicationState == .active
+              var needsRebirth = FocusFlowNotificationPlugin.pendingRebirthOnForeground && isForeground
+              
+              for activity in activities {
+                  let currentState: FocusFlowAttributes.ContentState
+                  if #available(iOS 16.2, *) {
+                      currentState = activity.content.state
+                  } else {
+                      currentState = activity.contentState
+                  }
+                  
+                  if currentState.isPaused != state.isPaused && isForeground {
+                      needsRebirth = true
+                      break
                   }
               }
-              group.wait()
+              
+              if needsRebirth {
+                  os_log("[FocusFlow] FOREGROUND/REENTRY detected. Executing NUCLEAR REBIRTH to reset budget.", log: .default, type: .info)
+                  FocusFlowNotificationPlugin.pendingRebirthOnForeground = false
+                  for activity in activities {
+                      await activity.end(dismissalPolicy: .immediate)
+                  }
+                  try? await Task.sleep(nanoseconds: 300_000_000) // Un poco más de margen para asegurar el reset
+                  
+                  do {
+                      if #available(iOS 16.2, *) {
+                          _ = try Activity<FocusFlowAttributes>.request(
+                              attributes: FocusFlowAttributes(name: "Focus Timer"),
+                              content: ActivityContent(state: state, staleDate: staleDate),
+                              pushType: nil
+                          )
+                      } else {
+                          _ = try Activity<FocusFlowAttributes>.request(
+                              attributes: FocusFlowAttributes(name: "Focus Timer"),
+                              contentState: state,
+                              pushType: nil
+                          )
+                      }
+                  } catch {
+                      os_log("[FocusFlow] Error in rebirth request: %{public}@", log: .default, type: .error, error.localizedDescription)
+                  }
+              } else {
+                  // Caso 3: UPDATE normal (Mismo estado o Segundo Plano)
+                  for activity in activities {
+                      guard activity.activityState == .active else { continue }
+                      
+                      let currentState: FocusFlowAttributes.ContentState
+                      if #available(iOS 16.2, *) {
+                          currentState = activity.content.state
+                      } else {
+                          currentState = activity.contentState
+                      }
+                      
+                      let isSameEndDate = abs(currentState.timerEndDate.timeIntervalSince(state.timerEndDate)) < 2.0
+                      let isSameRemaining = abs(currentState.remainingSeconds - state.remainingSeconds) <= 1
+                      let isPausedChanged = currentState.isPaused != state.isPaused
+                      let isRedundant = !isPausedChanged && (state.isPaused ? isSameRemaining : isSameEndDate)
+                      
+                      if isRedundant {
+                          os_log("[FocusFlow] Skipping redundant update.", log: .default, type: .info)
+                          continue
+                      }
+                      
+                      os_log("[FocusFlow] Executing Activity UPDATE (Visibility safe).", log: .default, type: .info)
+                      do {
+                          if #available(iOS 16.2, *) {
+                              try await activity.update(ActivityContent(state: state, staleDate: staleDate))
+                          } else {
+                              await activity.update(using: state)
+                          }
+                      } catch {
+                          os_log("[FocusFlow] Update error: %{public}@", log: .default, type: .error, error.localizedDescription)
+                      }
+                  }
+              }
           }
+          _ = semaphore.wait(timeout: .now() + 5.0) // Timeout de seguridad de 5s
       }
   }
 }

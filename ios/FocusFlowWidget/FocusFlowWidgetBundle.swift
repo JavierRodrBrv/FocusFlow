@@ -199,37 +199,65 @@ struct PauseIntent: LiveActivityIntent {
     
     func perform() async throws -> some IntentResult {
         os_log("[FocusFlowWidget] PauseIntent.perform()", log: .default, type: .info)
-        // Notificamos a Dart (solo lo oirá si está vivo)
-        let center = CFNotificationCenterGetDarwinNotifyCenter()
-        CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.pause" as CFString), nil, nil, true)
-        
+        let now = Date()
         let activities = Activity<FocusFlowAttributes>.activities
         os_log("[FocusFlowWidget] Found %d activities for PauseIntent", log: .default, type: .info, activities.count)
         
-        for activity in activities {
-            var state = activity.content.state
+        // ESTRATEGIA DE VISIBILIDAD: Usamos update para no desaparecer del Dynamic Island
+        // El budget se reseteará cuando el usuario abra la App (Rebirth en Foreground)
+        var lastRemainingSeconds = 0
+        if let activity = activities.first {
+            let state: FocusFlowAttributes.ContentState
+            if #available(iOS 16.2, *) {
+                state = activity.content.state
+            } else {
+                state = activity.contentState
+            }
             if !state.isPaused {
-                let now = Date()
                 let remaining = state.timerEndDate.timeIntervalSince(now)
-                state.remainingSeconds = max(0, Int(remaining))
-                state.isPaused = true
-                state.pauseDate = now
-                state.status = "focus" // Default fallback
-                
-                // Guardamos en AppGroup antes de actualizar, para que Dart pueda leer esta reconciliación luego
-                if let defaults = UserDefaults(suiteName: appGroupName) {
-                    defaults.set(state.isPaused, forKey: "isPaused")
-                    defaults.set(state.remainingSeconds, forKey: "remainingSeconds")
-                    defaults.set(now.timeIntervalSince1970, forKey: "lastWidgetActionTime")
-                }
-                
-                if #available(iOS 16.2, *) {
-                    await activity.update(ActivityContent(state: state, staleDate: nil))
-                } else {
-                    await activity.update(using: state)
-                }
+                lastRemainingSeconds = max(0, Int(remaining))
+            } else {
+                lastRemainingSeconds = state.remainingSeconds
             }
         }
+
+        // 1. Persistir
+        if let defaults = UserDefaults(suiteName: appGroupName) {
+            defaults.set(true, forKey: "isPaused")
+            defaults.set(lastRemainingSeconds, forKey: "remainingSeconds")
+            defaults.set(now.timeIntervalSince1970, forKey: "lastWidgetActionTime")
+            defaults.synchronize()
+        }
+        
+        // 2. Notificar a Dart
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.pause" as CFString), nil, nil, true)
+
+        // 3. Update Activity (Mantener visibilidad)
+        var currentStatus = "focus"
+        if let activity = activities.first {
+            if #available(iOS 16.2, *) {
+                currentStatus = activity.content.state.status
+            } else {
+                currentStatus = activity.contentState.status
+            }
+
+            let state = FocusFlowAttributes.ContentState(
+                isPaused: true,
+                status: currentStatus,
+                remainingSeconds: lastRemainingSeconds,
+                timerStartDate: now,
+                timerEndDate: now.addingTimeInterval(TimeInterval(lastRemainingSeconds)),
+                pauseDate: now
+            )
+            
+            if #available(iOS 16.2, *) {
+                try? await activity.update(ActivityContent(state: state, staleDate: nil))
+            } else {
+                await activity.update(using: state)
+            }
+        }
+
         return .result()
     }
 }
@@ -242,36 +270,52 @@ struct ResumeIntent: LiveActivityIntent {
     
     func perform() async throws -> some IntentResult {
         os_log("[FocusFlowWidget] ResumeIntent.perform()", log: .default, type: .info)
-        let center = CFNotificationCenterGetDarwinNotifyCenter()
-        CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.play" as CFString), nil, nil, true)
-        
+        let now = Date()
         let activities = Activity<FocusFlowAttributes>.activities
         os_log("[FocusFlowWidget] Found %d activities for ResumeIntent", log: .default, type: .info, activities.count)
         
-        for activity in activities {
-            var state = activity.content.state
-            if state.isPaused {
-                let now = Date()
-                let newEndDate = now.addingTimeInterval(TimeInterval(state.remainingSeconds))
-                
-                state.timerEndDate = newEndDate
-                state.pauseDate = nil
-                state.isPaused = false
-                
-                // Guardamos en App Group
-                if let defaults = UserDefaults(suiteName: appGroupName) {
-                    defaults.set(state.isPaused, forKey: "isPaused")
-                    defaults.set(state.remainingSeconds, forKey: "remainingSeconds")
-                    defaults.set(now.timeIntervalSince1970, forKey: "lastWidgetActionTime")
-                }
-                
-                if #available(iOS 16.2, *) {
-                    await activity.update(ActivityContent(state: state, staleDate: newEndDate.addingTimeInterval(60)))
-                } else {
-                    await activity.update(using: state)
-                }
+        // ESTRATEGIA DE VISIBILIDAD: Usamos update para no desaparecer
+        var currentStatus = "focus"
+        if let activity = activities.first {
+            if #available(iOS 16.2, *) {
+                currentStatus = activity.content.state.status
+            } else {
+                currentStatus = activity.contentState.status
             }
         }
+
+        // 1. Persistir
+        var lastRemaining = 0
+        if let defaults = UserDefaults(suiteName: appGroupName) {
+            lastRemaining = defaults.integer(forKey: "remainingSeconds")
+            defaults.set(false, forKey: "isPaused")
+            defaults.set(now.timeIntervalSince1970, forKey: "lastWidgetActionTime")
+            defaults.synchronize()
+        }
+        
+        // 2. Notificar
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.play" as CFString), nil, nil, true)
+
+        // 3. Update active activity
+        if let activity = activities.first {
+            let newEndDate = now.addingTimeInterval(TimeInterval(lastRemaining))
+            let state = FocusFlowAttributes.ContentState(
+                isPaused: false,
+                status: currentStatus,
+                remainingSeconds: lastRemaining,
+                timerStartDate: now,
+                timerEndDate: newEndDate,
+                pauseDate: nil
+            )
+            
+            if #available(iOS 16.2, *) {
+                try? await activity.update(ActivityContent(state: state, staleDate: newEndDate.addingTimeInterval(60)))
+            } else {
+                await activity.update(using: state)
+            }
+        }
+
         return .result()
     }
 }
