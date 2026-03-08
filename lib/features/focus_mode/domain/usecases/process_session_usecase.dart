@@ -47,6 +47,7 @@ class ProcessSessionUseCase implements IProcessSessionUseCase {
 
   ProcessSessionUseCase(this._saveSessionUseCase);
 
+  @override
   Future<ProcessSessionResult> call(ProcessSessionParams params) async {
     final s = params.newState;
     final prevStatus = params.prevStatus;

@@ -15,15 +15,15 @@ class SensorService {
       _orientationController.stream;
 
   SensorService() {
-    print('[SensorService] Created.');
+    debugPrint('[SensorService] Created.');
     _init();
   }
 
   void _init() {
-    print('[SensorService] Initializing...');
+    debugPrint('[SensorService] Initializing...');
     // In debug mode, accelerometer might not be available on emulators.
     if (kDebugMode) {
-      print(
+      debugPrint(
         '[SensorService] Running in Debug mode. Sensor data may be unavailable.',
       );
     }
@@ -49,7 +49,7 @@ class SensorService {
             // Only emit a new event if the orientation has actually changed.
             // This acts as a simple 'distinct' filter.
             if (currentOrientation != _lastOrientation) {
-              print(
+              debugPrint(
                 '[SensorService] Orientation changed: $currentOrientation (Z: ${event.z.toStringAsFixed(2)})',
               );
               _lastOrientation = currentOrientation;
@@ -57,18 +57,18 @@ class SensorService {
             }
           },
           onError: (error) {
-            print('[SensorService] Error: $error');
+            debugPrint('[SensorService] Error: $error');
           },
           cancelOnError: true,
         );
-    print('[SensorService] Subscribed to accelerometer events.');
+    debugPrint('[SensorService] Subscribed to accelerometer events.');
   }
 
   @disposeMethod
   void dispose() {
-    print('[SensorService] Disposing...');
+    debugPrint('[SensorService] Disposing...');
     _subscription?.cancel();
     _orientationController.close();
-    print('[SensorService] Disposed.');
+    debugPrint('[SensorService] Disposed.');
   }
 }

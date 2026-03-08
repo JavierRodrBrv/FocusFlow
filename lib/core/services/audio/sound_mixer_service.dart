@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
@@ -17,10 +18,10 @@ class SoundMixerService {
 
   Future<void> init() async {
     if (_isInitialized) {
-      print('[SoundMixerService] Already initialized.');
+      debugPrint('[SoundMixerService] Already initialized.');
       return;
     }
-    print('[SoundMixerService] Initializing...');
+    debugPrint('[SoundMixerService] Initializing...');
     try {
       // Configurar sesión de audio para background (iOS/Android)
       final session = await AudioSession.instance;
@@ -29,10 +30,13 @@ class SoundMixerService {
       await session.configure(
         const AudioSessionConfiguration(
           avAudioSessionCategory: AVAudioSessionCategory.playback,
-          avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
+          avAudioSessionCategoryOptions:
+              AVAudioSessionCategoryOptions.mixWithOthers,
           avAudioSessionMode: AVAudioSessionMode.defaultMode,
-          avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
-          avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
+          avAudioSessionRouteSharingPolicy:
+              AVAudioSessionRouteSharingPolicy.defaultPolicy,
+          avAudioSessionSetActiveOptions:
+              AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
           androidAudioAttributes: AndroidAudioAttributes(
             contentType: AndroidAudioContentType.music,
             flags: AndroidAudioFlags.none,
@@ -43,33 +47,33 @@ class SoundMixerService {
         ),
       );
 
-      print('[SoundMixerService] Loading assets...');
+      debugPrint('[SoundMixerService] Loading assets...');
       await _rainPlayer.setAsset('assets/audio/rain.mp3');
       await _firePlayer.setAsset('assets/audio/fire.mp3');
       await _brownNoisePlayer.setAsset('assets/audio/brown.mp3');
       await _keepAlivePlayer.setAsset('assets/audio/silence.mp3');
-      print('[SoundMixerService] Assets loaded.');
+      debugPrint('[SoundMixerService] Assets loaded.');
 
       await _rainPlayer.setLoopMode(LoopMode.one);
       await _firePlayer.setLoopMode(LoopMode.one);
       await _brownNoisePlayer.setLoopMode(LoopMode.one);
       await _ambiencePlayer.setLoopMode(LoopMode.one);
       await _keepAlivePlayer.setLoopMode(LoopMode.one);
-      
+
       await _keepAlivePlayer.setVolume(1.0);
       await _ambiencePlayer.setVolume(0.5);
 
       _isInitialized = true;
-      print('[SoundMixerService] Initialized successfully.');
+      debugPrint('[SoundMixerService] Initialized successfully.');
     } catch (e) {
-      print('[SoundMixerService] ERROR initializing: $e');
+      debugPrint('[SoundMixerService] ERROR initializing: $e');
       rethrow;
     }
   }
 
   void setAmbienceSound(String? assetPath) async {
     if (!_isInitialized) return;
-    
+
     if (assetPath == null) {
       await _ambiencePlayer.stop();
       _currentAmbiencePath = null;
@@ -85,7 +89,7 @@ class SoundMixerService {
       }
       _currentAmbiencePath = assetPath;
     } catch (e) {
-      print('[SoundMixerService] Error loading ambience: $e');
+      debugPrint('[SoundMixerService] Error loading ambience: $e');
     }
   }
 
@@ -113,7 +117,7 @@ class SoundMixerService {
   void startKeepAlive() {
     if (!_isInitialized) return;
     if (!_keepAlivePlayer.playing) {
-      print('[SoundMixerService] Starting keep-alive player (silent).');
+      debugPrint('[SoundMixerService] Starting keep-alive player (silent).');
       _keepAlivePlayer.play();
     }
   }
@@ -122,7 +126,7 @@ class SoundMixerService {
   void stopKeepAlive() {
     if (!_isInitialized) return;
     if (_keepAlivePlayer.playing) {
-      print('[SoundMixerService] Stopping keep-alive player.');
+      debugPrint('[SoundMixerService] Stopping keep-alive player.');
       _keepAlivePlayer.pause();
     }
   }
@@ -130,11 +134,11 @@ class SoundMixerService {
   void setRainVolume(double volume) {
     if (!_isInitialized) return;
     final clampedVolume = volume.clamp(0.0, 1.0);
-    print('[SoundMixerService] Setting rain volume to: $clampedVolume');
+    debugPrint('[SoundMixerService] Setting rain volume to: $clampedVolume');
 
     // Si el volumen es mayor que 0 y el reproductor no está sonando, iniciarlo.
     if (clampedVolume > 0 && !_rainPlayer.playing) {
-      print('[SoundMixerService] First play for Rain sound.');
+      debugPrint('[SoundMixerService] First play for Rain sound.');
       _rainPlayer.play();
     }
     _rainPlayer.setVolume(clampedVolume);
@@ -143,11 +147,11 @@ class SoundMixerService {
   void setFireVolume(double volume) {
     if (!_isInitialized) return;
     final clampedVolume = volume.clamp(0.0, 1.0);
-    print('[SoundMixerService] Setting fire volume to: $clampedVolume');
+    debugPrint('[SoundMixerService] Setting fire volume to: $clampedVolume');
 
     // Si el volumen es mayor que 0 y el reproductor no está sonando, iniciarlo.
     if (clampedVolume > 0 && !_firePlayer.playing) {
-      print('[SoundMixerService] First play for Fire sound.');
+      debugPrint('[SoundMixerService] First play for Fire sound.');
       _firePlayer.play();
     }
     _firePlayer.setVolume(clampedVolume);
@@ -156,18 +160,18 @@ class SoundMixerService {
   void setBrownNoiseVolume(double volume) {
     if (!_isInitialized) return;
     final clampedVolume = volume.clamp(0.0, 1.0);
-    print('[SoundMixerService] Setting brown noise volume to: $clampedVolume');
+    debugPrint('[SoundMixerService] Setting brown noise volume to: $clampedVolume');
 
     // Si el volumen es mayor que 0 y el reproductor no está sonando, iniciarlo.
     if (clampedVolume > 0 && !_brownNoisePlayer.playing) {
-      print('[SoundMixerService] First play for Brown Noise sound.');
+      debugPrint('[SoundMixerService] First play for Brown Noise sound.');
       _brownNoisePlayer.play();
     }
     _brownNoisePlayer.setVolume(clampedVolume);
   }
 
   void dispose() {
-    print('[SoundMixerService] Disposing audio players.');
+    debugPrint('[SoundMixerService] Disposing audio players.');
     _rainPlayer.dispose();
     _firePlayer.dispose();
     _brownNoisePlayer.dispose();

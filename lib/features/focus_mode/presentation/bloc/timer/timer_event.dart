@@ -41,3 +41,17 @@ class _SessionStateChanged extends TimerEvent {
   final SessionState sessionState;
   const _SessionStateChanged(this.sessionState);
 }
+
+/// Evento para reconciliar Dart con el estado autónomo del Widget de iOS
+class SyncWithWidgetState extends TimerEvent {
+  final bool isPaused;
+  final int remainingSeconds;
+  final bool isStopped;
+  const SyncWithWidgetState({
+    required this.isPaused,
+    required this.remainingSeconds,
+    required this.isStopped,
+  });
+  @override
+  List<Object?> get props => [isPaused, remainingSeconds, isStopped];
+}

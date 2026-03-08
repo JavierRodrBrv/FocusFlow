@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:injectable/injectable.dart';
 
@@ -19,13 +20,13 @@ class PremiumRepositoryImpl implements PremiumRepository {
       _premiumStatusKey,
       defaultValue: PremiumStatus(isPremium: false),
     );
-    print('[PremiumRepository] Getting premium status: ${status!.isPremium}');
+    debugPrint('[PremiumRepository] Getting premium status: ${status!.isPremium}');
     return status.isPremium;
   }
 
   @override
   Future<void> setPremiumStatus(bool isPremium) async {
-    print('[PremiumRepository] Setting premium status to: $isPremium');
+    debugPrint('[PremiumRepository] Setting premium status to: $isPremium');
     await box.put(_premiumStatusKey, PremiumStatus(isPremium: isPremium));
   }
 }

@@ -2,6 +2,7 @@ import WidgetKit
 import SwiftUI
 import ActivityKit
 import AppIntents
+import os.log
 
 // Helper function para mostrar el tiempo formateado (MM:SS) cuando está pausado
 func formatTime(seconds: Int) -> String {
@@ -13,22 +14,21 @@ func formatTime(seconds: Int) -> String {
 // --- ATTRIBUTES ---
 public struct FocusFlowAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        public var startDate: Date
-        public var targetEndDate: Date
         public var isPaused: Bool
-        public var totalDuration: Double
-        public var progress: Double
         public var status: String
         public var remainingSeconds: Int
         
-        public init(startDate: Date, targetEndDate: Date, isPaused: Bool, totalDuration: Double, progress: Double, status: String, remainingSeconds: Int) {
-            self.startDate = startDate
-            self.targetEndDate = targetEndDate
+        public var timerStartDate: Date
+        public var timerEndDate: Date
+        public var pauseDate: Date?
+        
+        public init(isPaused: Bool, status: String, remainingSeconds: Int, timerStartDate: Date, timerEndDate: Date, pauseDate: Date?) {
             self.isPaused = isPaused
-            self.totalDuration = totalDuration
-            self.progress = progress
             self.status = status
             self.remainingSeconds = remainingSeconds
+            self.timerStartDate = timerStartDate
+            self.timerEndDate = timerEndDate
+            self.pauseDate = pauseDate
         }
     }
     public var name: String
@@ -39,40 +39,39 @@ public struct FocusFlowAttributes: ActivityAttributes {
 struct FocusFlowLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: FocusFlowAttributes.self) { context in
-            // --- LOCK SCREEN (Versión Ultra-Estable) ---
+            // --- LOCK SCREEN ---
             HStack(spacing: 12) {
-                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
+                Image(systemName: context.state.status == "break" ? "cup.and.saucer.fill" : "brain.head.profile")
                     .font(.system(size: 20))
-                    .foregroundColor(context.state.status == "focus" ? .purple : .green)
+                    .foregroundColor(context.state.status == "break" ? .green : .purple)
                     .frame(width: 36, height: 36)
                     .background(Color.white.opacity(0.1))
                     .clipShape(Circle())
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(context.state.status == "focus" ? "Focus" : "Descanso")
+                    Text(context.state.status == "waiting" ? "Listo" : (context.state.status == "focus" ? "Focus" : "Descanso"))
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
-                    Text(context.state.isPaused ? "Pausado" : "En curso")
+                    Text(context.state.status == "waiting" ? "Voltea el móvil" : (context.state.isPaused ? "Pausado" : "En curso"))
                         .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.6))
                 }
                 
                 Spacer()
                 
-                // Botones y Timer
+                // Timer Display — simple y fiable
                 if context.state.isPaused {
                     Text(formatTime(seconds: context.state.remainingSeconds))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(.yellow)
-                        .padding(.trailing, 8) // Separación del botón
+                        .padding(.trailing, 8)
                 } else {
-                    Text(context.state.targetEndDate, style: .timer)
+                    Text(context.state.timerEndDate, style: .timer)
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(.white)
-                        // ELIMINADO: .frame(width: 90) para evitar que se monte encima
-                        .padding(.trailing, 8) // Separación del botón
+                        .padding(.trailing, 8)
                 }
                 
                 // Botón de Acción
@@ -106,12 +105,13 @@ struct FocusFlowLiveActivity: Widget {
             DynamicIsland {
                 // --- EXPANDED ---
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
+                    Image(systemName: context.state.status == "break" ? "cup.and.saucer.fill" : "brain.head.profile")
                         .font(.title2)
                         .foregroundColor(.purple)
                         .padding(.leading, 10)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
+                    // PAUSA: tiempo congelado estático. CORRIENDO: countdown nativo iOS.
                     if context.state.isPaused {
                         Text(formatTime(seconds: context.state.remainingSeconds))
                             .font(.title2)
@@ -119,7 +119,7 @@ struct FocusFlowLiveActivity: Widget {
                             .foregroundColor(.yellow)
                             .padding(.trailing, 10)
                     } else {
-                        Text(context.state.targetEndDate, style: .timer)
+                        Text(context.state.timerEndDate, style: .timer)
                             .font(.title2)
                             .monospacedDigit()
                             .foregroundColor(.purple)
@@ -162,10 +162,9 @@ struct FocusFlowLiveActivity: Widget {
                     .padding(.vertical, 10)
                 }
             } compactLeading: {
-                Image(systemName: context.state.status == "focus" ? "brain.head.profile" : "cup.and.saucer.fill")
+                Image(systemName: context.state.status == "break" ? "cup.and.saucer.fill" : "brain.head.profile")
                     .foregroundColor(context.state.isPaused ? .yellow : .purple)
             } compactTrailing: {
-                // REDUCCIÓN DEL WIDTH Y AUTO-ESCALADO
                 if context.state.isPaused {
                     Text(formatTime(seconds: context.state.remainingSeconds))
                         .monospacedDigit()
@@ -174,7 +173,7 @@ struct FocusFlowLiveActivity: Widget {
                         .minimumScaleFactor(0.8)
                         .frame(maxWidth: 40, alignment: .trailing)
                 } else {
-                    Text(context.state.targetEndDate, style: .timer)
+                    Text(context.state.timerEndDate, style: .timer)
                         .monospacedDigit()
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.purple)
@@ -188,7 +187,9 @@ struct FocusFlowLiveActivity: Widget {
     }
 }
 
-// --- INTENTS ---
+// --- INTENTS AUTÓNOMOS (APP GROUPS) ---
+
+let appGroupName = "group.com.andaluzcode.focusFlow"
 
 @available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
 struct PauseIntent: LiveActivityIntent {
@@ -197,15 +198,30 @@ struct PauseIntent: LiveActivityIntent {
     init() {}
     
     func perform() async throws -> some IntentResult {
+        os_log("[FocusFlowWidget] PauseIntent.perform()", log: .default, type: .info)
+        // Notificamos a Dart (solo lo oirá si está vivo)
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.pause" as CFString), nil, nil, true)
         
-        for activity in Activity<FocusFlowAttributes>.activities {
+        let activities = Activity<FocusFlowAttributes>.activities
+        os_log("[FocusFlowWidget] Found %d activities for PauseIntent", log: .default, type: .info, activities.count)
+        
+        for activity in activities {
             var state = activity.content.state
             if !state.isPaused {
-                let remaining = state.targetEndDate.timeIntervalSinceNow
+                let now = Date()
+                let remaining = state.timerEndDate.timeIntervalSince(now)
                 state.remainingSeconds = max(0, Int(remaining))
                 state.isPaused = true
+                state.pauseDate = now
+                state.status = "focus" // Default fallback
+                
+                // Guardamos en AppGroup antes de actualizar, para que Dart pueda leer esta reconciliación luego
+                if let defaults = UserDefaults(suiteName: appGroupName) {
+                    defaults.set(state.isPaused, forKey: "isPaused")
+                    defaults.set(state.remainingSeconds, forKey: "remainingSeconds")
+                    defaults.set(now.timeIntervalSince1970, forKey: "lastWidgetActionTime")
+                }
                 
                 if #available(iOS 16.2, *) {
                     await activity.update(ActivityContent(state: state, staleDate: nil))
@@ -225,23 +241,32 @@ struct ResumeIntent: LiveActivityIntent {
     init() {}
     
     func perform() async throws -> some IntentResult {
+        os_log("[FocusFlowWidget] ResumeIntent.perform()", log: .default, type: .info)
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.play" as CFString), nil, nil, true)
         
-        for activity in Activity<FocusFlowAttributes>.activities {
+        let activities = Activity<FocusFlowAttributes>.activities
+        os_log("[FocusFlowWidget] Found %d activities for ResumeIntent", log: .default, type: .info, activities.count)
+        
+        for activity in activities {
             var state = activity.content.state
             if state.isPaused {
-                // Calcular nueva fecha objetivo
-                let newTarget = Date().addingTimeInterval(TimeInterval(state.remainingSeconds))
-                // ¡CLAVE! Calcular nuevo inicio para que el progreso (circulo) se dibuje bien
-                let newStart = newTarget.addingTimeInterval(-state.totalDuration)
+                let now = Date()
+                let newEndDate = now.addingTimeInterval(TimeInterval(state.remainingSeconds))
                 
-                state.targetEndDate = newTarget
-                state.startDate = newStart
+                state.timerEndDate = newEndDate
+                state.pauseDate = nil
                 state.isPaused = false
                 
+                // Guardamos en App Group
+                if let defaults = UserDefaults(suiteName: appGroupName) {
+                    defaults.set(state.isPaused, forKey: "isPaused")
+                    defaults.set(state.remainingSeconds, forKey: "remainingSeconds")
+                    defaults.set(now.timeIntervalSince1970, forKey: "lastWidgetActionTime")
+                }
+                
                 if #available(iOS 16.2, *) {
-                    await activity.update(ActivityContent(state: state, staleDate: nil))
+                    await activity.update(ActivityContent(state: state, staleDate: newEndDate.addingTimeInterval(60)))
                 } else {
                     await activity.update(using: state)
                 }
@@ -260,6 +285,12 @@ struct StopIntent: LiveActivityIntent {
     func perform() async throws -> some IntentResult {
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         CFNotificationCenterPostNotification(center, CFNotificationName("com.andaluzcode.focusflow.stop" as CFString), nil, nil, true)
+        
+        // Guardar estado detenido en el group
+        if let defaults = UserDefaults(suiteName: appGroupName) {
+            defaults.set(true, forKey: "isStopped")
+            defaults.set(Date().timeIntervalSince1970, forKey: "lastWidgetActionTime")
+        }
         
         for activity in Activity<FocusFlowAttributes>.activities {
             await activity.end(dismissalPolicy: .immediate)

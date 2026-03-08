@@ -44,6 +44,19 @@ class FocusFlowNotification {
     });
   }
 
+  /// Recupera el estado autónomo escrito por los Intents del Widget en el App Group
+  static Future<Map<String, dynamic>?> syncWidgetState() async {
+    try {
+      final result = await _channel.invokeMethod('syncWidgetState');
+      if (result != null && result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+    } catch (e) {
+      // PlatformException si falla
+    }
+    return null;
+  }
+
   /// Finaliza la Live Activity
   static Future<void> endLiveActivity() async {
     await _channel.invokeMethod('endLiveActivity');

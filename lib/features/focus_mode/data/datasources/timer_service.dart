@@ -15,21 +15,26 @@ class TimerService {
   /// A stream that emits the remaining duration every second.
   Stream<Duration> get tickStream => _controller.stream;
 
+  DateTime? _targetTime;
+
   /// Starts the countdown from the given [startDuration].
   void start({required Duration startDuration}) {
     // Cancel any existing timer before starting a new one.
     _timer?.cancel();
 
+    _targetTime = DateTime.now().add(startDuration);
     _currentDuration = startDuration;
     _controller.add(_currentDuration);
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_currentDuration.inSeconds > 0) {
-        _currentDuration -= const Duration(seconds: 1);
+      final now = DateTime.now();
+      if (_targetTime != null && _targetTime!.isAfter(now)) {
+        _currentDuration = _targetTime!.difference(now);
         _controller.add(_currentDuration);
       } else {
         // Timer finished, stop it.
         timer.cancel();
+        _currentDuration = Duration.zero;
         _controller.add(Duration.zero);
       }
     });

@@ -19,18 +19,18 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    print('[AdBannerWidget] didChangeDependencies called.');
+    debugPrint('[AdBannerWidget] didChangeDependencies called.');
     _loadAd();
   }
 
   Future<void> _loadAd() async {
     // Si ya hay un anuncio cargado o se está cargando, no hacer nada.
     if (_bannerAd != null && _isAdLoaded) {
-      print('[AdBannerWidget] Ad already loaded or loading.');
+      debugPrint('[AdBannerWidget] Ad already loaded or loading.');
       return;
     }
 
-    print('[AdBannerWidget] Getting ad size...');
+    debugPrint('[AdBannerWidget] Getting ad size...');
     // Obtener el ancho de la pantalla para el banner adaptativo.
     final width = MediaQuery.of(context).size.width.truncate();
     final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
@@ -38,10 +38,10 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
     );
 
     if (size == null) {
-      print('[AdBannerWidget] ERROR: Unable to get adaptive ad size.');
+      debugPrint('[AdBannerWidget] ERROR: Unable to get adaptive ad size.');
       return;
     }
-    print(
+    debugPrint(
       '[AdBannerWidget] Adaptive ad size obtained: ${size.width}x${size.height}',
     );
 
@@ -58,7 +58,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
       size: _adSize!,
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          print('[AdBannerWidget] Ad loaded successfully.');
+          debugPrint('[AdBannerWidget] Ad loaded successfully.');
           if (mounted) {
             setState(() {
               _isAdLoaded = true;
@@ -66,7 +66,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
           }
         },
         onAdFailedToLoad: (ad, err) {
-          print('[AdBannerWidget] ERROR: Failed to load Ad: $err');
+          debugPrint('[AdBannerWidget] ERROR: Failed to load Ad: $err');
           ad.dispose();
         },
       ),
@@ -75,7 +75,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print('[AdBannerWidget] build called. isAdLoaded: $_isAdLoaded');
+    debugPrint('[AdBannerWidget] build called. isAdLoaded: $_isAdLoaded');
     if (_bannerAd != null && _isAdLoaded && _adSize != null) {
       return SizedBox(
         width: _adSize!.width.toDouble(),
@@ -95,7 +95,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
 
   @override
   void dispose() {
-    print('[AdBannerWidget] dispose: Disposing ad.');
+    debugPrint('[AdBannerWidget] dispose: Disposing ad.');
     _bannerAd?.dispose();
     super.dispose();
   }

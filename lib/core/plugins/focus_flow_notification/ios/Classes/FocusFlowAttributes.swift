@@ -3,22 +3,25 @@ import Foundation
 
 public struct FocusFlowAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        public var startDate: Date // <--- NUEVO: Para progreso fluido del anillo
-        public var targetEndDate: Date
         public var isPaused: Bool
-        public var totalDuration: Double
-        public var progress: Double
         public var status: String
         public var remainingSeconds: Int
         
-        public init(startDate: Date, targetEndDate: Date, isPaused: Bool, totalDuration: Double, progress: Double, status: String, remainingSeconds: Int) {
-            self.startDate = startDate
-            self.targetEndDate = targetEndDate
+        // --- NUEVO: Propiedades para Timer Nativo ---
+        // Al proveer The timestamp de inicio y fin, Text(timerInterval) de SwiftUI
+        // hace la cuenta regresiva nativamente sin consumir "updates" por segundo.
+        public var timerStartDate: Date
+        public var timerEndDate: Date
+        // Cuando pausamos, guardamos el timestamp de la pausa. Text() se quedará congelado ahí.
+        public var pauseDate: Date?
+        
+        public init(isPaused: Bool, status: String, remainingSeconds: Int, timerStartDate: Date, timerEndDate: Date, pauseDate: Date?) {
             self.isPaused = isPaused
-            self.totalDuration = totalDuration
-            self.progress = progress
             self.status = status
             self.remainingSeconds = remainingSeconds
+            self.timerStartDate = timerStartDate
+            self.timerEndDate = timerEndDate
+            self.pauseDate = pauseDate
         }
     }
     public var name: String

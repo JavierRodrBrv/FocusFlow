@@ -23,7 +23,8 @@ class SavedMixesBottomSheet extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SavedMixesBottomSheet(state: state, service: service),
+      builder: (context) =>
+          SavedMixesBottomSheet(state: state, service: service),
     );
   }
 
@@ -50,16 +51,16 @@ class SavedMixesBottomSheet extends StatelessWidget {
           Text(
             'Mezclas Guardadas',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           Flexible(
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: state.savedMixes.length,
-              separatorBuilder: (_, ___) => const Divider(color: Colors.white10),
+              separatorBuilder: (_, _) => const Divider(color: Colors.white10),
               itemBuilder: (context, index) {
                 final mix = state.savedMixes[index];
                 final isSelected = mix.id == state.lastActivatedMixId;
@@ -74,21 +75,21 @@ class SavedMixesBottomSheet extends StatelessWidget {
                       color: isSelected
                           ? Colors.greenAccent.withValues(alpha: 0.2)
                           : isHistory
-                              ? Colors.grey.withValues(alpha: 0.2)
-                              : Colors.blueAccent.withValues(alpha: 0.2),
+                          ? Colors.grey.withValues(alpha: 0.2)
+                          : Colors.blueAccent.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isSelected
                           ? Icons.check
                           : isHistory
-                              ? Icons.history
-                              : Icons.music_note,
+                          ? Icons.history
+                          : Icons.music_note,
                       color: isSelected
                           ? Colors.greenAccent
                           : isHistory
-                              ? Colors.white70
-                              : Colors.blueAccent,
+                          ? Colors.white70
+                          : Colors.blueAccent,
                     ),
                   ),
                   title: Text(
@@ -97,9 +98,11 @@ class SavedMixesBottomSheet extends StatelessWidget {
                       color: isSelected
                           ? Colors.greenAccent
                           : isHistory
-                              ? Colors.white70
-                              : Colors.white,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          ? Colors.white70
+                          : Colors.white,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(

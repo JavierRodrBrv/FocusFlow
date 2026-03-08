@@ -20,11 +20,11 @@ class HardcoreModeCard extends StatelessWidget {
     final isSessionActive = state.pomodoroStatus != PomodoroStatus.initial;
 
     final borderColor = state.isInPenaltyBox
-        ? Colors.red.withOpacity(0.5)
-        : Colors.white.withOpacity(0.1);
+        ? Colors.red.withValues(alpha: 0.5)
+        : Colors.white.withValues(alpha: 0.1);
 
     final backgroundColor = state.isInPenaltyBox
-        ? Colors.red.withOpacity(0.05)
+        ? Colors.red.withValues(alpha: 0.05)
         : Colors.transparent;
 
     return Container(
@@ -58,8 +58,8 @@ class HardcoreModeCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         color: isSessionActive
-                            ? Colors.amber.withOpacity(0.8)
-                            : Colors.blueAccent.withOpacity(0.9),
+                            ? Colors.amber.withValues(alpha: 0.8)
+                            : Colors.blueAccent.withValues(alpha: 0.9),
                         fontWeight: isSessionActive
                             ? FontWeight.bold
                             : FontWeight.normal,

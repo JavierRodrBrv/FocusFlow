@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 import 'dart:io';
@@ -20,7 +21,7 @@ class DndService {
       );
       return filter;
     } catch (e) {
-      print('[DndService] Error getting DND status: $e');
+      debugPrint('[DndService] Error getting DND status: $e');
       return 1;
     }
   }

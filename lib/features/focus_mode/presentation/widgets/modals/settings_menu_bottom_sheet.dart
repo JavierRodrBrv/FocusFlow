@@ -575,7 +575,7 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor.withOpacity(0.2) : Colors.transparent,
+          color: isSelected ? activeColor.withValues(alpha: 0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(25),
           border: isSelected ? Border.all(color: activeColor, width: 2) : null,
         ),

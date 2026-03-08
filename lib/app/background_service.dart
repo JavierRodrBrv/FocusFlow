@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:focus_flow/core/services/audio/sound_mixer_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/timer/timer_bloc.dart';
@@ -55,12 +53,16 @@ void onStart(ServiceInstance service) async {
   TimerBloc? timerBloc;
   AudioMixBloc? audioBloc;
   SettingsBloc? settingsBloc;
-  SoundMixerService? soundMixerService;
 
   PomodoroStatus? lastStatus;
   Duration? lastRemaining;
   bool forceNextUpdate = false;
   bool lastPenaltyState = false;
+  bool isAppInForeground = true; // Flag para la estrategia de "Desentenderse"
+
+  // --- FIX iOS: Tracking limits variables ---
+  bool? lastIsPaused;
+  DateTime? lastTargetEndTime;
 
   FocusState getCombinedState() {
     final ts = timerBloc?.state ?? TimerState.initial();
@@ -107,6 +109,90 @@ void onStart(ServiceInstance service) async {
     service.invoke('update', getCombinedState().toJson());
   }
 
+  // --- LOGICA DE SINCRONIZACIÓN IOS (Arquitectura Autónoma) ---
+  Future<void> syncIosWidget(
+    TimerState state,
+    PomodoroStatus status,
+    String customStatus,
+    bool isFinished,
+    bool isInitial,
+    bool isPaused,
+    bool wasForcedUpdate,
+  ) async {
+    if (status == PomodoroStatus.initial || isFinished) {
+      if (isFinished) {
+        await Future.delayed(const Duration(milliseconds: 800));
+      }
+      await _notificationChannel.invokeMethod('endLiveActivity');
+      return;
+    }
+
+    final now = DateTime.now();
+    final targetEndTime = now.add(state.remainingTime);
+    final startDate = targetEndTime.subtract(state.pomodoroDuration);
+
+    bool iosShouldUpdate = wasForcedUpdate;
+
+    if (!iosShouldUpdate && isAppInForeground) {
+      if (lastIsPaused != isPaused || lastStatus != status) {
+        iosShouldUpdate = true;
+      } else if (!isPaused) {
+        if (lastTargetEndTime == null ||
+            (targetEndTime.difference(lastTargetEndTime!).inSeconds.abs() >
+                2)) {
+          iosShouldUpdate = true;
+        }
+      }
+    }
+
+    if (iosShouldUpdate) {
+      await _notificationChannel.invokeMethod('updateLiveActivity', {
+        'startDate': startDate.millisecondsSinceEpoch,
+        'targetEndTime': targetEndTime.millisecondsSinceEpoch,
+        'totalDuration': state.pomodoroDuration.inSeconds,
+        'status': customStatus,
+        'isPaused': isPaused,
+        'progress': state.pomodoroDuration.inSeconds > 0
+            ? (state.pomodoroDuration.inSeconds -
+                      state.remainingTime.inSeconds) /
+                  state.pomodoroDuration.inSeconds
+            : 0.0,
+        'remainingSeconds': state.remainingTime.inSeconds,
+      });
+
+      lastTargetEndTime = targetEndTime;
+      lastIsPaused = isPaused;
+    }
+  }
+
+  Future<void> runImmediateIosSync() async {
+    final state = timerBloc?.state;
+    if (state == null || !Platform.isIOS) return;
+
+    final status = state.pomodoroStatus;
+    bool isFinished = status == PomodoroStatus.finished;
+    bool isPaused =
+        status == PomodoroStatus.paused || state.isWaitingForFirstFlip;
+    bool isInitial = status == PomodoroStatus.initial;
+
+    String customStatus = 'focus';
+    if (state.isWaitingForFirstFlip) {
+      customStatus = 'waiting';
+    } else if (state.isResting) {
+      customStatus = 'break';
+    }
+
+    await syncIosWidget(
+      state,
+      status,
+      customStatus,
+      isFinished,
+      isInitial,
+      isPaused,
+      true, // forced update
+    );
+  }
+
   _notificationChannel.setMethodCallHandler((call) async {
     if (call.method == 'onNotificationAction') {
       final action = call.arguments as String;
@@ -126,12 +212,15 @@ void onStart(ServiceInstance service) async {
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
-    if (!Hive.isAdapterRegistered(0))
+    if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(PremiumStatusAdapter());
-    if (!Hive.isAdapterRegistered(1))
+    }
+    if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(SoundMixModelAdapter());
-    if (!Hive.isAdapterRegistered(2))
+    }
+    if (!Hive.isAdapterRegistered(2)) {
       Hive.registerAdapter(FocusSessionModelAdapter());
+    }
 
     await configureDependencies();
     await LocalNotificationService().init();
@@ -139,7 +228,6 @@ void onStart(ServiceInstance service) async {
     timerBloc = getIt<TimerBloc>();
     audioBloc = getIt<AudioMixBloc>();
     settingsBloc = getIt<SettingsBloc>();
-    soundMixerService = getIt<SoundMixerService>();
 
     final focusManager = getIt<FocusSessionManager>();
     await focusManager.init();
@@ -159,12 +247,13 @@ void onStart(ServiceInstance service) async {
     debugPrint('[BackgroundService] Fatal init error: $e');
   }
 
-  service.on('sendEvent').listen((event) {
+  service.on('sendEvent').listen((event) async {
     if (event == null ||
         timerBloc == null ||
         audioBloc == null ||
-        settingsBloc == null)
+        settingsBloc == null) {
       return;
+    }
     final name = event['event'];
 
     if (name == 'startTimer') {
@@ -246,15 +335,49 @@ void onStart(ServiceInstance service) async {
     } else if (name == 'requestState') {
       broadcastState();
     } else if (name == 'ui_resumed') {
-      // FIX iOS #3: Al volver a primer plano, forzar sincronización del Live Activity
-      if (Platform.isIOS) forceNextUpdate = true;
+      isAppInForeground = true;
+      // Al volver a primer plano, forzar sincronización del Live Activity
+      if (Platform.isIOS) {
+        forceNextUpdate = true;
+        // FIX #E: Arquitectura Indestructible — leer el estado autónomo del Widget
+        try {
+          final widgetState =
+              await _notificationChannel.invokeMethod('syncWidgetState')
+                  as Map?;
+          if (widgetState != null && widgetState['error'] == null) {
+            final lastActionTime =
+                widgetState['lastWidgetActionTime'] as double? ?? 0;
+            final now = DateTime.now().millisecondsSinceEpoch / 1000;
+            if (lastActionTime > 0 && (now - lastActionTime) < 3600) {
+              timerBloc.add(
+                SyncWithWidgetState(
+                  isPaused: widgetState['isPaused'] as bool? ?? false,
+                  remainingSeconds:
+                      widgetState['remainingSeconds'] as int? ?? 0,
+                  isStopped: widgetState['isStopped'] as bool? ?? false,
+                ),
+              );
+              // Después de añadir el evento, disparamos sync inmediato para refrescar la UI nativa
+              await Future.delayed(const Duration(milliseconds: 100));
+              await runImmediateIosSync();
+            }
+          }
+        } catch (_) {}
+      }
       broadcastState();
     } else if (name == 'ui_heartbeat') {
+      // Si la UI está activa, mantenemos isAppInForeground a true (debounce)
+      isAppInForeground = true;
       // FIX iOS #3: Heartbeat de UI activa → forzar actualización del Live Activity
       // Android no lo necesita porque ya actualiza cada segundo por timeDifference
       if (Platform.isIOS) forceNextUpdate = true;
     } else if (name == 'ui_paused') {
+      isAppInForeground = false;
       forceNextUpdate = true;
+      // HANDOFF INSTANTÁNEO: No esperar al siguiente tick del timer
+      if (Platform.isIOS) {
+        await runImmediateIosSync();
+      }
       broadcastState();
     }
   });
@@ -264,8 +387,16 @@ void onStart(ServiceInstance service) async {
         '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
     final status = state.pomodoroStatus;
     bool isFinished = status == PomodoroStatus.finished;
-    bool isPaused = status == PomodoroStatus.paused;
+    bool isPaused =
+        status == PomodoroStatus.paused || state.isWaitingForFirstFlip;
     bool isInitial = status == PomodoroStatus.initial;
+
+    String customStatus = 'focus';
+    if (state.isWaitingForFirstFlip) {
+      customStatus = 'waiting';
+    } else if (state.isResting) {
+      customStatus = 'break';
+    }
 
     // --- ORQUESTACIÓN DE SERVICIOS ---
     if (service is AndroidServiceInstance) {
@@ -287,7 +418,8 @@ void onStart(ServiceInstance service) async {
     bool timeDifference =
         lastRemaining == null ||
         (lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() >= 1;
-    bool shouldUpdate = forceNextUpdate || statusChanged;
+    bool wasForcedUpdate = forceNextUpdate;
+    bool shouldUpdate = wasForcedUpdate || statusChanged;
 
     // Android: actualiza la notificación cada segundo para el contador visible.
     // iOS NO actualiza cada segundo — el estilo .timer de SwiftUI cuenta de forma
@@ -325,33 +457,15 @@ void onStart(ServiceInstance service) async {
         }
 
         if (Platform.isIOS) {
-          if (status == PomodoroStatus.initial || isFinished) {
-            if (isFinished)
-              await Future.delayed(const Duration(milliseconds: 800));
-            await _notificationChannel.invokeMethod('endLiveActivity');
-          } else {
-            final now = DateTime.now();
-            // FIX iOS #2: cuando está pausado, enviamos una fecha muy lejana
-            // para que SwiftUI no siga contando hacia atrás mientras está en pausa.
-            // Al reanudar, se recalcula con el tiempo restante real.
-            final targetEndTime = isPaused
-                ? now.add(const Duration(days: 1)) // placeholder: no cuenta
-                : now.add(state.remainingTime); // cuenta regresiva real
-            final startDate = targetEndTime.subtract(state.pomodoroDuration);
-            await _notificationChannel.invokeMethod('updateLiveActivity', {
-              'startDate': startDate.millisecondsSinceEpoch,
-              'targetEndTime': targetEndTime.millisecondsSinceEpoch,
-              'totalDuration': state.pomodoroDuration.inSeconds,
-              'status': state.isResting ? 'break' : 'focus',
-              'isPaused': isPaused,
-              'progress': state.pomodoroDuration.inSeconds > 0
-                  ? (state.pomodoroDuration.inSeconds -
-                            state.remainingTime.inSeconds) /
-                        state.pomodoroDuration.inSeconds
-                  : 0.0,
-              'remainingSeconds': state.remainingTime.inSeconds,
-            });
-          }
+          await syncIosWidget(
+            state,
+            status,
+            customStatus,
+            isFinished,
+            isInitial,
+            isPaused,
+            wasForcedUpdate,
+          );
         }
       } catch (e) {
         debugPrint('[BackgroundService] Sync Error: $e');

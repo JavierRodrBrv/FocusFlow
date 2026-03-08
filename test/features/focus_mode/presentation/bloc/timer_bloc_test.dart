@@ -84,13 +84,13 @@ void main() {
     stateController.close();
   });
 
-  TimerBloc _buildBloc() => TimerBloc(mockManager, mockUseCase);
+  TimerBloc buildBloc() => TimerBloc(mockManager, mockUseCase);
 
   group('TimerBloc —', () {
     group('InitializeTimer', () {
       blocTest<TimerBloc, TimerState>(
         'emite estado loaded con isPremium=true al inicializar',
-        build: _buildBloc,
+        build: buildBloc,
         act: (bloc) => bloc.add(const InitializeTimer(isPremium: true)),
         // InitializeTimer emite UN solo estado que ya tiene status=loaded e isPremium=true
         expect: () => [
@@ -104,7 +104,7 @@ void main() {
     group('UpdateTimerPremiumStatus', () {
       blocTest<TimerBloc, TimerState>(
         'actualiza isPremium en el estado sin otras mutaciones',
-        build: _buildBloc,
+        build: buildBloc,
         act: (bloc) => bloc.add(const UpdateTimerPremiumStatus(true)),
         expect: () => [
           isA<TimerState>().having((s) => s.isPremium, 'isPremium', true),
@@ -122,7 +122,7 @@ void main() {
                 _emptyResult(nextStart: DateTime.now(), nextGroupId: 'group-1'),
           );
         },
-        build: _buildBloc,
+        build: buildBloc,
         act: (bloc) {
           stateController.add(_sessionState(status: PomodoroStatus.running));
         },
@@ -146,7 +146,7 @@ void main() {
             () => mockUseCase(any()),
           ).thenAnswer((_) async => _emptyResult(hasSaved: true));
         },
-        build: _buildBloc,
+        build: buildBloc,
         act: (bloc) {
           stateController.add(_sessionState(status: PomodoroStatus.finished));
         },
@@ -167,7 +167,7 @@ void main() {
             () => mockUseCase(any()),
           ).thenAnswer((_) async => _emptyResult());
         },
-        build: _buildBloc,
+        build: buildBloc,
         act: (bloc) {
           stateController.add(
             _sessionState(

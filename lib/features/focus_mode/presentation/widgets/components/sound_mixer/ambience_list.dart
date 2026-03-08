@@ -3,7 +3,6 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import '../../../models/focus_state.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
-import '../shared/bouncing_button.dart';
 
 class AmbienceList extends StatelessWidget {
   final FocusState state;
@@ -14,20 +13,16 @@ class AmbienceList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ambiences = [
-      {
-        'name': 'Ninguno',
-        'path': null,
-        'icon': Icons.music_off_outlined,
-      },
+      {'name': 'Ninguno', 'path': null, 'icon': Icons.music_off_outlined},
       {
         'name': 'Ranas',
         'path': 'assets/audio/frogs_sound.mp3',
-        'svgPath': 'assets/icons/frog.svg'
+        'svgPath': 'assets/icons/frog.svg',
       },
       {
         'name': 'Biblioteca',
         'path': 'assets/audio/library_sound.wav',
-        'svgPath': 'assets/icons/library.svg'
+        'svgPath': 'assets/icons/library.svg',
       },
       {
         'name': 'Parque',
@@ -37,7 +32,7 @@ class AmbienceList extends StatelessWidget {
       {
         'name': 'Arroyo',
         'path': 'assets/audio/stream_ambience.mp3',
-        'svgPath': 'assets/icons/arroyo.svg'
+        'svgPath': 'assets/icons/arroyo.svg',
       },
       {
         'name': 'Media noche',
@@ -60,27 +55,30 @@ class AmbienceList extends StatelessWidget {
             return ListTile(
               dense: true,
               visualDensity: VisualDensity.compact,
-              leading: item['path'] == null 
+              leading: item['path'] == null
                   ? Icon(
                       Icons.music_off_outlined,
                       color: isSelected ? Colors.blueAccent : Colors.white38,
                       size: 20,
                     )
                   : (item['svgPath'] != null
-                      ? SvgPicture.asset(
-                          item['svgPath'] as String,
-                          width: 20,
-                          height: 20,
-                          colorFilter: ColorFilter.mode(
-                            isSelected ? Colors.blueAccent : Colors.white38,
-                            BlendMode.srcIn,
-                          ),
-                        )
-                      : Icon(
-                          (item['icon'] as IconData?) ?? Icons.music_note_outlined,
-                          color: isSelected ? Colors.blueAccent : Colors.white38,
-                          size: 20,
-                        )),
+                        ? SvgPicture.asset(
+                            item['svgPath'] as String,
+                            width: 20,
+                            height: 20,
+                            colorFilter: ColorFilter.mode(
+                              isSelected ? Colors.blueAccent : Colors.white38,
+                              BlendMode.srcIn,
+                            ),
+                          )
+                        : Icon(
+                            (item['icon'] as IconData?) ??
+                                Icons.music_note_outlined,
+                            color: isSelected
+                                ? Colors.blueAccent
+                                : Colors.white38,
+                            size: 20,
+                          )),
               title: Text(
                 item['name'] as String,
                 style: TextStyle(

@@ -67,7 +67,7 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
     final url = Uri.parse('https://formsubmit.co/ajax/andaluzcode@gmail.com');
 
     try {
-      print('Enviando feedback a: $url');
+      debugPrint('Enviando feedback a: $url');
       final response = await http.post(
         url,
         headers: {
@@ -88,8 +88,8 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
         }),
       );
 
-      print('FormSubmit Response Code: ${response.statusCode}');
-      print('FormSubmit Response Body: ${response.body}');
+      debugPrint('FormSubmit Response Code: ${response.statusCode}');
+      debugPrint('FormSubmit Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         // Success
@@ -187,7 +187,7 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
                         color: _selectedIndex == 0
-                            ? _activeColor.withOpacity(0.2)
+                            ? _activeColor.withValues(alpha: 0.2)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(25),
                         border: _selectedIndex == 0
@@ -216,7 +216,7 @@ class _FeedbackBottomSheetState extends State<FeedbackBottomSheet>
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
                         color: _selectedIndex == 1
-                            ? _activeColor.withOpacity(0.2)
+                            ? _activeColor.withValues(alpha: 0.2)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(25),
                         border: _selectedIndex == 1

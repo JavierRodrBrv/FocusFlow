@@ -33,6 +33,7 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
     on<ToggleHardcoreMode>(_onToggleHardcore);
     on<UpdateTimerPremiumStatus>(_onUpdatePremiumStatus);
     on<_SessionStateChanged>(_onSessionStateChanged);
+    on<SyncWithWidgetState>(_onSyncWithWidget);
 
     _sessionSubscription = _sessionManager.stateStream.listen((sessionState) {
       add(_SessionStateChanged(sessionState));
@@ -132,5 +133,30 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
         isWaitingForFirstFlip: s.isWaitingForFirstFlip,
       ),
     );
+  }
+
+  /// Reconcilia el estado del Timer con lo que el Widget iOS hizo de forma autónoma.
+  /// Si el widget pausó o reanudó mientras Dart estaba muerto, aqui lo aplicamos.
+  Future<void> _onSyncWithWidget(
+    SyncWithWidgetState event,
+    Emitter<TimerState> emit,
+  ) async {
+    if (event.isStopped) {
+      // El usuario detuvo el timer desde la Dynamic Island → resetear
+      await _sessionManager.resetTimer();
+      return;
+    }
+
+    final timerRunning = state.pomodoroStatus == PomodoroStatus.running;
+    final timerPaused = state.pomodoroStatus == PomodoroStatus.paused;
+
+    if (event.isPaused && timerRunning) {
+      // El widget pausó mientras Dart creía que estaba corriendo
+      await _sessionManager.pauseTimer();
+    } else if (!event.isPaused && timerPaused) {
+      // El widget reanudó mientras Dart creía que estaba pausado
+      _sessionManager.startTimer();
+    }
+    // Si los estados ya coinciden, no hacemos nada.
   }
 }

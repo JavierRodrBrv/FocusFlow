@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 import 'package:vibration/vibration.dart';
@@ -10,7 +11,7 @@ class HapticFeedbackService {
   static const platform = MethodChannel('com.example.focus_flow/native');
 
   HapticFeedbackService() {
-    print('[HapticFeedbackService] Created');
+    debugPrint('[HapticFeedbackService] Created');
   }
 
   /// Internal method to trigger a single vibration, handling iOS background isolate limitations.
@@ -31,15 +32,15 @@ class HapticFeedbackService {
       }
 
       // 2. Use vibration plugin (registered in all isolates)
-      if (await Vibration.hasVibrator() ?? false) {
-        if (await Vibration.hasAmplitudeControl() ?? false) {
+      if (await Vibration.hasVibrator()) {
+        if (await Vibration.hasAmplitudeControl()) {
           await Vibration.vibrate(duration: duration, amplitude: amplitude);
         } else {
           await Vibration.vibrate(duration: duration);
         }
       }
     } catch (e) {
-      print('[HapticFeedbackService] Vibration execution error: $e');
+      debugPrint('[HapticFeedbackService] Vibration execution error: $e');
     }
   }
 
@@ -53,7 +54,7 @@ class HapticFeedbackService {
     // Stop any previous timer
     await stopFailVibration();
 
-    print('[HapticFeedbackService] Starting alarm vibration loop...');
+    debugPrint('[HapticFeedbackService] Starting alarm vibration loop...');
 
     // Execute immediately
     _performSingleVibration();
@@ -75,7 +76,7 @@ class HapticFeedbackService {
     _vibrationTimer = null;
 
     try {
-      if (await Vibration.hasVibrator() ?? false) {
+      if (await Vibration.hasVibrator()) {
         Vibration.cancel();
       }
     } catch (e) {
