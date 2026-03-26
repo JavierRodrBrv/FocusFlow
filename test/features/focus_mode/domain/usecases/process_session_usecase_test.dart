@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:focus_flow/features/stats/domain/entities/session_record.dart';
+import 'package:focus_flow/features/stats/domain/repositories/i_session_stats_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:focus_flow/core/domain/result.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
@@ -12,6 +14,9 @@ import 'package:focus_flow/features/focus_mode/domain/entities/background_effect
 // --- Mocks ---
 
 class MockSaveSessionUseCase extends Mock implements SaveSessionUseCase {}
+class MockSessionStatsRepository extends Mock implements ISessionStatsRepository {}
+
+final _defaultTarget = DateTime(2024);
 
 // --- Helper: construye un SessionState minimal ---
 
@@ -61,18 +66,20 @@ ProcessSessionParams _params({
 );
 
 void main() {
-  late MockSaveSessionUseCase mockSaveSession;
+  late MockSaveSessionUseCase mockSaveSessionUseCase;
+  late MockSessionStatsRepository mockStatsRepository;
   late ProcessSessionUseCase useCase;
 
   setUp(() {
-    mockSaveSession = MockSaveSessionUseCase();
-    useCase = ProcessSessionUseCase(mockSaveSession);
+    mockSaveSessionUseCase = MockSaveSessionUseCase();
+    mockStatsRepository = MockSessionStatsRepository();
+    useCase = ProcessSessionUseCase(mockSaveSessionUseCase, mockStatsRepository);
 
     // Por defecto, el guardado siempre tiene éxito
     registerFallbackValue(
       FocusSession(
         id: 'fallback',
-        startTime: DateTime(2024),
+        startTime: _defaultTarget,
         plannedDuration: const Duration(minutes: 25),
         actualDuration: const Duration(minutes: 25),
         isHardcoreMode: false,
@@ -82,9 +89,22 @@ void main() {
         isCompleted: true,
       ),
     );
+
+    registerFallbackValue(
+      SessionRecord(
+        id: 'fallback',
+        startTime: _defaultTarget,
+        endTime: _defaultTarget,
+        durationSeconds: 0,
+        status: 'completed',
+      ),
+    );
+
     when(
-      () => mockSaveSession(any()),
+      () => mockSaveSessionUseCase(any()),
     ).thenAnswer((_) async => const Success(null));
+    when(() => mockStatsRepository.saveSession(any()))
+        .thenAnswer((_) async {});
   });
 
   group('ProcessSessionUseCase —', () {
@@ -101,7 +121,7 @@ void main() {
 
           expect(result.nextSessionStartTime, isNotNull);
           expect(result.nextGroupId, isNotNull);
-          verifyNever(() => mockSaveSession(any()));
+          verifyNever(() => mockSaveSessionUseCase(any()));
         },
       );
 
@@ -119,7 +139,7 @@ void main() {
           );
 
           expect(result.nextSessionStartTime, isNull);
-          verifyNever(() => mockSaveSession(any()));
+          verifyNever(() => mockSaveSessionUseCase(any()));
         },
       );
     });
@@ -141,7 +161,7 @@ void main() {
             ),
           );
 
-          verify(() => mockSaveSession(any())).called(1);
+          verify(() => mockSaveSessionUseCase(any())).called(1);
           // Al terminar en 'finished' (sin break), el grupo se cierra:
           // nextGroupId y hasSavedInCurrentGroup se resetean a null/false
           expect(result.nextGroupId, isNull);
@@ -165,7 +185,7 @@ void main() {
             ),
           );
 
-          verify(() => mockSaveSession(any())).called(1);
+          verify(() => mockSaveSessionUseCase(any())).called(1);
           expect(result.nextGroupId, equals('grupo-1')); // Mantiene el grupo
           expect(result.nextSessionStartTime, isNotNull);
         },
@@ -186,7 +206,7 @@ void main() {
             ),
           );
 
-          verifyNever(() => mockSaveSession(any()));
+          verifyNever(() => mockSaveSessionUseCase(any()));
         },
       );
 
@@ -205,7 +225,7 @@ void main() {
             ),
           );
 
-          verify(() => mockSaveSession(any())).called(1);
+          verify(() => mockSaveSessionUseCase(any())).called(1);
         },
       );
     });
@@ -225,7 +245,7 @@ void main() {
             ),
           );
 
-          verify(() => mockSaveSession(any())).called(1);
+          verify(() => mockSaveSessionUseCase(any())).called(1);
           expect(result.hasSavedInCurrentGroup, isTrue);
         },
       );
@@ -247,7 +267,7 @@ void main() {
             ),
           );
 
-          verify(() => mockSaveSession(any())).called(1);
+          verify(() => mockSaveSessionUseCase(any())).called(1);
         },
       );
 
@@ -261,7 +281,7 @@ void main() {
             ),
           );
 
-          verifyNever(() => mockSaveSession(any()));
+          verifyNever(() => mockSaveSessionUseCase(any()));
         },
       );
     });

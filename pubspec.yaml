@@ -63,6 +63,7 @@ dependencies:
   intl: ^0.20.2
   equatable: ^2.0.8
   flutter_svg: ^2.2.3
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:

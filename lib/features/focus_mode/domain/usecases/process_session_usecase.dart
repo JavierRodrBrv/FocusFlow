@@ -5,6 +5,9 @@ import 'package:focus_flow/features/session_history/domain/entities/focus_sessio
 import 'package:focus_flow/features/session_history/domain/usecases/save_session_usecase.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../../stats/domain/entities/session_record.dart';
+import '../../../stats/domain/repositories/i_session_stats_repository.dart';
+
 /// Resultado del procesamiento de un cambio de estado en la sesión.
 class ProcessSessionResult {
   final FocusSession? sessionToSave;
@@ -44,8 +47,9 @@ class ProcessSessionParams {
 @LazySingleton(as: IProcessSessionUseCase)
 class ProcessSessionUseCase implements IProcessSessionUseCase {
   final SaveSessionUseCase _saveSessionUseCase;
+  final ISessionStatsRepository _statsRepository;
 
-  ProcessSessionUseCase(this._saveSessionUseCase);
+  ProcessSessionUseCase(this._saveSessionUseCase, this._statsRepository);
 
   @override
   Future<ProcessSessionResult> call(ProcessSessionParams params) async {
@@ -118,6 +122,18 @@ class ProcessSessionUseCase implements IProcessSessionUseCase {
         );
 
         await _saveSessionUseCase(sessionToSave);
+        
+        if (!wasResting) {
+          final record = SessionRecord(
+            id: sessionToSave.id,
+            startTime: sessionToSave.startTime,
+            endTime: sessionToSave.startTime.add(sessionToSave.actualDuration),
+            durationSeconds: sessionToSave.actualDuration.inSeconds,
+            status: sessionToSave.isCompleted ? 'completed' : 'abandoned',
+          );
+          await _statsRepository.saveSession(record);
+        }
+
         updatedHasSaved = true;
       }
 

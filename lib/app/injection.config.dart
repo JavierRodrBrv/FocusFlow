@@ -64,6 +64,11 @@ import '../features/session_history/domain/usecases/save_session_usecase.dart'
     as _i415;
 import '../features/session_history/presentation/bloc/session_history_bloc.dart'
     as _i120;
+import '../features/stats/data/repositories/hive_session_stats_repository_impl.dart'
+    as _i405;
+import '../features/stats/domain/repositories/i_session_stats_repository.dart'
+    as _i18;
+import '../features/stats/presentation/bloc/stats_bloc.dart' as _i1057;
 
 // initializes the registration of main-scope dependencies inside of GetIt
 Future<_i174.GetIt> $initGetIt(
@@ -104,6 +109,8 @@ Future<_i174.GetIt> $initGetIt(
         gh<_i582.SoundMixerService>(),
         gh<_i48.SoundEffectService>(),
       ));
+  gh.lazySingleton<_i18.ISessionStatsRepository>(
+      () => _i405.HiveSessionStatsRepositoryImpl());
   gh.lazySingleton<_i1064.GetLastPlayedMixUseCase>(
       () => _i1064.GetLastPlayedMixUseCase(gh<_i72.ISoundMixRepository>()));
   gh.lazySingleton<_i657.SaveLastPlayedMixUseCase>(
@@ -116,6 +123,8 @@ Future<_i174.GetIt> $initGetIt(
       () => _i777.SessionHistoryRepositoryImpl());
   gh.lazySingleton<_i843.PremiumRepository>(
       () => _i380.PremiumRepositoryImpl(gh<_i979.Box<_i434.PremiumStatus>>()));
+  gh.factory<_i1057.StatsBloc>(
+      () => _i1057.StatsBloc(gh<_i18.ISessionStatsRepository>()));
   gh.lazySingleton<_i63.FocusSessionManager>(() => _i63.FocusSessionManager(
         gh<_i507.IAudioManager>(),
         gh<_i350.SensorService>(),
@@ -130,7 +139,10 @@ Future<_i174.GetIt> $initGetIt(
   gh.lazySingleton<_i415.SaveSessionUseCase>(
       () => _i415.SaveSessionUseCase(gh<_i506.ISessionHistoryRepository>()));
   gh.lazySingleton<_i719.IProcessSessionUseCase>(
-      () => _i648.ProcessSessionUseCase(gh<_i415.SaveSessionUseCase>()));
+      () => _i648.ProcessSessionUseCase(
+            gh<_i415.SaveSessionUseCase>(),
+            gh<_i18.ISessionStatsRepository>(),
+          ));
   gh.factory<_i120.SessionHistoryBloc>(() => _i120.SessionHistoryBloc(
         gh<_i37.GetSessionHistoryUseCase>(),
         gh<_i684.DeleteSessionUseCase>(),

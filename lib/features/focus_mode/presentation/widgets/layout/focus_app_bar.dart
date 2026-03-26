@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings_menu_bottom_sheet.dart';
+import 'package:focus_flow/features/stats/presentation/screens/dashboard_screen.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
 import 'package:focus_flow/features/session_history/presentation/pages/session_history_page.dart';
 import 'package:focus_flow/flavors.dart';
@@ -60,6 +61,20 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.bar_chart_rounded, color: Colors.white70),
+          onPressed: () {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => const DashboardScreen(),
+                transitionsBuilder: (_, animation, __, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+              ),
+            );
+          },
+        ),
         Showcase(
           key: historyKey,
           title: 'Historial de Sesiones',

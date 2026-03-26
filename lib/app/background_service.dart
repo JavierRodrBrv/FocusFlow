@@ -449,7 +449,8 @@ void onStart(ServiceInstance service) async {
     if (shouldUpdate) {
       forceNextUpdate = false;
       try {
-        if (statusChanged && isFinished) {
+        bool wentToBreak = lastStatus == PomodoroStatus.running && status == PomodoroStatus.resting;
+        if (statusChanged && (isFinished || wentToBreak)) {
           await LocalNotificationService().showTimerCompleteNotification();
           await Future.delayed(const Duration(milliseconds: 100));
           service.invoke('refresh_history');
