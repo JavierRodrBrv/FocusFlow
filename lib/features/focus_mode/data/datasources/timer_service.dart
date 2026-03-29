@@ -22,7 +22,9 @@ class TimerService {
     // Cancel any existing timer before starting a new one.
     _timer?.cancel();
 
-    _targetTime = DateTime.now().add(startDuration);
+    // Add 999ms to the target time to fix the truncation issue where
+    // Difference between DateTimes results in dropping a full second in the UI.
+    _targetTime = DateTime.now().add(startDuration).add(const Duration(milliseconds: 999));
     _currentDuration = startDuration;
     _controller.add(_currentDuration);
 

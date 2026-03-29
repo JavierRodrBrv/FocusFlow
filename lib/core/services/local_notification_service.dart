@@ -15,7 +15,7 @@ class LocalNotificationService {
     tz.initializeTimeZones();
 
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/launcher_icon');
 
     final DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
@@ -43,7 +43,7 @@ class LocalNotificationService {
           channelDescription: 'Notificaciones informativas de la aplicación',
           importance: Importance.max,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: '@mipmap/launcher_icon',
         );
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails();
@@ -68,7 +68,7 @@ class LocalNotificationService {
           channelDescription: 'Notificaciones informativas de la aplicación',
           importance: Importance.max,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: '@mipmap/launcher_icon',
         );
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails();
@@ -100,7 +100,7 @@ class LocalNotificationService {
           channelDescription: 'Recordatorios para mantener el enfoque',
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
-          icon: '@mipmap/ic_launcher',
+          icon: '@mipmap/launcher_icon',
         );
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails();

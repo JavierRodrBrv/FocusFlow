@@ -15,15 +15,28 @@ class StatsLoaded extends StatsState {
   final int currentStreak;
   final int totalSecondsFocus;
   final Map<int, double> weeklyBarData; // 1: Monday, 7: Sunday
+  final DateTime currentWeekStart;
+  final bool hasPreviousWeek;
+  final bool hasNextWeek;
 
   const StatsLoaded({
     required this.currentStreak,
     required this.totalSecondsFocus,
     required this.weeklyBarData,
+    required this.currentWeekStart,
+    required this.hasPreviousWeek,
+    required this.hasNextWeek,
   });
 
   @override
-  List<Object?> get props => [currentStreak, totalSecondsFocus, weeklyBarData];
+  List<Object?> get props => [
+        currentStreak,
+        totalSecondsFocus,
+        weeklyBarData,
+        currentWeekStart,
+        hasPreviousWeek,
+        hasNextWeek,
+      ];
 }
 
 class StatsError extends StatsState {

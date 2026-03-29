@@ -7,6 +7,7 @@ import '../bloc/stats_bloc.dart';
 import '../bloc/stats_event.dart';
 import '../bloc/stats_state.dart';
 import '../widgets/animated_bar_chart.dart';
+import '../../../session_history/presentation/pages/session_history_page.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -107,13 +108,44 @@ class DashboardView extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
                       // Weekly Chart
-                      const Text(
-                        'Esta Semana',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (state.hasPreviousWeek)
+                            IconButton(
+                              icon: const Icon(Icons.chevron_left, color: Colors.white),
+                              onPressed: () {
+                                context.read<StatsBloc>().add(LoadDailyStats(
+                                  baseDate: state.currentWeekStart.subtract(const Duration(days: 7)),
+                                ));
+                              },
+                            )
+                          else
+                            const SizedBox(width: 48),
+
+                          Text(
+                            !state.hasNextWeek 
+                                ? 'Esta Semana'
+                                : 'Sem ${state.currentWeekStart.day}/${state.currentWeekStart.month} - ${state.currentWeekStart.add(const Duration(days: 6)).day}/${state.currentWeekStart.add(const Duration(days: 6)).month}',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+
+                          if (state.hasNextWeek)
+                            IconButton(
+                              icon: const Icon(Icons.chevron_right, color: Colors.white),
+                              onPressed: () {
+                                context.read<StatsBloc>().add(LoadDailyStats(
+                                  baseDate: state.currentWeekStart.add(const Duration(days: 7)),
+                                ));
+                              },
+                            )
+                          else
+                            const SizedBox(width: 48),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -123,6 +155,17 @@ class DashboardView extends StatelessWidget {
                           child: AnimatedBarChart(
                             weeklyData: state.weeklyBarData,
                             maxY: state.weeklyBarData.values.fold(0.0, (m, v) => v > m ? v : m),
+                            onBarTapped: (dayIndex) {
+                              // dayIndex es 1..7 (Lunes..Domingo)
+                              final targetDate = state.currentWeekStart.add(Duration(days: dayIndex - 1));
+                              
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SessionHistoryPage(filterDate: targetDate),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),

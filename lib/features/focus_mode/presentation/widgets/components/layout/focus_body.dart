@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:showcaseview/showcaseview.dart';
 
+import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/ad_banner_widget.dart';
 import '../../../models/focus_state.dart';
+import '../../modals/settings_menu_bottom_sheet.dart';
 import '../timer/timer_display.dart';
 import '../timer/timer_controls.dart';
 
@@ -53,6 +55,63 @@ class FocusBody extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Nuevo: Burbuja de Descansos
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: (state.defaultBreakDuration != null &&
+                            state.pomodoroStatus == PomodoroStatus.initial &&
+                            showUI)
+                        ? Padding(
+                            padding: const EdgeInsets.only(bottom: 24.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => SettingsMenuBottomSheet(
+                                    initialState: state,
+                                    initialView: 3,
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.coffee,
+                                      size: 16,
+                                      color: Colors.orangeAccent,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${state.defaultBreakDuration!.inMinutes} min descanso',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                   AnimatedScale(
                     duration: const Duration(milliseconds: 500),
                     scale: isZoomMode ? 1.4 : 1.0,

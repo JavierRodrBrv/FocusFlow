@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class AnimatedBarChart extends StatelessWidget {
   final Map<int, double> weeklyData;
   final double maxY;
+  final void Function(int dayIndex)? onBarTapped;
 
   const AnimatedBarChart({
     Key? key,
     required this.weeklyData,
     required this.maxY,
+    this.onBarTapped,
   }) : super(key: key);
 
   @override
@@ -25,6 +27,14 @@ class AnimatedBarChart extends StatelessWidget {
             minY: 0,
             barTouchData: BarTouchData(
               enabled: true,
+              touchCallback: (FlTouchEvent event, barTouchResponse) {
+                if (event is FlTapDownEvent) {
+                  if (barTouchResponse != null && barTouchResponse.spot != null) {
+                    final dayIndex = barTouchResponse.spot!.touchedBarGroupIndex + 1;
+                    Future.microtask(() => onBarTapped?.call(dayIndex));
+                  }
+                }
+              },
               touchTooltipData: BarTouchTooltipData(
                 getTooltipColor: (_) => Colors.black87,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {

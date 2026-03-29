@@ -11,7 +11,12 @@ import '../../models/focus_state.dart';
 
 class SettingsMenuBottomSheet extends StatefulWidget {
   final FocusState initialState;
-  const SettingsMenuBottomSheet({super.key, required this.initialState});
+  final int initialView;
+  const SettingsMenuBottomSheet({
+    super.key,
+    required this.initialState,
+    this.initialView = 0,
+  });
 
   @override
   State<SettingsMenuBottomSheet> createState() =>
@@ -19,7 +24,7 @@ class SettingsMenuBottomSheet extends StatefulWidget {
 }
 
 class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
-  int _currentView = 0; // 0: Main, 1: Fondo, 2: Feedback
+  late int _currentView; // 0: Main, 1: Fondo, 2: Feedback, 3: Descansos
   int _previousView = 0;
 
   // Feedback State
@@ -43,6 +48,12 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
     } else {
       _feedbackFocusNode.unfocus();
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _currentView = widget.initialView;
   }
 
   @override
@@ -257,6 +268,8 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
     );
   }
 
+  int? _tempBreakMinutes;
+
   Widget _buildDescansosMenu(BuildContext context, FocusState state) {
     return Container(
       key: const ValueKey(3),
@@ -310,6 +323,7 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
               itemExtent: 44,
               onSelectedItemChanged: (int index) {
                 final minutes = index + 1;
+                _tempBreakMinutes = minutes;
                 FlutterBackgroundService().invoke('sendEvent', {
                   'event': 'setDefaultBreakDuration',
                   'durationMinutes': minutes,
@@ -339,7 +353,15 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
                 ),
                 elevation: 0,
               ),
-              onPressed: () => _goToView(0),
+              onPressed: () {
+                final finalMinutes = _tempBreakMinutes ?? (state.defaultBreakDuration?.inMinutes ?? 5);
+                FlutterBackgroundService().invoke('sendEvent', {
+                  'event': 'setDefaultBreakDuration',
+                  'durationMinutes': finalMinutes,
+                });
+                _tempBreakMinutes = null;
+                _goToView(0);
+              },
               child: const Text(
                 'Aceptar',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -354,6 +376,7 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
                   'event': 'setDefaultBreakDuration',
                   'durationMinutes': null,
                 });
+                _tempBreakMinutes = null;
                 _goToView(0);
               },
               child: const Text(

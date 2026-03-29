@@ -7,4 +7,11 @@ abstract class StatsEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadDailyStats extends StatsEvent {}
+class LoadDailyStats extends StatsEvent {
+  final DateTime? baseDate;
+
+  const LoadDailyStats({this.baseDate});
+
+  @override
+  List<Object?> get props => [baseDate];
+}

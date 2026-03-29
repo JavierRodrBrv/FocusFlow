@@ -38,14 +38,14 @@ class HiveSessionStatsRepositoryImpl implements ISessionStatsRepository {
     return await _withBox((box) async {
       final records = <SessionRecord>[];
       for (var value in box.values) {
-        final startTime = DateTime.parse(value['startTime'] as String);
+        final startTime = DateTime.parse(value['startTime'] as String).toLocal();
         if (startTime.isAfter(start.subtract(const Duration(seconds: 1))) &&
             startTime.isBefore(end.add(const Duration(seconds: 1)))) {
           records.add(
             SessionRecord(
               id: value['id'] as String,
               startTime: startTime,
-              endTime: DateTime.parse(value['endTime'] as String),
+              endTime: DateTime.parse(value['endTime'] as String).toLocal(),
               durationSeconds: value['durationSeconds'] as int,
               status: value['status'] as String,
             ),
@@ -53,6 +53,23 @@ class HiveSessionStatsRepositoryImpl implements ISessionStatsRepository {
         }
       }
       return records;
+    });
+  }
+
+  @override
+  Future<DateTime?> getFirstSessionDate() async {
+    return await _withBox((box) async {
+      if (box.isEmpty) return null;
+      DateTime? earliestDay;
+      for (var value in box.values) {
+        if (value['status'] == 'completed') {
+          final startTime = DateTime.parse(value['startTime'] as String).toLocal();
+          if (earliestDay == null || startTime.isBefore(earliestDay)) {
+            earliestDay = startTime;
+          }
+        }
+      }
+      return earliestDay;
     });
   }
 }

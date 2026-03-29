@@ -22,12 +22,26 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
     emit(StatsLoading());
     try {
       final now = DateTime.now();
-      // Obtener el Lunes de la semana actual a las 00:00:00
-      final startOfWeek = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+      final baseDate = event.baseDate ?? now;
+      
+      // Obtener el Lunes de la semana de baseDate a las 00:00:00
+      final startOfWeek = DateTime(baseDate.year, baseDate.month, baseDate.day).subtract(Duration(days: baseDate.weekday - 1));
       // Domingo a las 23:59:59
       final endOfWeek = startOfWeek.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
       
       final records = await _repository.getSessionsByDateRange(startOfWeek, endOfWeek);
+      final firstSessionDate = await _repository.getFirstSessionDate();
+      
+      // Determine navigation flags
+      bool hasPreviousWeek = false;
+      if (firstSessionDate != null) {
+         final firstSessionStartOfWeek = DateTime(firstSessionDate.year, firstSessionDate.month, firstSessionDate.day)
+             .subtract(Duration(days: firstSessionDate.weekday - 1));
+         hasPreviousWeek = firstSessionStartOfWeek.isBefore(startOfWeek);
+      }
+      
+      final currentStartOfWeek = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+      bool hasNextWeek = startOfWeek.isBefore(currentStartOfWeek);
       
       // Inicializar horas para cada día de la semana (1=Lunes, 7=Domingo)
       final weeklyData = <int, double>{
@@ -43,7 +57,7 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
         }
       }
 
-      // Racha básica: si completó algo hoy, es 1. (En un caso real la consulta hacia atrás sería profunda).
+      // Racha básica: calculamos si completó algo en la semana actual o en hoy.
       final hasCompletedToday = records.any((r) => r.status == 'completed' && r.startTime.day == now.day);
       final streak = hasCompletedToday ? 1 : 0; 
       
@@ -51,6 +65,9 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
         currentStreak: streak,
         totalSecondsFocus: totalSeconds,
         weeklyBarData: weeklyData,
+        currentWeekStart: startOfWeek,
+        hasPreviousWeek: hasPreviousWeek,
+        hasNextWeek: hasNextWeek,
       ));
     } catch (e) {
       emit(StatsError(e.toString()));
