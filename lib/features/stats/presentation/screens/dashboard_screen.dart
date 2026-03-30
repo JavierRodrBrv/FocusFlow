@@ -111,35 +111,39 @@ class DashboardView extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (state.hasPreviousWeek)
+                          if (state.previousWeekDate != null)
                             IconButton(
                               icon: const Icon(Icons.chevron_left, color: Colors.white),
                               onPressed: () {
                                 context.read<StatsBloc>().add(LoadDailyStats(
-                                  baseDate: state.currentWeekStart.subtract(const Duration(days: 7)),
+                                  baseDate: state.previousWeekDate!,
                                 ));
                               },
                             )
                           else
                             const SizedBox(width: 48),
 
-                          Text(
-                            !state.hasNextWeek 
-                                ? 'Esta Semana'
-                                : 'Sem ${state.currentWeekStart.day}/${state.currentWeekStart.month} - ${state.currentWeekStart.add(const Duration(days: 6)).day}/${state.currentWeekStart.add(const Duration(days: 6)).month}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          Expanded(
+                            child: Text(
+                              state.nextWeekDate == null 
+                                  ? 'Esta Semana'
+                                  : 'Semana ${state.currentWeekStart.day}/${state.currentWeekStart.month} \n ${state.currentWeekStart.add(const Duration(days: 6)).day}/${state.currentWeekStart.add(const Duration(days: 6)).month}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
                             ),
                           ),
 
-                          if (state.hasNextWeek)
+                          if (state.nextWeekDate != null)
                             IconButton(
                               icon: const Icon(Icons.chevron_right, color: Colors.white),
                               onPressed: () {
                                 context.read<StatsBloc>().add(LoadDailyStats(
-                                  baseDate: state.currentWeekStart.add(const Duration(days: 7)),
+                                  baseDate: state.nextWeekDate!,
                                 ));
                               },
                             )
@@ -152,20 +156,37 @@ class DashboardView extends StatelessWidget {
                         height: 300,
                         child: _buildGlassCard(
                           padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                          child: AnimatedBarChart(
-                            weeklyData: state.weeklyBarData,
-                            maxY: state.weeklyBarData.values.fold(0.0, (m, v) => v > m ? v : m),
-                            onBarTapped: (dayIndex) {
-                              // dayIndex es 1..7 (Lunes..Domingo)
-                              final targetDate = state.currentWeekStart.add(Duration(days: dayIndex - 1));
-                              
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SessionHistoryPage(filterDate: targetDate),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 350),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder: (Widget child, Animation<double> animation) {
+                              final offsetAnimation = Tween<Offset>(
+                                begin: Offset(state.isForwardNavigation ? 0.2 : -0.2, 0.0),
+                                end: Offset.zero,
+                              ).animate(animation);
+                              return SlideTransition(
+                                position: offsetAnimation,
+                                child: FadeTransition(
+                                  opacity: animation,
+                                  child: child,
                                 ),
                               );
                             },
+                            child: AnimatedBarChart(
+                              key: ValueKey(state.currentWeekStart),
+                              weeklyData: state.weeklyBarData,
+                              maxY: state.weeklyBarData.values.fold(0.0, (m, v) => v > m ? v : m),
+                              onBarTapped: (dayIndex) {
+                                final targetDate = state.currentWeekStart.add(Duration(days: dayIndex - 1));
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => SessionHistoryPage(filterDate: targetDate),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
@@ -212,9 +233,12 @@ class DashboardView extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+                maxLines: 2,
+              ),
             ),
           ],
         ),

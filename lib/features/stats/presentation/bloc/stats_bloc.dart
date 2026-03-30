@@ -19,7 +19,14 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
   }
 
   Future<void> _onLoadDailyStats(LoadDailyStats event, Emitter<StatsState> emit) async {
-    emit(StatsLoading());
+    bool isForward = true;
+    if (state is StatsLoaded && event.baseDate != null) {
+      final oldStart = (state as StatsLoaded).currentWeekStart;
+      if (event.baseDate!.isBefore(oldStart)) {
+        isForward = false;
+      }
+    }
+
     try {
       final now = DateTime.now();
       final baseDate = event.baseDate ?? now;
@@ -29,19 +36,40 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
       // Domingo a las 23:59:59
       final endOfWeek = startOfWeek.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
       
-      final records = await _repository.getSessionsByDateRange(startOfWeek, endOfWeek);
-      final firstSessionDate = await _repository.getFirstSessionDate();
+      final allRecords = await _repository.getAllValidSessions();
       
-      // Determine navigation flags
-      bool hasPreviousWeek = false;
-      if (firstSessionDate != null) {
-         final firstSessionStartOfWeek = DateTime(firstSessionDate.year, firstSessionDate.month, firstSessionDate.day)
-             .subtract(Duration(days: firstSessionDate.weekday - 1));
-         hasPreviousWeek = firstSessionStartOfWeek.isBefore(startOfWeek);
+      // Filtrar registros de la semana actual
+      final records = allRecords.where((r) => 
+        r.startTime.isAfter(startOfWeek.subtract(const Duration(seconds: 1))) && 
+        r.startTime.isBefore(endOfWeek.add(const Duration(seconds: 1)))
+      ).toList();
+
+      DateTime? previousWeekDate;
+      DateTime? nextWeekDate;
+
+      // Determinar semana previa con datos
+      final sortedDesc = List.of(allRecords)..sort((a, b) => b.startTime.compareTo(a.startTime));
+      for (var r in sortedDesc) {
+        if (r.startTime.isBefore(startOfWeek)) {
+          previousWeekDate = r.startTime;
+          break;
+        }
       }
-      
+
+      // Determinar semana siguiente con datos
+      final sortedAsc = List.of(allRecords)..sort((a, b) => a.startTime.compareTo(b.startTime));
+      for (var r in sortedAsc) {
+        if (r.startTime.isAfter(endOfWeek)) {
+          nextWeekDate = r.startTime;
+          break;
+        }
+      }
+
       final currentStartOfWeek = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
-      bool hasNextWeek = startOfWeek.isBefore(currentStartOfWeek);
+      // Si no hay datos futuros pero estamos viendo el pasado, permitir al usuario regresar a "Esta semana"
+      if (nextWeekDate == null && startOfWeek.isBefore(currentStartOfWeek)) {
+        nextWeekDate = now; // Salto seguro al presente
+      }
       
       // Inicializar horas para cada día de la semana (1=Lunes, 7=Domingo)
       final weeklyData = <int, double>{
@@ -50,14 +78,13 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
       
       int totalSeconds = 0;
       for (var record in records) {
-        if (record.status == 'completed') {
-           final dayOfWeek = record.startTime.weekday;
-           weeklyData[dayOfWeek] = (weeklyData[dayOfWeek]! + (record.durationSeconds / 3600.0));
-           totalSeconds += record.durationSeconds;
-        }
+        // Se suma el tiempo independientemente de si completó la sesión o la abandonó
+        final dayOfWeek = record.startTime.weekday;
+        weeklyData[dayOfWeek] = (weeklyData[dayOfWeek]! + (record.durationSeconds / 3600.0));
+        totalSeconds += record.durationSeconds;
       }
 
-      // Racha básica: calculamos si completó algo en la semana actual o en hoy.
+      // Racha básica: calculamos si completó algo en el día de hoy.
       final hasCompletedToday = records.any((r) => r.status == 'completed' && r.startTime.day == now.day);
       final streak = hasCompletedToday ? 1 : 0; 
       
@@ -66,8 +93,9 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
         totalSecondsFocus: totalSeconds,
         weeklyBarData: weeklyData,
         currentWeekStart: startOfWeek,
-        hasPreviousWeek: hasPreviousWeek,
-        hasNextWeek: hasNextWeek,
+        previousWeekDate: previousWeekDate,
+        nextWeekDate: nextWeekDate,
+        isForwardNavigation: isForward,
       ));
     } catch (e) {
       emit(StatsError(e.toString()));

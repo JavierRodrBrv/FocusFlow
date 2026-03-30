@@ -109,8 +109,6 @@ Future<_i174.GetIt> $initGetIt(
         gh<_i582.SoundMixerService>(),
         gh<_i48.SoundEffectService>(),
       ));
-  gh.lazySingleton<_i18.ISessionStatsRepository>(
-      () => _i405.HiveSessionStatsRepositoryImpl());
   gh.lazySingleton<_i1064.GetLastPlayedMixUseCase>(
       () => _i1064.GetLastPlayedMixUseCase(gh<_i72.ISoundMixRepository>()));
   gh.lazySingleton<_i657.SaveLastPlayedMixUseCase>(
@@ -123,6 +121,8 @@ Future<_i174.GetIt> $initGetIt(
       () => _i777.SessionHistoryRepositoryImpl());
   gh.lazySingleton<_i843.PremiumRepository>(
       () => _i380.PremiumRepositoryImpl(gh<_i979.Box<_i434.PremiumStatus>>()));
+  gh.lazySingleton<_i18.ISessionStatsRepository>(() =>
+      _i405.SessionStatsRepositoryImpl(gh<_i506.ISessionHistoryRepository>()));
   gh.factory<_i1057.StatsBloc>(
       () => _i1057.StatsBloc(gh<_i18.ISessionStatsRepository>()));
   gh.lazySingleton<_i63.FocusSessionManager>(() => _i63.FocusSessionManager(
@@ -139,10 +139,7 @@ Future<_i174.GetIt> $initGetIt(
   gh.lazySingleton<_i415.SaveSessionUseCase>(
       () => _i415.SaveSessionUseCase(gh<_i506.ISessionHistoryRepository>()));
   gh.lazySingleton<_i719.IProcessSessionUseCase>(
-      () => _i648.ProcessSessionUseCase(
-            gh<_i415.SaveSessionUseCase>(),
-            gh<_i18.ISessionStatsRepository>(),
-          ));
+      () => _i648.ProcessSessionUseCase(gh<_i415.SaveSessionUseCase>()));
   gh.factory<_i120.SessionHistoryBloc>(() => _i120.SessionHistoryBloc(
         gh<_i37.GetSessionHistoryUseCase>(),
         gh<_i684.DeleteSessionUseCase>(),

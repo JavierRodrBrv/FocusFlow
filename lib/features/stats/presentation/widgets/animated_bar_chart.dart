@@ -20,15 +20,18 @@ class AnimatedBarChart extends StatelessWidget {
       duration: const Duration(milliseconds: 1200),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
+        final effectiveMaxY = maxY < 1.0 ? 1.0 : maxY * 1.25;
+
         return BarChart(
           BarChartData(
             alignment: BarChartAlignment.spaceAround,
-            maxY: maxY < 1.0 ? 1.0 : maxY * 1.25,
+            maxY: effectiveMaxY,
             minY: 0,
             barTouchData: BarTouchData(
               enabled: true,
               touchCallback: (FlTouchEvent event, barTouchResponse) {
-                if (event is FlTapDownEvent) {
+                // Navegar al historial ÚNICAMENTE al soltar un toque rápido (TapUp)
+                if (event is FlTapUpEvent) {
                   if (barTouchResponse != null && barTouchResponse.spot != null) {
                     final dayIndex = barTouchResponse.spot!.touchedBarGroupIndex + 1;
                     Future.microtask(() => onBarTapped?.call(dayIndex));
@@ -94,7 +97,7 @@ class AnimatedBarChart extends StatelessWidget {
             gridData: FlGridData(
               show: true,
               drawVerticalLine: false,
-              horizontalInterval: (maxY > 0 ? maxY : 1.0) / 4,
+              horizontalInterval: effectiveMaxY / 4,
               getDrawingHorizontalLine: (value) => FlLine(
                 color: Colors.white12,
                 strokeWidth: 1,

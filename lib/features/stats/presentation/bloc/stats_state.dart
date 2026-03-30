@@ -16,16 +16,18 @@ class StatsLoaded extends StatsState {
   final int totalSecondsFocus;
   final Map<int, double> weeklyBarData; // 1: Monday, 7: Sunday
   final DateTime currentWeekStart;
-  final bool hasPreviousWeek;
-  final bool hasNextWeek;
+  final DateTime? previousWeekDate;
+  final DateTime? nextWeekDate;
+  final bool isForwardNavigation;
 
   const StatsLoaded({
     required this.currentStreak,
     required this.totalSecondsFocus,
     required this.weeklyBarData,
     required this.currentWeekStart,
-    required this.hasPreviousWeek,
-    required this.hasNextWeek,
+    this.previousWeekDate,
+    this.nextWeekDate,
+    this.isForwardNavigation = true,
   });
 
   @override
@@ -34,8 +36,9 @@ class StatsLoaded extends StatsState {
         totalSecondsFocus,
         weeklyBarData,
         currentWeekStart,
-        hasPreviousWeek,
-        hasNextWeek,
+        previousWeekDate,
+        nextWeekDate,
+        isForwardNavigation,
       ];
 }
 

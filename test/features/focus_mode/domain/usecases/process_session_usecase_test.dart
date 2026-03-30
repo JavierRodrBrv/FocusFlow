@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:focus_flow/features/stats/domain/entities/session_record.dart';
-import 'package:focus_flow/features/stats/domain/repositories/i_session_stats_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:focus_flow/core/domain/result.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
@@ -14,7 +12,6 @@ import 'package:focus_flow/features/focus_mode/domain/entities/background_effect
 // --- Mocks ---
 
 class MockSaveSessionUseCase extends Mock implements SaveSessionUseCase {}
-class MockSessionStatsRepository extends Mock implements ISessionStatsRepository {}
 
 final _defaultTarget = DateTime(2024);
 
@@ -67,13 +64,11 @@ ProcessSessionParams _params({
 
 void main() {
   late MockSaveSessionUseCase mockSaveSessionUseCase;
-  late MockSessionStatsRepository mockStatsRepository;
   late ProcessSessionUseCase useCase;
 
   setUp(() {
     mockSaveSessionUseCase = MockSaveSessionUseCase();
-    mockStatsRepository = MockSessionStatsRepository();
-    useCase = ProcessSessionUseCase(mockSaveSessionUseCase, mockStatsRepository);
+    useCase = ProcessSessionUseCase(mockSaveSessionUseCase);
 
     // Por defecto, el guardado siempre tiene éxito
     registerFallbackValue(
@@ -90,21 +85,9 @@ void main() {
       ),
     );
 
-    registerFallbackValue(
-      SessionRecord(
-        id: 'fallback',
-        startTime: _defaultTarget,
-        endTime: _defaultTarget,
-        durationSeconds: 0,
-        status: 'completed',
-      ),
-    );
-
     when(
       () => mockSaveSessionUseCase(any()),
     ).thenAnswer((_) async => const Success(null));
-    when(() => mockStatsRepository.saveSession(any()))
-        .thenAnswer((_) async {});
   });
 
   group('ProcessSessionUseCase —', () {
