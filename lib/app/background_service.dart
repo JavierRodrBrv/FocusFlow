@@ -404,6 +404,25 @@ void onStart(ServiceInstance service) async {
     }
   });
 
+  if (Platform.isAndroid) {
+    _notificationChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onNotificationAction') {
+        final action = call.arguments as String;
+        debugPrint('[BackgroundService] Received native action: $action');
+        if (action == 'PAUSE_ACTION' || action == 'pause') {
+          timerBloc?.add(PauseTimer());
+          forceNextUpdate = true;
+        } else if (action == 'PLAY_ACTION' || action == 'resume') {
+          timerBloc?.add(StartTimer());
+          forceNextUpdate = true;
+        } else if (action == 'stop') {
+          timerBloc?.add(ResetTimer());
+          forceNextUpdate = true;
+        }
+      }
+    });
+  }
+
   timerBloc?.stream.listen((state) async {
     final time =
         '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';

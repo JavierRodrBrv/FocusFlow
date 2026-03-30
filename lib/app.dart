@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -13,7 +14,7 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  static const _nativeChannel = MethodChannel('com.example.focus_flow/native');
+  static const _nativeChannel = MethodChannel('com.example.focus_flow/notification');
 
   @override
   void initState() {
@@ -23,14 +24,16 @@ class _AppState extends State<App> {
 
   void _initNativeChannel() {
     _nativeChannel.setMethodCallHandler((call) async {
-      if (call.method == 'onNotificationAction') {
+      if (Platform.isAndroid && call.method == 'onNotificationAction') {
         final action = call.arguments as String;
         debugPrint('[App] Received native action: $action');
         
         switch (action) {
+          case 'PAUSE_ACTION':
           case 'pause':
             FlutterBackgroundService().invoke('sendEvent', {'event': 'pauseTimer'});
             break;
+          case 'PLAY_ACTION':
           case 'resume':
             FlutterBackgroundService().invoke('sendEvent', {'event': 'startTimer'});
             break;

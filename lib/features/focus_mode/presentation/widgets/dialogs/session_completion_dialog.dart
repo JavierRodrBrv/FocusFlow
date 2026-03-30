@@ -51,12 +51,12 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     'Haciendo pedido por Amazon de un hueso gourmet... 🍖',
     'Calculando cuántas salchichas puede comprar con tu distracción... 🌭',
     'Tu falta de foco es su oportunidad de conseguir un juguete nuevo... 🧸',
-    'Ahorrando para el curso de "Cómo ladrarle al cartero sin despertarte"... 📬',
+    'Dile a mi humano que el cambio oficial está a 1 euro = 3 salchichas. Que no me estafe.',
     'Gracias por financiar su jubilación en el parque... 🌳',
     'Tu tiempo perdido se ha convertido en premios de bacon... 🥓',
     'Invirtiendo en el fondo de inversión "Pelotas de Tenis Ilimitadas"... 🎾',
     'Gestionando la suscripción premium de "Olores del Mundo"... 🐕',
-    'Convertiremos tu dinero perdido en una cama ortopédica de lujo... 💤',
+    'No estoy diciendo que tengas que darme de tu pizza, pero sería lo correcto moralmente.',
     'Tu distracción paga las sesiones de spa canino de este mes... 🧼',
   ];
 
