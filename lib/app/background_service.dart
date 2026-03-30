@@ -208,25 +208,9 @@ void onStart(ServiceInstance service) async {
     );
   }
 
-  _notificationChannel.setMethodCallHandler((call) async {
-    if (call.method == 'onNotificationAction') {
-      final action = call.arguments as String;
-      print('[BackgroundService] Action received from Widget: $action');
-      if (timerBloc == null) {
-        print('[BackgroundService] Warning: TimerBloc is NULL');
-        return;
-      }
-
-      if (action == 'PAUSE_ACTION') {
-        timerBloc.add(PauseTimer());
-      } else if (action == 'PLAY_ACTION') {
-        timerBloc.add(StartTimer());
-      } else if (action == 'STOP_ACTION') {
-        timerBloc.add(ResetTimer());
-      }
-      forceNextUpdate = true;
-    }
-  });
+  // Aislamiento total: El motor de Flutter no recibe notificaciones directas
+  // de los botones del widget para evitar despertarlo innecesariamente.
+  // La sincronización se realiza al volver al primer plano (foreground).
 
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();

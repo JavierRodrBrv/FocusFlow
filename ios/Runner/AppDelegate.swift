@@ -15,8 +15,6 @@ import AudioToolbox
     channel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if ("vibrate" == call.method) {
-        // Usar la vibración de sistema estándar (kSystemSoundID_Vibrate = 4095)
-        // Funciona de forma consistente tanto en primer plano como en segundo plano.
         AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
         result(nil)
       } else {
@@ -26,5 +24,19 @@ import AudioToolbox
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    let urlString = url.absoluteString
+    if urlString.hasPrefix("focusflow://") {
+        let action = urlString.replacingOccurrences(of: "focusflow://", with: "")
+        let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
+        let channel = FlutterMethodChannel(name: "com.example.focus_flow/native",
+                                                  binaryMessenger: controller.binaryMessenger)
+        // Informar a Flutter del comando (pause/resume/stop)
+        channel.invokeMethod("onNotificationAction", arguments: action)
+        return true
+    }
+    return super.application(app, open: url, options: options)
   }
 }
