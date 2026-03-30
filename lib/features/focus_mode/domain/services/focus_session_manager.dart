@@ -485,6 +485,36 @@ class FocusSessionManager {
     await _hapticService.stopAlarmVibration();
   }
 
+  // --- HIBERNATION & SYNC (iOS 26) ---
+
+  /// Detiene el motor de Flutter sin cambiar el estado de la sesión.
+  /// Usado al salir de la App para delegar el control a iOS nativo.
+  void hibernateTicker() {
+    debugPrint('[FocusSessionManager] Technical hibernation. Stopping Dart ticker.');
+    _timerService.pause();
+  }
+
+  /// Sincroniza el motor de Flutter con los valores reales reportados por iOS.
+  void syncFromNative(Duration remaining, PomodoroStatus status, bool isPaused) {
+    debugPrint('[FocusSessionManager] Awakening from hibernate. Syncing with iOS: $remaining [$status] (Paused: $isPaused)');
+    
+    _remainingTime = remaining;
+    _status = status;
+    
+    if (isPaused) {
+      _timerService.pause();
+      _status = PomodoroStatus.paused;
+    } else {
+      if (_status == PomodoroStatus.running || _status == PomodoroStatus.resting) {
+        _timerService.start(startDuration: _remainingTime);
+      } else {
+        _timerService.pause();
+      }
+    }
+    
+    _emitState();
+  }
+
   // --- Logic Helpers ---
 
   void _checkHardcoreRules() {

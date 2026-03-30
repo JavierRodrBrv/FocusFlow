@@ -44,7 +44,8 @@ class FocusFlowNotification {
     });
   }
 
-  /// Recupera el estado autónomo escrito por los Intents del Widget en el App Group
+  /// Recupera el estado autónomo escrito por los Intents del Widget en el App Group.
+  /// Incluye: isPaused, remainingSeconds, isStopped, targetEndTime, status, lastWidgetActionTime.
   static Future<Map<String, dynamic>?> syncWidgetState() async {
     try {
       final result = await _channel.invokeMethod('syncWidgetState');

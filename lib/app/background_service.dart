@@ -53,14 +53,17 @@ void onStart(ServiceInstance service) async {
   TimerBloc? timerBloc;
   AudioMixBloc? audioBloc;
   SettingsBloc? settingsBloc;
+  FocusSessionManager? focusManager;
 
   PomodoroStatus? lastStatus;
   Duration? lastRemaining;
   bool forceNextUpdate = false;
   bool lastPenaltyState = false;
 
-  // --- FIX iOS: Tracking limits variables ---
+  // --- FIX iOS 26: Hybrid Vigilant Motor variables ---
   bool? lastIsPaused;
+  bool _isAppInForeground = true;
+  int _vigilantCheckTick = 0;
 
   FocusState getCombinedState() {
     final ts = timerBloc?.state ?? TimerState.initial();
@@ -224,7 +227,7 @@ void onStart(ServiceInstance service) async {
     audioBloc = getIt<AudioMixBloc>();
     settingsBloc = getIt<SettingsBloc>();
 
-    final focusManager = getIt<FocusSessionManager>();
+    focusManager = getIt<FocusSessionManager>();
     await focusManager.init();
 
     final settingsBox = await Hive.openBox('settings');
@@ -333,43 +336,69 @@ void onStart(ServiceInstance service) async {
       // Al volver a primer plano, forzar sincronización del Live Activity
       if (Platform.isIOS) {
         forceNextUpdate = true;
-        // FIX #E: Arquitectura Indestructible — leer el estado autónomo del Widget
+        // FIX #E: Arquitectura Indestructible — recuperar estado real de iOS 26
         try {
           final widgetState =
               await _notificationChannel.invokeMethod('syncWidgetState')
                   as Map?;
+          
           if (widgetState != null && widgetState['error'] == null) {
-            final lastActionTime =
-                widgetState['lastWidgetActionTime'] as double? ?? 0;
-            final now = DateTime.now().millisecondsSinceEpoch / 1000;
-            if (lastActionTime > 0 && (now - lastActionTime) < 3600) {
-              timerBloc.add(
-                SyncWithWidgetState(
-                  isPaused: widgetState['isPaused'] as bool? ?? false,
-                  remainingSeconds:
-                      widgetState['remainingSeconds'] as int? ?? 0,
-                  isStopped: widgetState['isStopped'] as bool? ?? false,
-                ),
-              );
-              // --- LIMPIEZA: Liberamos el estado nativo tras sincronizar ---
-              await _notificationChannel.invokeMethod('clearWidgetState');
-              // Después de añadir el evento, disparamos sync inmediato para refrescar la UI nativa
-              await Future.delayed(const Duration(milliseconds: 100));
-              await runImmediateIosSync();
+            final targetEndTime = widgetState['targetEndTime'] as int? ?? 0;
+            final isPaused = widgetState['isPaused'] as bool? ?? false;
+            final statusStr = widgetState['status'] as String? ?? 'focus';
+            final remainingSeconds = widgetState['remainingSeconds'] as int? ?? 0;
+            
+            final now = DateTime.now().millisecondsSinceEpoch;
+            
+            // --- CÁLCULO DE REENTRADA (iOS 26) ---
+            Duration finalRemaining;
+            if (isPaused) {
+              finalRemaining = Duration(seconds: remainingSeconds);
+            } else {
+              // El sistema nativo es la fuente de verdad del tiempo
+              finalRemaining = Duration(milliseconds: targetEndTime - now);
+              if (finalRemaining.isNegative) finalRemaining = Duration.zero;
             }
+            
+            final pomodoroStatus = statusStr == 'break' 
+                ? PomodoroStatus.resting 
+                : PomodoroStatus.running;
+
+            // Despertamos al gestor de sesiones con el tiempo real
+            focusManager?.syncFromNative(
+              finalRemaining, 
+              pomodoroStatus, 
+              isPaused
+            );
+
+            // Sincronizamos la UI del Bloc
+            timerBloc.add(
+              SyncWithWidgetState(
+                isPaused: isPaused,
+                remainingSeconds: finalRemaining.inSeconds,
+                isStopped: widgetState['isStopped'] as bool? ?? false,
+              ),
+            );
+
+            // Limpiamos flags para evitar bucles de sincronización
+            await _notificationChannel.invokeMethod('clearWidgetState');
           }
         } catch (_) {}
       }
+      _isAppInForeground = true;
       broadcastState();
     } else if (name == 'ui_heartbeat') {
       // FIX iOS #3: Heartbeat de UI activa → forzar actualización del Live Activity
       // Android no lo necesita porque ya actualiza cada segundo por timeDifference
       if (Platform.isIOS) forceNextUpdate = true;
     } else if (name == 'ui_paused') {
+      if (Platform.isIOS) {
+        // MOTOR HÍBRIDO: No hibernamos totalmente para permitir cambios de fase automáticos.
+        // Solo marcamos que estamos en segundo plano para activar el Polling Vigilante.
+        _isAppInForeground = false;
+      }
       forceNextUpdate = true;
-      // HANDOFF OPTIMIZADO: No forzamos ráfaga de MethodChannel.
-      // El plugin nativo detectará applicationDidEnterBackground y hará el COMMIT solo.
-      // Solo aseguramos que el estado esté STAGED.
+      // HANDOFF OPTIMIZADO: El plugin nativo detectará background y hará el COMMIT.
       await runImmediateIosSync();
       broadcastState();
     }
@@ -389,6 +418,36 @@ void onStart(ServiceInstance service) async {
       customStatus = 'waiting';
     } else if (state.isResting) {
       customStatus = 'break';
+    }
+    
+    // --- VIGILANCIA HÍBRIDA (iOS 26) ---
+    // Si estamos en segundo plano, verificamos periódicamente si el Widget se ha pausado u ocultado nativamente.
+    if (Platform.isIOS && !_isAppInForeground && status == PomodoroStatus.running) {
+      _vigilantCheckTick++;
+      if (_vigilantCheckTick >= 5) {
+        _vigilantCheckTick = 0;
+        try {
+          final widgetState = await _notificationChannel.invokeMethod('syncWidgetState') as Map?;
+          if (widgetState != null && widgetState['error'] == null) {
+            bool widgetPaused = widgetState['isPaused'] as bool? ?? false;
+            bool isStopped = widgetState['isStopped'] as bool? ?? false;
+            
+            if (isStopped || widgetPaused != isPaused) {
+              // Discrepancia detectada (ej: usuario pausó u ocultó el widget pero Flutter seguía corriendo)
+              timerBloc?.add(
+                SyncWithWidgetState(
+                  isPaused: widgetPaused,
+                  remainingSeconds: widgetState['remainingSeconds'] as int? ?? 0,
+                  isStopped: isStopped,
+                ),
+              );
+              
+              // --- LIMPIEZA: Marcamos el estado como sincronizado ---
+              await _notificationChannel.invokeMethod('clearWidgetState');
+            }
+          }
+        } catch (_) {}
+      }
     }
 
     // --- ORQUESTACIÓN DE SERVICIOS ---

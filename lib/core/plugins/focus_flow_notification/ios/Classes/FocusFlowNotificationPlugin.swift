@@ -67,6 +67,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
               "isPaused": defaults.bool(forKey: "isPaused"),
               "remainingSeconds": defaults.integer(forKey: "remainingSeconds"),
               "isStopped": defaults.bool(forKey: "isStopped"),
+              "targetEndTime": defaults.integer(forKey: "targetEndTime"),
+              "status": defaults.string(forKey: "status") ?? "focus",
               "lastWidgetActionTime": defaults.double(forKey: "lastWidgetActionTime")
           ]
           result(dict)
