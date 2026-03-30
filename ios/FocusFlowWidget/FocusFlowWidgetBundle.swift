@@ -38,7 +38,7 @@ struct FocusFlowLiveActivity: Widget {
                             .foregroundColor(.yellow)
                             .padding(.trailing, 8)
                     } else {
-                        Text(timerInterval: context.state.timerStartDate...context.state.timerEndDate, countsDown: true)
+                        Text(context.state.timerEndDate, style: .timer)
                             .font(.system(size: 24, weight: .bold, design: .rounded))
                             .monospacedDigit()
                             .foregroundColor(context.state.status == "break" ? .green : .purple)

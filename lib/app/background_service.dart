@@ -58,7 +58,6 @@ void onStart(ServiceInstance service) async {
   Duration? lastRemaining;
   bool forceNextUpdate = false;
   bool lastPenaltyState = false;
-  bool isAppInForeground = true; // Flag para la estrategia de "Desentenderse"
 
   // --- FIX iOS: Tracking limits variables ---
   bool? lastIsPaused;
@@ -160,18 +159,11 @@ void onStart(ServiceInstance service) async {
     // Siempre "staged" para que al minimizar la app, Swift tenga el dato fresco para el COMMIT
     await _notificationChannel.invokeMethod('stageLiveActivity', activityData);
 
-    // 4. COMMIT (Solo en cambios significativos si estamos en foreground)
-    bool shouldCommitNow = wasForcedUpdate;
-    if (!shouldCommitNow && isAppInForeground) {
-      if (lastIsPaused != isPaused || lastStatus != status) {
-        shouldCommitNow = true;
-      }
-      // NOTA: No enviamos updates por drift (tiempo cada segundo) porque iOS usa su contador nativo.
-    }
-
+    // 4. COMMIT (En iOS 26, el presupuesto de actualizaciones permite cambios de estado críticos)
+    bool shouldCommitNow = wasForcedUpdate || lastIsPaused != isPaused || lastStatus != status;
+    
     if (shouldCommitNow) {
-      // Solo llamamos a ActivityKit.update si hay un cambio real de estado mientras la app está abierta.
-      // Al cerrar la app, el Plugin (Swift) disparará su propio manageActivity(args: nil).
+      // Enviamos el update a iOS incondicionalmente si el estado ha cambiado.
       await _notificationChannel.invokeMethod(
         'updateLiveActivity',
         activityData,
@@ -338,7 +330,6 @@ void onStart(ServiceInstance service) async {
     } else if (name == 'requestState') {
       broadcastState();
     } else if (name == 'ui_resumed') {
-      isAppInForeground = true;
       // Al volver a primer plano, forzar sincronización del Live Activity
       if (Platform.isIOS) {
         forceNextUpdate = true;
@@ -371,13 +362,10 @@ void onStart(ServiceInstance service) async {
       }
       broadcastState();
     } else if (name == 'ui_heartbeat') {
-      // Si la UI está activa, mantenemos isAppInForeground a true (debounce)
-      isAppInForeground = true;
       // FIX iOS #3: Heartbeat de UI activa → forzar actualización del Live Activity
       // Android no lo necesita porque ya actualiza cada segundo por timeDifference
       if (Platform.isIOS) forceNextUpdate = true;
     } else if (name == 'ui_paused') {
-      isAppInForeground = false;
       forceNextUpdate = true;
       // HANDOFF OPTIMIZADO: No forzamos ráfaga de MethodChannel.
       // El plugin nativo detectará applicationDidEnterBackground y hará el COMMIT solo.
