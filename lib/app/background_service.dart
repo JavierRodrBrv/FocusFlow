@@ -360,6 +360,8 @@ void onStart(ServiceInstance service) async {
                   isStopped: widgetState['isStopped'] as bool? ?? false,
                 ),
               );
+              // --- LIMPIEZA: Liberamos el estado nativo tras sincronizar ---
+              await _notificationChannel.invokeMethod('clearWidgetState');
               // Después de añadir el evento, disparamos sync inmediato para refrescar la UI nativa
               await Future.delayed(const Duration(milliseconds: 100));
               await runImmediateIosSync();
@@ -418,11 +420,14 @@ void onStart(ServiceInstance service) async {
     }
 
     bool statusChanged = lastStatus != status;
+    bool sideChanged = lastIsPaused != isPaused;
     bool timeDifference =
         lastRemaining == null ||
         (lastRemaining!.inSeconds - state.remainingTime.inSeconds).abs() >= 1;
+    
     bool wasForcedUpdate = forceNextUpdate;
-    bool shouldUpdate = wasForcedUpdate || statusChanged;
+    // CRÍTICO: Si el estado cambia (ej. a Break) o es forzado, actualizamos SIEMPRE.
+    bool shouldUpdate = wasForcedUpdate || statusChanged || sideChanged;
 
     // Android: actualiza la notificación cada segundo para el contador visible.
     // iOS NO actualiza cada segundo — el estilo .timer de SwiftUI cuenta de forma

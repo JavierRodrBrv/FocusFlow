@@ -61,4 +61,9 @@ class FocusFlowNotification {
   static Future<void> endLiveActivity() async {
     await _channel.invokeMethod('endLiveActivity');
   }
+
+  /// Limpia los flags de estado en UserDefaults (Stop, Acción reciente)
+  static Future<void> clearWidgetState() async {
+    await _channel.invokeMethod('clearWidgetState');
+  }
 }
