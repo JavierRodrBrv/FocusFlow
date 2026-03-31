@@ -241,10 +241,10 @@ public struct FocusFlowWidgetView: View {
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.yellow)
             } else {
-                Text(timerInterval: context.state.timerStartDate...context.state.timerEndDate, countsDown: true)
+                Text(context.state.timerEndDate, style: .timer)
                     .monospacedDigit()
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(context.state.themeColor)
             }
             
             // --- CONTROLES HÍBRIDOS ---
