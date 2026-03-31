@@ -69,7 +69,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
               "isStopped": defaults.bool(forKey: "isStopped"),
               "targetEndTime": defaults.integer(forKey: "targetEndTime"),
               "status": defaults.string(forKey: "status") ?? "focus",
-              "lastWidgetActionTime": defaults.double(forKey: "lastWidgetActionTime")
+              "lastWidgetActionTime": defaults.double(forKey: "lastWidgetActionTime"),
+              "nativeFocusStartTimestamp": Int(defaults.double(forKey: "nativeFocusStartTimestamp"))
           ]
           result(dict)
       } else {
@@ -80,6 +81,15 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           os_log("[FocusFlow] Clearing widget state flags.", log: .default, type: .info)
           defaults.set(false, forKey: "isStopped")
           defaults.set(0.0, forKey: "lastWidgetActionTime")
+          defaults.synchronize()
+          result(nil)
+      } else {
+          result(nil)
+      }
+    case "clearNativeFocusTimestamp":
+      if let defaults = UserDefaults(suiteName: appGroup) {
+          os_log("[FocusFlow] Clearing nativeFocusStartTimestamp.", log: .default, type: .info)
+          defaults.set(0.0, forKey: "nativeFocusStartTimestamp")
           defaults.synchronize()
           result(nil)
       } else {
@@ -112,10 +122,13 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           defaults.set(args["remainingSeconds"] as? Int ?? 0, forKey: "remainingSeconds")
           defaults.set(args["startDate"] as? Int ?? 0, forKey: "startDate")
           defaults.set(args["targetEndTime"] as? Int ?? 0, forKey: "targetEndTime")
-          defaults.set(args["totalDuration"] as? Int ?? 0, forKey: "totalDuration")
+          let totalDuration = args["totalDuration"] as? Int ?? 0
+          defaults.set(totalDuration, forKey: "totalDuration")
+          defaults.set(totalDuration, forKey: "pomodoroDurationSeconds")
           defaults.set(args["status"] as? String ?? "focus", forKey: "status")
-          // No seteamos isStopped aqui para no sobreescribir una accion real del widget
+          
           defaults.synchronize()
+          os_log("Staged state in UserDefaults: totalDuration=%d, status=%{public}@", type: .debug, totalDuration, args["status"] as? String ?? "focus")
       }
   }
 
@@ -141,6 +154,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       let status             = finalArgs["status"] as? String ?? "focus"
       let isPaused           = finalArgs["isPaused"] as? Bool ?? false
       let remainingSeconds   = finalArgs["remainingSeconds"] as? Int ?? 0
+      
+      os_log("Managing Live Activity: status=%{public}@, isPaused=%d", type: .info, status, isPaused)
       
       let targetEndDate = Date(timeIntervalSince1970: TimeInterval(targetEndTimeMillis) / 1000)
       let state = FocusFlowAttributes.ContentState(

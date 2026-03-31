@@ -103,6 +103,7 @@ void onStart(ServiceInstance service) async {
       isWaitingForFirstFlip: ts.isWaitingForFirstFlip,
       defaultBreakDuration: ss.defaultBreakDuration,
       selectedAmbiencePath: ams.selectedAmbiencePath,
+      isAutoStartEnabled: ss.isAutoStartEnabled,
     );
   }
 
@@ -139,8 +140,11 @@ void onStart(ServiceInstance service) async {
         final nowSeconds = DateTime.now().millisecondsSinceEpoch / 1000;
         // NOTA: Eliminamos el silencio de 20s para adoptar la estrategia "Activity Rebirth".
         // Con la recreación de actividades, no hay riesgo de agotar presupuesto.
-        if (lastActionTime > 0 && (nowSeconds - lastActionTime) < 20) {
-          // Ya no retornamos early. Dejamos que Dart fluya.
+        // NOTA: Eliminamos el silencio de 20s para adoptar la estrategia "Activity Rebirth".
+        // Solo respetamos el silencio si NO hay un cambio de estado crítico.
+        bool statusChanged = lastStatus != status;
+        if (!statusChanged && lastActionTime > 0 && (nowSeconds - lastActionTime) < 10) {
+          return;
         }
       }
     } catch (_) {}
@@ -153,6 +157,7 @@ void onStart(ServiceInstance service) async {
       'startDate': startDate.millisecondsSinceEpoch,
       'targetEndTime': targetEndTime.millisecondsSinceEpoch,
       'totalDuration': state.pomodoroDuration.inSeconds,
+      'pomodoroDurationSeconds': state.pomodoroDuration.inSeconds,
       'status': customStatus,
       'isPaused': isPaused,
       'remainingSeconds': state.remainingTime.inSeconds,
@@ -166,11 +171,20 @@ void onStart(ServiceInstance service) async {
     bool shouldCommitNow = wasForcedUpdate || lastIsPaused != isPaused || lastStatus != status;
     
     if (shouldCommitNow) {
-      // Enviamos el update a iOS incondicionalmente si el estado ha cambiado.
+      bool breakEnded = lastStatus == PomodoroStatus.resting && status == PomodoroStatus.paused;
+
       await _notificationChannel.invokeMethod(
         'updateLiveActivity',
         activityData,
       );
+      
+      if (breakEnded) {
+        // DOUBLE COMMIT: Send again after a short delay to ensure UI reflects 00:00
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _notificationChannel.invokeMethod('updateLiveActivity', activityData);
+        });
+      }
+      
       lastIsPaused = isPaused;
     }
   }
@@ -181,16 +195,19 @@ void onStart(ServiceInstance service) async {
 
     final status = state.pomodoroStatus;
     bool isFinished = status == PomodoroStatus.finished;
-    bool isPaused =
-        status == PomodoroStatus.paused || state.isWaitingForFirstFlip;
     bool isInitial = status == PomodoroStatus.initial;
-
+    bool breakEnded = lastStatus == PomodoroStatus.resting && status == PomodoroStatus.paused;
     String customStatus = 'focus';
     if (state.isWaitingForFirstFlip) {
       customStatus = 'waiting';
     } else if (state.isResting) {
       customStatus = 'break';
+    } else if (breakEnded || (status == PomodoroStatus.paused && state.remainingTime == Duration.zero)) {
+      customStatus = 'overtime';
     }
+
+    bool isPaused =
+        (status == PomodoroStatus.paused && customStatus != 'overtime') || state.isWaitingForFirstFlip;
 
     await syncIosWidget(
       state,
@@ -291,6 +308,8 @@ void onStart(ServiceInstance service) async {
           minutes != null ? Duration(minutes: minutes) : null,
         ),
       );
+    } else if (name == 'toggleAutoStart') {
+      settingsBloc.add(ToggleAutoStart());
     } else if (name == 'updateRainVolume') {
       final volume = (event['volume'] as num).toDouble();
       audioBloc.add(UpdateRainVolume(volume));
@@ -336,7 +355,6 @@ void onStart(ServiceInstance service) async {
       // Al volver a primer plano, forzar sincronización del Live Activity
       if (Platform.isIOS) {
         forceNextUpdate = true;
-        // FIX #E: Arquitectura Indestructible — recuperar estado real de iOS 26
         try {
           final widgetState =
               await _notificationChannel.invokeMethod('syncWidgetState')
@@ -347,34 +365,52 @@ void onStart(ServiceInstance service) async {
             final isPaused = widgetState['isPaused'] as bool? ?? false;
             final statusStr = widgetState['status'] as String? ?? 'focus';
             final remainingSeconds = widgetState['remainingSeconds'] as int? ?? 0;
+            final nativeStartTs = widgetState['nativeFocusStartTimestamp'] as int? ?? 0;
             
             final now = DateTime.now().millisecondsSinceEpoch;
             
+            // --- DETECCIÓN DE INICIO NATIVO ---
+            // Si nativeFocusStartTimestamp existe y es reciente (< 24h), significa que
+            // el usuario pulsó "Iniciar Enfoque" desde la Dynamic Island.
+            bool hasNativeTransition = nativeStartTs > 0 && (now - nativeStartTs) < 86400000;
+            
             // --- CÁLCULO DE REENTRADA (iOS 26) ---
             Duration finalRemaining;
-            if (isPaused) {
+            PomodoroStatus pomodoroStatus;
+            
+            if (hasNativeTransition && statusStr == 'focus' && targetEndTime > now) {
+              // Transición nativa detectada: calculamos el tiempo real restante
+              finalRemaining = Duration(milliseconds: targetEndTime - now);
+              pomodoroStatus = PomodoroStatus.running;
+              debugPrint('[BackgroundService] Native focus transition detected. Remaining: ${finalRemaining.inSeconds}s');
+              
+              // Limpiar el timestamp para no reutilizarlo en próximos foregrounds
+              await _notificationChannel.invokeMethod('clearNativeFocusTimestamp');
+            } else if (isPaused) {
               finalRemaining = Duration(seconds: remainingSeconds);
+              pomodoroStatus = statusStr == 'break' ? PomodoroStatus.resting : PomodoroStatus.paused;
             } else {
               // El sistema nativo es la fuente de verdad del tiempo
-              finalRemaining = Duration(milliseconds: targetEndTime - now);
+              finalRemaining = targetEndTime > 0
+                  ? Duration(milliseconds: targetEndTime - now)
+                  : Duration(seconds: remainingSeconds);
               if (finalRemaining.isNegative) finalRemaining = Duration.zero;
+              pomodoroStatus = statusStr == 'break' 
+                  ? PomodoroStatus.resting 
+                  : PomodoroStatus.running;
             }
-            
-            final pomodoroStatus = statusStr == 'break' 
-                ? PomodoroStatus.resting 
-                : PomodoroStatus.running;
 
             // Despertamos al gestor de sesiones con el tiempo real
             focusManager?.syncFromNative(
               finalRemaining, 
               pomodoroStatus, 
-              isPaused
+              isPaused && !hasNativeTransition,
             );
 
             // Sincronizamos la UI del Bloc
             timerBloc.add(
               SyncWithWidgetState(
-                isPaused: isPaused,
+                isPaused: isPaused && !hasNativeTransition,
                 remainingSeconds: finalRemaining.inSeconds,
                 isStopped: widgetState['isStopped'] as bool? ?? false,
               ),
@@ -428,16 +464,21 @@ void onStart(ServiceInstance service) async {
         '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
     final status = state.pomodoroStatus;
     bool isFinished = status == PomodoroStatus.finished;
-    bool isPaused =
-        status == PomodoroStatus.paused || state.isWaitingForFirstFlip;
     bool isInitial = status == PomodoroStatus.initial;
 
     String customStatus = 'focus';
+    bool breakEnded = lastStatus == PomodoroStatus.resting && status == PomodoroStatus.paused;
+
     if (state.isWaitingForFirstFlip) {
       customStatus = 'waiting';
     } else if (state.isResting) {
       customStatus = 'break';
+    } else if (breakEnded || (status == PomodoroStatus.paused && state.remainingTime == Duration.zero)) {
+      customStatus = 'overtime';
     }
+
+    bool isPaused =
+        (status == PomodoroStatus.paused && customStatus != 'overtime') || state.isWaitingForFirstFlip;
     
     // --- VIGILANCIA HÍBRIDA (iOS 26) ---
     // Si estamos en segundo plano, verificamos periódicamente si el Widget se ha pausado u ocultado nativamente.
@@ -505,10 +546,14 @@ void onStart(ServiceInstance service) async {
       forceNextUpdate = false;
       try {
         bool wentToBreak = lastStatus == PomodoroStatus.running && status == PomodoroStatus.resting;
+        bool breakEnded = lastStatus == PomodoroStatus.resting && status == PomodoroStatus.paused;
+
         if (statusChanged && (isFinished || wentToBreak)) {
           await LocalNotificationService().showTimerCompleteNotification();
           await Future.delayed(const Duration(milliseconds: 100));
           service.invoke('refresh_history');
+        } else if (statusChanged && breakEnded) {
+          await LocalNotificationService().showBreakCompleteNotification();
         }
 
         bool penaltyChanged = lastPenaltyState != state.isInPenaltyBox;
@@ -522,9 +567,16 @@ void onStart(ServiceInstance service) async {
         }
 
         if (Platform.isAndroid && !isFinished && !isInitial) {
+          bool breakEnded = lastStatus == PomodoroStatus.resting && status == PomodoroStatus.paused;
           String notificationStatus = state.isInPenaltyBox
               ? 'running'
-              : (isPaused ? 'paused' : 'running');
+              : (isPaused ? (breakEnded ? 'paused_break_ended' : 'paused') : 'running');
+          
+          // Use 'resting' for real break state
+          if (status == PomodoroStatus.resting) {
+            notificationStatus = 'resting';
+          }
+
           await _notificationChannel.invokeMethod('updateNotification', {
             'time': time,
             'status': notificationStatus,

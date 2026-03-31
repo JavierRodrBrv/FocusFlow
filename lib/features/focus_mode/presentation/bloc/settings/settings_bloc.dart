@@ -20,6 +20,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<UpdateConsentStatus>(_onUpdateConsentStatus);
     on<UpdateSettingsPremiumStatus>(_onUpdatePremiumStatus);
     on<SetDefaultBreakDuration>(_onSetDefaultBreakDuration);
+    on<ToggleAutoStart>(_onToggleAutoStart);
   }
 
   void _onInitializeSettings(InitializeSettings event, Emitter<SettingsState> emit) {
@@ -30,6 +31,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       isPremium: event.isPremium,
       backgroundEffect: _sessionManager.currentState.backgroundEffect,
       isAlarmSoundEnabled: _sessionManager.isAlarmSoundEnabled,
+      isAutoStartEnabled: _sessionManager.isAutoStartEnabled,
       defaultBreakDuration: defaultBreakMinutes != null ? Duration(minutes: defaultBreakMinutes) : null,
     ));
   }
@@ -65,5 +67,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       box.put('default_break_duration', event.duration!.inMinutes);
       emit(state.copyWith(defaultBreakDuration: event.duration));
     }
+  }
+
+  void _onToggleAutoStart(ToggleAutoStart event, Emitter<SettingsState> emit) {
+    _sessionManager.toggleAutoStart();
+    emit(state.copyWith(isAutoStartEnabled: _sessionManager.isAutoStartEnabled));
   }
 }

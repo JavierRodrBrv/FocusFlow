@@ -35,3 +35,5 @@ class SetDefaultBreakDuration extends SettingsEvent {
   final Duration? duration;
   const SetDefaultBreakDuration(this.duration);
 }
+
+class ToggleAutoStart extends SettingsEvent {}

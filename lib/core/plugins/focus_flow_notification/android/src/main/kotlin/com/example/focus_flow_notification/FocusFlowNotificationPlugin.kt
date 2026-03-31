@@ -108,9 +108,15 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
             }
             
             // Adjust text size based on sub-state
-            val isBreakState = status == "resting" || status == "paused_break"
-            val textSize = if (isBreakState) 22f else 32f
+            val isBreakState = status == "resting" || status == "paused_break" || status == "paused_break_ended"
+            val textSize = if (isBreakState) 20f else 32f
             remoteViews.setTextViewTextSize(tvTimeId, TypedValue.COMPLEX_UNIT_SP, textSize)
+            
+            if (status == "paused_break_ended") {
+                remoteViews.setTextViewText(tvTimeId, "¡Descanso terminado! Pulsa para enfocar")
+                remoteViews.setTextColor(tvTimeId, Color.parseColor("#4CAF50")) // Green for success/ready
+                remoteViews.setTextViewTextSize(tvTimeId, TypedValue.COMPLEX_UNIT_SP, 14f)
+            }
             
             val icPauseId = context.resources.getIdentifier("ic_pause", "drawable", hostPackageName)
             val icPlayId = context.resources.getIdentifier("ic_play", "drawable", hostPackageName)

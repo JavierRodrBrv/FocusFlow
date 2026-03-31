@@ -37,6 +37,7 @@ class FocusState extends Equatable {
   final bool isWaitingForFirstFlip;
   final Duration? defaultBreakDuration;
   final String? selectedAmbiencePath;
+  final bool isAutoStartEnabled;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -69,6 +70,7 @@ class FocusState extends Equatable {
     this.isWaitingForFirstFlip = false,
     this.defaultBreakDuration,
     this.selectedAmbiencePath,
+    this.isAutoStartEnabled = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -112,6 +114,7 @@ class FocusState extends Equatable {
       'isWaitingForFirstFlip': isWaitingForFirstFlip,
       'defaultBreakDuration': defaultBreakDuration?.inSeconds,
       'selectedAmbiencePath': selectedAmbiencePath,
+      'isAutoStartEnabled': isAutoStartEnabled,
     };
   }
 
@@ -161,6 +164,7 @@ class FocusState extends Equatable {
           ? Duration(seconds: json['defaultBreakDuration'] as int)
           : null,
       selectedAmbiencePath: json['selectedAmbiencePath'] as String?,
+      isAutoStartEnabled: json['isAutoStartEnabled'] as bool? ?? false,
     );
   }
 
@@ -195,6 +199,7 @@ class FocusState extends Equatable {
     bool? isWaitingForFirstFlip,
     Duration? defaultBreakDuration,
     String? selectedAmbiencePath,
+    bool? isAutoStartEnabled,
     bool clearSelectedAmbience = false,
   }) {
     return FocusState(
@@ -228,6 +233,7 @@ class FocusState extends Equatable {
       isWaitingForFirstFlip: isWaitingForFirstFlip ?? this.isWaitingForFirstFlip,
       defaultBreakDuration: defaultBreakDuration ?? this.defaultBreakDuration,
       selectedAmbiencePath: clearSelectedAmbience ? null : (selectedAmbiencePath ?? this.selectedAmbiencePath),
+      isAutoStartEnabled: isAutoStartEnabled ?? this.isAutoStartEnabled,
     );
   }
 
@@ -263,5 +269,6 @@ class FocusState extends Equatable {
         isWaitingForFirstFlip,
         defaultBreakDuration,
         selectedAmbiencePath,
+        isAutoStartEnabled,
       ];
 }

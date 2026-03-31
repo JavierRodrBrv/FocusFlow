@@ -41,6 +41,7 @@ SessionState _sessionState({
   totalPenaltyTime: Duration.zero,
   backgroundEffect: BackgroundEffect.gradient,
   isWaitingForFirstFlip: isWaitingForFirstFlip,
+  isAutoStartEnabled: false,
 );
 
 ProcessSessionResult _emptyResult({

@@ -60,6 +60,31 @@ class LocalNotificationService {
     );
   }
 
+  Future<void> showBreakCompleteNotification() async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'focus_flow_alerts',
+          'Alertas de FocusFlow',
+          channelDescription: 'Notificaciones informativas de la aplicación',
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: '@mipmap/launcher_icon',
+        );
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        DarwinNotificationDetails();
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      id: 0,
+      title: '¡Descanso terminado!',
+      body: 'Es hora de volver a enfocarse. Pulsa para iniciar.',
+      notificationDetails: platformChannelSpecifics,
+    );
+  }
+
   Future<void> showPenaltyWarningNotification() async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(

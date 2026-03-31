@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:focus_flow/core/services/dnd_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:injectable/injectable.dart';
+import 'package:shared_preference_app_group/shared_preference_app_group.dart';
 import 'package:focus_flow/features/focus_mode/domain/repositories/i_audio_manager.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
@@ -26,6 +27,7 @@ class SessionState {
   final Duration totalPenaltyTime;
   final BackgroundEffect backgroundEffect;
   final bool isWaitingForFirstFlip;
+  final bool isAutoStartEnabled;
 
   SessionState({
     required this.status,
@@ -41,6 +43,7 @@ class SessionState {
     required this.totalPenaltyTime,
     required this.backgroundEffect,
     required this.isWaitingForFirstFlip,
+    required this.isAutoStartEnabled,
   });
 
   factory SessionState.initial() => SessionState(
@@ -57,6 +60,7 @@ class SessionState {
     totalPenaltyTime: Duration.zero,
     backgroundEffect: BackgroundEffect.gradient,
     isWaitingForFirstFlip: false,
+    isAutoStartEnabled: false,
   );
 }
 
@@ -86,6 +90,7 @@ class FocusSessionManager {
   PomodoroStatus? _prePauseStatus;
   BackgroundEffect _backgroundEffect = BackgroundEffect.gradient;
   bool _isWaitingForFirstFlip = false;
+  bool _isAutoStartEnabled = false;
 
   // Métricas de distracción
   int _penaltyCount = 0;
@@ -99,6 +104,7 @@ class FocusSessionManager {
   DateTime _lastPenaltyIncrementTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   bool get isAlarmSoundEnabled => _isAlarmSoundEnabled;
+  bool get isAutoStartEnabled => _isAutoStartEnabled;
 
   SessionState get currentState => SessionState(
     status: _status,
@@ -116,6 +122,7 @@ class FocusSessionManager {
     totalPenaltyTime: _totalPenaltyTime,
     backgroundEffect: _backgroundEffect,
     isWaitingForFirstFlip: _isWaitingForFirstFlip,
+    isAutoStartEnabled: _isAutoStartEnabled,
   );
 
   FocusSessionManager(
@@ -167,27 +174,46 @@ class FocusSessionManager {
 
             _emitState();
           } else if (_status == PomodoroStatus.resting) {
-            // Finaliza descanso, reinicia sesión de foco
+            // Descanso terminado
+            if (_isAutoStartEnabled) {
+              // AUTO-INICIO: Regresamos al foco automáticamente
+              _status = PomodoroStatus.running;
+              _remainingTime = _duration;
+              _prePauseStatus = null;
+              _timerService.start(startDuration: _remainingTime);
+              
+              _hapticService.startAlarmVibration();
+              Future.delayed(const Duration(seconds: 2), () {
+                _hapticService.stopAlarmVibration();
+                _audioManager.stopBreakEndSound();
+              });
+              
+              // El KeepAlive ya debería estar sonando o se reinicia
+              _audioManager.startKeepAlive();
+              _emitState();
+              return;
+            }
 
-            _status = PomodoroStatus.running;
-
-            _remainingTime = _duration;
-
-            _timerService.start(startDuration: _remainingTime);
+            // Transición MANUAL al foco.
+            // Detenemos el timer y pasamos a estado "listo para iniciar".
+            _timerService.pause();
+            _status = PomodoroStatus.paused;
+            _prePauseStatus = PomodoroStatus.resting; // señal de que viene de break
+            _remainingTime = Duration.zero; // Quedamos en 0:00 para la Live Activity
 
             // Solo vibramos al llegar a 0 (el sonido ya sonó a los 5s)
-
             _hapticService.startAlarmVibration();
 
             Future.delayed(const Duration(seconds: 2), () {
               _hapticService.stopAlarmVibration();
 
-              // APAGAR EL SONIDO 2 segundos después de empezar el foco
+              // APAGAR EL SONIDO 2 segundos después del aviso
 
               _audioManager.stopBreakEndSound();
             });
 
             _emitState();
+            return; // importante: no caer en el _emitState() de abajo
           } else if (_status == PomodoroStatus.running ||
               _status == PomodoroStatus.paused) {
             // Comportamiento normal si no hay descanso configurado
@@ -299,6 +325,14 @@ class FocusSessionManager {
     await _audioManager.init();
 
     // Cargar preferencia guardada de forma segura
+    
+    // Configurar App Group
+    try {
+      SharedPreferenceAppGroup.setAppGroup('group.com.andaluzcode.focusFlow');
+      SharedPreferenceAppGroup.setInt('pomodoroDurationSeconds', _duration.inSeconds);
+    } catch (e) {
+      debugPrint('[FocusSessionManager] Error setting up App Group: $e');
+    }
 
     try {
       _settingsBox = Hive.isBoxOpen('settings')
@@ -315,6 +349,11 @@ class FocusSessionManager {
         defaultValue: BackgroundEffect.gradient.index,
       );
       _backgroundEffect = BackgroundEffect.values[effectIndex];
+
+      _isAutoStartEnabled = _settingsBox!.get(
+        'auto_start_next_focus',
+        defaultValue: false,
+      );
 
       debugPrint(
         '[FocusSessionManager] Loaded Alarm Sound Preference: $_isAlarmSoundEnabled',
@@ -339,6 +378,12 @@ class FocusSessionManager {
       _duration = duration;
 
       _remainingTime = duration;
+
+      try {
+        SharedPreferenceAppGroup.setInt('pomodoroDurationSeconds', duration.inSeconds);
+      } catch (e) {
+        debugPrint('[FocusSessionManager] Error saving duration to App Group: $e');
+      }
 
       _emitState();
     }
@@ -389,11 +434,33 @@ class FocusSessionManager {
     _emitState();
   }
 
+  void toggleAutoStart() async {
+    _isAutoStartEnabled = !_isAutoStartEnabled;
+
+    try {
+      if (_settingsBox != null) {
+        await _settingsBox!.put('auto_start_next_focus', _isAutoStartEnabled);
+      }
+    } catch (e) {
+      debugPrint('[FocusSessionManager] Error saving auto-start preference: $e');
+    }
+
+    _emitState();
+  }
+
   void startTimer() {
     if (_status == PomodoroStatus.paused && !_isInPenalty) {
-      _timerService.resume();
-
-      _status = _prePauseStatus ?? PomodoroStatus.running;
+      // Si venimos de un descanso terminado, necesitamos un start fresco
+      if (_prePauseStatus == PomodoroStatus.resting) {
+        // Regreso del descanso -> Iniciamos nueva sesión con el tiempo de foco configurado
+        _remainingTime = _duration;
+        _prePauseStatus = null;
+        _timerService.start(startDuration: _remainingTime);
+      } else {
+        _timerService.resume();
+      }
+      _status = PomodoroStatus.running;
+      _audioManager.startKeepAlive();
     } else if (_status == PomodoroStatus.initial) {
       // REQUISITO: Si es Hardcore, no arranca el timer de inmediato
       if (_isHardcore) {
@@ -649,6 +716,7 @@ class FocusSessionManager {
         totalPenaltyTime: _totalPenaltyTime,
         backgroundEffect: _backgroundEffect,
         isWaitingForFirstFlip: _isWaitingForFirstFlip,
+        isAutoStartEnabled: _isAutoStartEnabled,
       ),
     );
   }

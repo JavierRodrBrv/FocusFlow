@@ -340,7 +340,29 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
               )),
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: SwitchListTile(
+              title: const Text(
+                'Auto-iniciar enfoque',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text(
+                'Comenzar trabajo automáticamente tras el descanso.',
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              value: state.isAutoStartEnabled,
+              onChanged: (bool value) {
+                FlutterBackgroundService().invoke('sendEvent', {
+                  'event': 'toggleAutoStart',
+                });
+              },
+              activeTrackColor: const Color(0xFF6366F1),
+              activeThumbColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: ElevatedButton(
