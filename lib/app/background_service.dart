@@ -163,26 +163,46 @@ void onStart(ServiceInstance service) async {
       'remainingSeconds': state.remainingTime.inSeconds,
     };
 
-    // 3. STAGE (Guardado ligero en UserDefaults)
+    // 3. STAGE (Guardado ligero en UserDefaults + App Group)
     // Siempre "staged" para que al minimizar la app, Swift tenga el dato fresco para el COMMIT
     await _notificationChannel.invokeMethod('stageLiveActivity', activityData);
+    
+    // ATOMIC SYNC: Si estamos iniciando una fase, asegurar datos en App Group
+    if (lastStatus != status) {
+        await _notificationChannel.invokeMethod('stageLiveActivity', activityData);
+    }
 
     // 4. COMMIT (En iOS 26, el presupuesto de actualizaciones permite cambios de estado críticos)
     bool shouldCommitNow = wasForcedUpdate || lastIsPaused != isPaused || lastStatus != status;
     
     if (shouldCommitNow) {
-      bool breakEnded = lastStatus == PomodoroStatus.resting && status == PomodoroStatus.paused;
-
-      await _notificationChannel.invokeMethod(
-        'updateLiveActivity',
-        activityData,
-      );
+      // Detección de fin de descanso (manual o automático)
+      bool isBreakEnding = lastStatus == PomodoroStatus.resting && 
+                         (status == PomodoroStatus.paused || status == PomodoroStatus.running);
       
-      if (breakEnded) {
-        // DOUBLE COMMIT: Send again after a short delay to ensure UI reflects 00:00
+      bool isAutoStartTransition = lastStatus == PomodoroStatus.resting && status == PomodoroStatus.running;
+
+      if (isAutoStartTransition) {
+        debugPrint("[BackgroundService] Auto-start transition detected. Using safe delay sync.");
+        // Primeiro commit (limpieza/aviso)
+        await _notificationChannel.invokeMethod('updateLiveActivity', activityData);
+        
+        // Delay de seguridad de 500ms para evitar colisión de iOS (Throttling)
         Future.delayed(const Duration(milliseconds: 500), () {
           _notificationChannel.invokeMethod('updateLiveActivity', activityData);
         });
+      } else {
+        await _notificationChannel.invokeMethod(
+          'updateLiveActivity',
+          activityData,
+        );
+        
+        if (isBreakEnding) {
+          // DOUBLE COMMIT para asegurar 00:00 o refresco de color
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _notificationChannel.invokeMethod('updateLiveActivity', activityData);
+          });
+        }
       }
       
       lastIsPaused = isPaused;

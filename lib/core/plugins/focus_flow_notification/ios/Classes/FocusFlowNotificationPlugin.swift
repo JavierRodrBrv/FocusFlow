@@ -15,6 +15,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     return Activity<FocusFlowAttributes>.activities.first
   }
   
+  private static var lastUpdateDate = Date.distantPast
+  
   public static func register(with registrar: FlutterPluginRegistrar) {
     let messenger = registrar.messenger()
     let channel = FlutterMethodChannel(name: "com.example.focus_flow/notification", binaryMessenger: messenger)
@@ -200,6 +202,17 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
                       os_log("[FocusFlow] Skipping redundant update.", log: .default, type: .info)
                       continue
                   }
+                  
+                  // --- PROTECCIÓN TRANSICIÓN RÁPIDA (Apple Throttle) ---
+                  let now = Date()
+                  let elapsed = now.timeIntervalSince(FocusFlowNotificationPlugin.lastUpdateDate)
+                  
+                  // Si pasamos de break a focus en menos de 1s, esperamos un poco para asegurar el refresco UI
+                  if currentState.status == "break" && state.status == "focus" && elapsed < 1.0 {
+                      os_log("[FocusFlow] Fast transition (break->focus) detected. Delaying 0.5s for stability.", log: .default, type: .info)
+                      try? await Task.sleep(nanoseconds: 500_000_000)
+                  }
+                  FocusFlowNotificationPlugin.lastUpdateDate = Date()
                   
                   do {
                       os_log("[FocusFlow] Updating activity. Status: %{public}@", log: .default, type: .info, status)
