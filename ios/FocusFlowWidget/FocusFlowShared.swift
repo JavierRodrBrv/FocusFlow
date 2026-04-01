@@ -142,6 +142,7 @@ public struct StopIntent: LiveActivityIntent {
     
     public func perform() async throws -> some IntentResult {
         os_log("[FocusFlow] Intent: STOP triggered", log: .default, type: .info)
+        clearSessionData()
         if let defaults = UserDefaults(suiteName: appGroupName) {
             defaults.set(true, forKey: "isStopped")
             defaults.set(Date().timeIntervalSince1970, forKey: "lastWidgetActionTime")
@@ -202,6 +203,18 @@ public func formatTime(seconds: Int) -> String {
     let m = seconds / 60
     let s = seconds % 60
     return String(format: "%02d:%02d", m, s)
+}
+
+public func clearSessionData() {
+    if let defaults = UserDefaults(suiteName: appGroupName) {
+        let keys = ["isPaused", "remainingSeconds", "isStopped", "targetEndTime", 
+                    "status", "lastWidgetActionTime", "nativeFocusStartTimestamp",
+                    "startDate", "totalDuration", "pomodoroDurationSeconds"]
+        for key in keys {
+            defaults.removeObject(forKey: key)
+        }
+        defaults.synchronize()
+    }
 }
 
 // --- VISTAS COMPARTIDAS ---

@@ -121,11 +121,26 @@ void onStart(ServiceInstance service) async {
     bool isPaused,
     bool wasForcedUpdate,
   ) async {
-    // 1. GESTIÓN DE FINALIZACIÓN
+    // 1. STAGE (Guardado ligero en UserDefaults + App Group)
+    // Siempre "staged" para que al minimizar la app, Swift tenga el dato fresco o para que persista el minuto seleccionado
+    final now = DateTime.now();
+    final targetEndTime = now.add(state.remainingTime);
+    final startDate = targetEndTime.subtract(state.pomodoroDuration);
+
+    final Map<String, dynamic> activityData = {
+      'startDate': startDate.millisecondsSinceEpoch,
+      'targetEndTime': targetEndTime.millisecondsSinceEpoch,
+      'totalDuration': state.pomodoroDuration.inSeconds,
+      'pomodoroDurationSeconds': state.pomodoroDuration.inSeconds,
+      'status': customStatus,
+      'isPaused': isPaused,
+      'remainingSeconds': state.remainingTime.inSeconds,
+    };
+    await _notificationChannel.invokeMethod('stageLiveActivity', activityData);
+
+    // 2. GESTIÓN DE VISIBILIDAD (Solo Live Activity activo si no es inicial ni terminado)
     if (status == PomodoroStatus.initial || isFinished) {
-      if (isFinished) {
-        await Future.delayed(const Duration(milliseconds: 800));
-      }
+      // Si entramos en este estado, aseguramos que no haya widget activo
       await _notificationChannel.invokeMethod('endLiveActivity');
       return;
     }
@@ -149,32 +164,13 @@ void onStart(ServiceInstance service) async {
       }
     } catch (_) {}
 
-    final now = DateTime.now();
-    final targetEndTime = now.add(state.remainingTime);
-    final startDate = targetEndTime.subtract(state.pomodoroDuration);
-
-    final Map<String, dynamic> activityData = {
-      'startDate': startDate.millisecondsSinceEpoch,
-      'targetEndTime': targetEndTime.millisecondsSinceEpoch,
-      'totalDuration': state.pomodoroDuration.inSeconds,
-      'pomodoroDurationSeconds': state.pomodoroDuration.inSeconds,
-      'status': customStatus,
-      'isPaused': isPaused,
-      'remainingSeconds': state.remainingTime.inSeconds,
-    };
-
     // 3. STAGE (Guardado ligero en UserDefaults + App Group)
-    // Siempre "staged" para que al minimizar la app, Swift tenga el dato fresco para el COMMIT
+    // Siempre "staged" para que al minimizar la app, Swift tenga el dato fresco o para que persista el minuto seleccionado
     await _notificationChannel.invokeMethod('stageLiveActivity', activityData);
-    
-    // ATOMIC SYNC: Si estamos iniciando una fase, asegurar datos en App Group
-    if (lastStatus != status) {
-        await _notificationChannel.invokeMethod('stageLiveActivity', activityData);
-    }
 
     // 4. COMMIT (En iOS 26, el presupuesto de actualizaciones permite cambios de estado críticos)
     bool shouldCommitNow = wasForcedUpdate || lastIsPaused != isPaused || lastStatus != status;
-    
+
     if (shouldCommitNow) {
       // Detección de fin de descanso (manual o automático)
       bool isBreakEnding = lastStatus == PomodoroStatus.resting && 
@@ -214,20 +210,29 @@ void onStart(ServiceInstance service) async {
     if (state == null || !Platform.isIOS) return;
 
     final status = state.pomodoroStatus;
-    bool isFinished = status == PomodoroStatus.finished;
-    bool isInitial = status == PomodoroStatus.initial;
-    bool breakEnded = lastStatus == PomodoroStatus.resting && status == PomodoroStatus.paused;
+    final isFinished = status == PomodoroStatus.finished;
+
+    // MOTOR DE ESTADOS DINÁMICO
     String customStatus = 'focus';
-    if (state.isWaitingForFirstFlip) {
-      customStatus = 'waiting';
+    if (isFinished) {
+      customStatus = 'overtime';
     } else if (state.isResting) {
       customStatus = 'break';
-    } else if (breakEnded || (status == PomodoroStatus.paused && state.remainingTime == Duration.zero)) {
-      customStatus = 'overtime';
     }
 
-    bool isPaused =
-        (status == PomodoroStatus.paused && customStatus != 'overtime') || state.isWaitingForFirstFlip;
+    final isInitial = status == PomodoroStatus.initial;
+
+    // MEJORA REQUISITO: Definición estricta de pausa para evitar autostarts
+    // Si no estamos en un estado de ejecución real (running/resting activo), isPaused debe ser true.
+    bool isPaused = status == PomodoroStatus.paused ||
+        isInitial ||
+        state.isWaitingForFirstFlip;
+
+    // Si detectamos que los segundos restantes son 0 en descanso, forzamos un estado de "listo"
+    if (state.isResting && state.remainingTime.inSeconds == 0) {
+      customStatus = 'focus_ready';
+      isPaused = true;
+    }
 
     await syncIosWidget(
       state,
@@ -381,43 +386,40 @@ void onStart(ServiceInstance service) async {
                   as Map?;
           
           if (widgetState != null && widgetState['error'] == null) {
+            final hasActiveActivity = widgetState['hasActiveActivity'] as bool? ?? false;
             final targetEndTime = widgetState['targetEndTime'] as int? ?? 0;
             final isPaused = widgetState['isPaused'] as bool? ?? false;
             final statusStr = widgetState['status'] as String? ?? 'focus';
             final remainingSeconds = widgetState['remainingSeconds'] as int? ?? 0;
             final nativeStartTs = widgetState['nativeFocusStartTimestamp'] as int? ?? 0;
-            
             final now = DateTime.now().millisecondsSinceEpoch;
-            
+
             // --- DETECCIÓN DE INICIO NATIVO ---
-            // Si nativeFocusStartTimestamp existe y es reciente (< 24h), significa que
-            // el usuario pulsó "Iniciar Enfoque" desde la Dynamic Island.
             bool hasNativeTransition = nativeStartTs > 0 && (now - nativeStartTs) < 86400000;
-            
+
             // --- CÁLCULO DE REENTRADA (iOS 26) ---
             Duration finalRemaining;
             PomodoroStatus pomodoroStatus;
             
             if (hasNativeTransition && statusStr == 'focus' && targetEndTime > now) {
-              // Transición nativa detectada: calculamos el tiempo real restante
               finalRemaining = Duration(milliseconds: targetEndTime - now);
               pomodoroStatus = PomodoroStatus.running;
-              debugPrint('[BackgroundService] Native focus transition detected. Remaining: ${finalRemaining.inSeconds}s');
-              
-              // Limpiar el timestamp para no reutilizarlo en próximos foregrounds
               await _notificationChannel.invokeMethod('clearNativeFocusTimestamp');
             } else if (isPaused) {
               finalRemaining = Duration(seconds: remainingSeconds);
               pomodoroStatus = statusStr == 'break' ? PomodoroStatus.resting : PomodoroStatus.paused;
-            } else {
-              // El sistema nativo es la fuente de verdad del tiempo
+            } else if (hasActiveActivity) {
+              // Solo confiamos en el modo 'running' si hay una actividad activa real
               finalRemaining = targetEndTime > 0
                   ? Duration(milliseconds: targetEndTime - now)
                   : Duration(seconds: remainingSeconds);
               if (finalRemaining.isNegative) finalRemaining = Duration.zero;
-              pomodoroStatus = statusStr == 'break' 
-                  ? PomodoroStatus.resting 
-                  : PomodoroStatus.running;
+              pomodoroStatus = statusStr == 'break' ? PomodoroStatus.resting : PomodoroStatus.running;
+            } else {
+              // BUGFIX: Si no hay actividad activa y no es una transición nativa ni pausa,
+              // ignoramos el estado nativo 'running' porque es basura de una sesión anterior.
+              debugPrint('[BackgroundService] Ignoring stale native state (no active activity)');
+              return; 
             }
 
             // Despertamos al gestor de sesiones con el tiempo real
@@ -483,22 +485,27 @@ void onStart(ServiceInstance service) async {
     final time =
         '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
     final status = state.pomodoroStatus;
-    bool isFinished = status == PomodoroStatus.finished;
-    bool isInitial = status == PomodoroStatus.initial;
+    final isFinished = status == PomodoroStatus.finished;
+    final isInitial = status == PomodoroStatus.initial;
 
+    // MOTOR DE ESTADOS DINÁMICO
     String customStatus = 'focus';
-    bool breakEnded = lastStatus == PomodoroStatus.resting && status == PomodoroStatus.paused;
-
-    if (state.isWaitingForFirstFlip) {
-      customStatus = 'waiting';
+    if (isFinished) {
+      customStatus = 'overtime';
     } else if (state.isResting) {
       customStatus = 'break';
-    } else if (breakEnded || (status == PomodoroStatus.paused && state.remainingTime == Duration.zero)) {
-      customStatus = 'overtime';
     }
 
-    bool isPaused =
-        (status == PomodoroStatus.paused && customStatus != 'overtime') || state.isWaitingForFirstFlip;
+    // MEJORA REQUISITO: Definición estricta de pausa para evitar autostarts
+    bool isPaused = status == PomodoroStatus.paused ||
+        isInitial ||
+        state.isWaitingForFirstFlip;
+
+    // Si detectamos que los segundos restantes son 0 en descanso, forzamos un estado de "listo"
+    if (state.isResting && state.remainingTime.inSeconds == 0) {
+      customStatus = 'focus_ready';
+      isPaused = true;
+    }
     
     // --- VIGILANCIA HÍBRIDA (iOS 26) ---
     // Si estamos en segundo plano, verificamos periódicamente si el Widget se ha pausado u ocultado nativamente.

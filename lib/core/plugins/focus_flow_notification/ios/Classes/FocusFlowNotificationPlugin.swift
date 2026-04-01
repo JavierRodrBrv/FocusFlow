@@ -35,7 +35,10 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
 
   public func applicationDidEnterBackground(_ application: UIApplication) {
       if #available(iOS 16.2, *) {
-          self.manageActivity(args: nil)
+          // Solo actualizamos si ya existe una actividad activa para evitar phantom starts
+          if !Activity<FocusFlowAttributes>.activities.isEmpty {
+              self.manageActivity(args: nil)
+          }
       }
   }
 
@@ -58,6 +61,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
             for activity in Activity<FocusFlowAttributes>.activities {
               await activity.end(nil, dismissalPolicy: .immediate)
             }
+            // Limpieza crítica comentada para restaurar persistencia
+            // self.clearSessionData()
           }
         }
         result(nil)
@@ -72,7 +77,13 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
               "targetEndTime": defaults.integer(forKey: "targetEndTime"),
               "status": defaults.string(forKey: "status") ?? "focus",
               "lastWidgetActionTime": defaults.double(forKey: "lastWidgetActionTime"),
-              "nativeFocusStartTimestamp": Int(defaults.double(forKey: "nativeFocusStartTimestamp"))
+              "nativeFocusStartTimestamp": Int(defaults.double(forKey: "nativeFocusStartTimestamp")),
+              "hasActiveActivity": {
+                  if #available(iOS 16.2, *) {
+                      return !Activity<FocusFlowAttributes>.activities.isEmpty
+                  }
+                  return false
+              }()
           ]
           result(dict)
       } else {
@@ -82,6 +93,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       if let defaults = UserDefaults(suiteName: appGroup) {
           os_log("[FocusFlow] Clearing widget state flags.", log: .default, type: .info)
           defaults.set(false, forKey: "isStopped")
+          defaults.set(true, forKey: "isPaused")
           defaults.set(0.0, forKey: "lastWidgetActionTime")
           defaults.synchronize()
           result(nil)
@@ -107,6 +119,18 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     default:
       result(FlutterMethodNotImplemented)
     }
+  }
+
+  private func clearSessionData() {
+      if let defaults = UserDefaults(suiteName: appGroup) {
+          let keys = ["isPaused", "remainingSeconds", "isStopped", "targetEndTime", 
+                      "status", "lastWidgetActionTime", "nativeFocusStartTimestamp",
+                      "startDate", "totalDuration", "pomodoroDurationSeconds"]
+          for key in keys {
+              defaults.removeObject(forKey: key)
+          }
+          defaults.synchronize()
+      }
   }
 
   private func showLocalNotification(time: String, status: String) {
