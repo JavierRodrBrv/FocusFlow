@@ -100,6 +100,7 @@ void onStart(ServiceInstance service) async {
       isWaitingForFirstFlip: ts.isWaitingForFirstFlip,
       defaultBreakDuration: ss.defaultBreakDuration,
       selectedAmbiencePath: ams.selectedAmbiencePath,
+      autoTransitionWhenForeground: ss.autoTransitionWhenForeground,
     );
   }
 
@@ -119,8 +120,21 @@ void onStart(ServiceInstance service) async {
   ) async {
     // 1. GESTIÓN DE FINALIZACIÓN
     if (status == PomodoroStatus.initial || isFinished) {
+      // Sobrescribimos el stage para evitar que didEnterBackground en Swift
+      // resucite un timer antiguo leyendo datos sucios de UserDefaults.
+      await _notificationChannel.invokeMethod('stageLiveActivity', {
+        'status': 'initial',
+        'isPaused': true,
+        'remainingSeconds': 0,
+      });
+
       if (isFinished) {
         await Future.delayed(const Duration(milliseconds: 800));
+        // Verificamos si después del delay el estado cambió a paused (ej. no auto-transition)
+        final currentStatus = timerBloc?.state.pomodoroStatus;
+        if (currentStatus != PomodoroStatus.finished && currentStatus != PomodoroStatus.initial) {
+          return; // No matamos la actividad, se mantendrá en Paused
+        }
       }
       await _notificationChannel.invokeMethod('endLiveActivity');
       return;
@@ -368,6 +382,7 @@ void onStart(ServiceInstance service) async {
       broadcastState();
     } else if (name == 'ui_resumed') {
       // Al volver a primer plano, forzar sincronización del Live Activity
+      getIt<FocusSessionManager>().setAppInForeground(true);
       if (Platform.isIOS) {
         forceNextUpdate = true;
         // FIX #E: Arquitectura Indestructible — leer el estado autónomo del Widget
@@ -396,11 +411,13 @@ void onStart(ServiceInstance service) async {
         } catch (_) {}
       }
       broadcastState();
-    } else if (name == 'ui_heartbeat') {
+    } else if (name == 'ui_heartbeat' || name == 'ui_active') {
       // FIX iOS #3: Heartbeat de UI activa → forzar actualización del Live Activity
       // Android no lo necesita porque ya actualiza cada segundo por timeDifference
+      getIt<FocusSessionManager>().setAppInForeground(true);
       if (Platform.isIOS) forceNextUpdate = true;
     } else if (name == 'ui_paused') {
+      getIt<FocusSessionManager>().setAppInForeground(false);
       forceNextUpdate = true;
       // HANDOFF OPTIMIZADO: No forzamos ráfaga de MethodChannel.
       // El plugin nativo detectará applicationDidEnterBackground y hará el COMMIT solo.
@@ -482,6 +499,7 @@ void onStart(ServiceInstance service) async {
           await _notificationChannel.invokeMethod('updateNotification', {
             'time': time,
             'status': notificationStatus,
+            'phase': customStatus,
           });
         }
 

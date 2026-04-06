@@ -96,26 +96,26 @@ struct FocusFlowLiveActivity: Widget {
                 // Timer Display — simple y fiable
                 if context.state.isPaused {
                     Text(formatTime(seconds: context.state.remainingSeconds))
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(.yellow)
-                        .padding(.trailing, 8)
+                        .padding(.trailing, 2)
                 } else {
                     Text(timerInterval: phaseInfo.startDate...phaseInfo.endDate)
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(.white)
-                        .padding(.trailing, 8)
+                        .padding(.trailing, 2)
                 }
                 
                 // Botón de Acción
                 if #available(iOS 17.0, *) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         if context.state.isPaused {
                             Button(intent: ResumeIntent()) {
                                 Image(systemName: "play.fill")
-                                    .font(.title3)
-                                    .frame(width: 40, height: 40)
+                                    .font(.body)
+                                    .frame(width: 34, height: 34)
                                     .background(Color.purple.opacity(0.3))
                                     .clipShape(Circle())
                             }
@@ -123,8 +123,8 @@ struct FocusFlowLiveActivity: Widget {
                         } else {
                             Button(intent: PauseIntent()) {
                                 Image(systemName: "pause.fill")
-                                    .font(.title3)
-                                    .frame(width: 40, height: 40)
+                                    .font(.body)
+                                    .frame(width: 34, height: 34)
                                     .background(Color.white.opacity(0.15))
                                     .clipShape(Circle())
                             }
@@ -133,8 +133,8 @@ struct FocusFlowLiveActivity: Widget {
                         
                         Button(intent: NextPhaseIntent()) {
                             Image(systemName: "forward.end.fill")
-                                .font(.title3)
-                                .frame(width: 40, height: 40)
+                                .font(.body)
+                                .frame(width: 34, height: 34)
                                 .background(Color.blue.opacity(0.2))
                                 .clipShape(Circle())
                         }

@@ -213,6 +213,12 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       let focusDuration      = finalArgs["focusDuration"] as? Int ?? 0
       let breakDuration      = finalArgs["breakDuration"] as? Int ?? 0
       let status             = finalArgs["status"]        as? String ?? "focus"
+      
+      if status == "initial" || status == "finished" {
+          os_log("[FocusFlow] manageActivity skipped because status is %{public}@", log: .default, type: .info, status)
+          return
+      }
+      
       let isPaused           = finalArgs["isPaused"]      as? Bool ?? false
       let remainingSeconds   = finalArgs["remainingSeconds"] as? Int ?? 0
       

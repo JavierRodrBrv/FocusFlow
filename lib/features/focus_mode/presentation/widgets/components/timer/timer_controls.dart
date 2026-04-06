@@ -114,10 +114,13 @@ class TimerControls extends StatelessWidget {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start, // Mantener estático el origen
       children: [
         if (!state.isZoomMode) ...[
           // Reset Button - Acción secundaria
-          BouncingButton(
+          Padding(
+            padding: const EdgeInsets.only(top: 18), // Centrar respecto al botón de 88px ( (88 - (28+24)) / 2 )
+            child: BouncingButton(
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -136,91 +139,133 @@ class TimerControls extends StatelessWidget {
               () => service.invoke('sendEvent', {'event': 'resetTimer'}),
             ),
           ),
+        ),
 
-          const SizedBox(width: 32),
+        const SizedBox(width: 32),
 
-          // Play/Pause Button - Acción principal rediseñada
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (child, animation) =>
-                ScaleTransition(scale: animation, child: child),
-            child: BouncingButton(
-              key: ValueKey(isActive ? 'pause_btn' : 'play_btn'),
-              child: GestureDetector(
-                onTap: () {
-                  if (status == PomodoroStatus.initial) {
-                    if (state.defaultBreakDuration != null) {
-                      service.invoke('sendEvent', {
-                        'event': 'setBreakDuration',
-                        'durationMinutes': state.defaultBreakDuration!.inMinutes,
-                      });
-                      service.invoke('sendEvent', {'event': 'startTimer'});
-                    } else {
-                      _showBreakSelectionDialog(context);
-                    }
-                  } else {
-                    // Si estamos esperando el primer volteo en modo Hardcore,
-                    // mostramos aviso en lugar de pausar/reanudar.
-                    if (state.isHardcoreMode && state.isWaitingForFirstFlip) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Modo Focus activo: Voltea el móvil boca abajo para que el tiempo empiece a correr.',
-                          ),
-                          backgroundColor: Colors.redAccent,
-                          duration: Duration(seconds: 3),
+          // Contenedor central (Play/Pause + Skip Animado)
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Play/Pause Button - Acción principal rediseñada
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) =>
+                    ScaleTransition(scale: animation, child: child),
+                child: BouncingButton(
+                  key: ValueKey(isActive ? 'pause_btn' : 'play_btn'),
+                  child: GestureDetector(
+                    onTap: () {
+                      if (status == PomodoroStatus.initial) {
+                        if (state.defaultBreakDuration != null) {
+                          service.invoke('sendEvent', {
+                            'event': 'setBreakDuration',
+                            'durationMinutes': state.defaultBreakDuration!.inMinutes,
+                          });
+                          service.invoke('sendEvent', {'event': 'startTimer'});
+                        } else {
+                          _showBreakSelectionDialog(context);
+                        }
+                      } else {
+                        // Si estamos esperando el primer volteo en modo Hardcore,
+                        // mostramos aviso en lugar de pausar/reanudar.
+                        if (state.isHardcoreMode && state.isWaitingForFirstFlip) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Modo Focus activo: Voltea el móvil boca abajo para que el tiempo empiece a correr.',
+                              ),
+                              backgroundColor: Colors.redAccent,
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                          return;
+                        }
+                        final event = isActive ? 'pauseTimer' : 'startTimer';
+                        service.invoke('sendEvent', {'event': event});
+                      }
+                    },
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context).colorScheme.secondary,
+                          ],
                         ),
-                      );
-                      return;
-                    }
-                    final event = isActive ? 'pauseTimer' : 'startTimer';
-                    service.invoke('sendEvent', {'event': event});
-                  }
-                },
-                child: Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.secondary,
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.4),
-                        blurRadius: 25,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.4),
+                            blurRadius: 25,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Icon(
-                    isActive ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    size: 52,
-                    color: Colors.white,
+                      child: Icon(
+                        isActive ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                        size: 52,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              
+              // Skip Button Animated - Aparece solo si corre
+              AnimatedSize(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutBack,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: ScaleTransition(scale: animation, child: child)),
+                  child: isActive ? Padding(
+                    key: const ValueKey('skipBtn'),
+                    padding: const EdgeInsets.only(top: 16),
+                    child: BouncingButton(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.05),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                        ),
+                        child: Icon(
+                          Icons.skip_next_rounded,
+                          size: 24,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      onPressed: () {
+                        service.invoke('sendEvent', {'event': 'skipNextPhase'});
+                      },
+                    ),
+                  ) : const SizedBox.shrink(key: ValueKey('emptySkipBtn')),
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(width: 32),
         ],
 
         // Zoom Button - Acción complementaria
-        BouncingButton(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: state.isZoomMode
+        Padding(
+          padding: const EdgeInsets.only(top: 18),
+          child: BouncingButton(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: state.isZoomMode
                   ? Colors.blueAccent.withValues(alpha: 0.2)
                   : Colors.white.withValues(alpha: 0.05),
               border: Border.all(
@@ -240,6 +285,7 @@ class TimerControls extends StatelessWidget {
           onPressed: () {
             service.invoke('sendEvent', {'event': 'toggleZoomMode'});
           },
+        ),
         ),
       ],
     );

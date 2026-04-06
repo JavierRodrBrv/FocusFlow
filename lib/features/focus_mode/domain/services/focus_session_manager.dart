@@ -97,6 +97,7 @@ class FocusSessionManager {
   Timer? _penaltyTicker;
   PhoneOrientation? _lastConfirmedOrientation;
   DateTime _lastPenaltyIncrementTime = DateTime.fromMillisecondsSinceEpoch(0);
+  bool _isAppInForeground = true;
 
   bool get isAlarmSoundEnabled => _isAlarmSoundEnabled;
 
@@ -155,47 +156,52 @@ class FocusSessionManager {
       if (_remainingTime.inSeconds == 0) {
         Future.microtask(() {
           bool autoTransition = _settingsBox?.get('auto_transition_when_foreground', defaultValue: true) as bool? ?? true;
-          bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
-          bool shouldAutoPlay = autoTransition && isAppInForeground;
+          bool shouldAutoPlay = autoTransition && _isAppInForeground;
 
           if (_status == PomodoroStatus.running && _breakDuration != null) {
             // Finaliza sesión de foco, prepara o inicia descanso
+            _status = PomodoroStatus.resting;
             _remainingTime = _breakDuration!;
+            _timerService.start(startDuration: _remainingTime);
             
-            if (shouldAutoPlay) {
-              _status = PomodoroStatus.resting;
-              _timerService.start(startDuration: _remainingTime);
-              _notifyTransition(isStartingBreak: true);
-            } else {
-              _status = PomodoroStatus.paused;
-              _prePauseStatus = PomodoroStatus.resting;
-              _triggerAlarm(); // Suena la alarma de fin de foco
-            }
+            // SIEMPRE llamamos a transición asimétrica, no a loop infinito
+            _notifyTransition(isStartingBreak: true);
+            
+            _emitState(); // Emitimos para que ProcessSessionUseCase sepa que el foco acabó
 
-            _emitState();
+            if (!shouldAutoPlay) {
+              Future.delayed(const Duration(milliseconds: 200), () {
+                _status = PomodoroStatus.paused;
+                _prePauseStatus = PomodoroStatus.resting;
+                _timerService.pause();
+                // Quitamos _triggerAlarm() para no disparar la alarma de fin absoluto
+                _emitState(); // Segundo emit para mostrar el pause en UI
+              });
+            }
           } else if (_status == PomodoroStatus.resting) {
             // Finaliza descanso, prepara o inicia focus
+            _status = PomodoroStatus.running;
             _remainingTime = _duration;
+            _timerService.start(startDuration: _remainingTime);
 
-            if (shouldAutoPlay) {
-              _status = PomodoroStatus.running;
-              _timerService.start(startDuration: _remainingTime);
-              _hapticService.startAlarmVibration();
-              Future.delayed(const Duration(seconds: 2), () {
-                _hapticService.stopAlarmVibration();
-                _audioManager.stopBreakEndSound();
-              });
-            } else {
-              _status = PomodoroStatus.paused;
-              _prePauseStatus = PomodoroStatus.running;
-              _hapticService.startAlarmVibration(); // Alarma de fin de descanso
-              Future.delayed(const Duration(seconds: 2), () {
-                _hapticService.stopAlarmVibration();
-                _audioManager.stopBreakEndSound();
-              });
-            }
+            // SIEMPRE hacemos la vibración de transición
+            _hapticService.startAlarmVibration();
+            Future.delayed(const Duration(seconds: 2), () {
+              _hapticService.stopAlarmVibration();
+              _audioManager.stopBreakEndSound();
+            });
 
             _emitState();
+
+            if (!shouldAutoPlay) {
+              Future.delayed(const Duration(milliseconds: 200), () {
+                _status = PomodoroStatus.paused;
+                _prePauseStatus = PomodoroStatus.running;
+                _timerService.pause();
+                // Quitamos _triggerAlarm() para no disparar alarma sin sentido
+                _emitState();
+              });
+            }
           } else if (_status == PomodoroStatus.running ||
               _status == PomodoroStatus.paused) {
             // Comportamiento normal si no hay descanso configurado
@@ -206,7 +212,18 @@ class FocusSessionManager {
 
             _triggerAlarm();
 
-            _emitState();
+            _emitState(); // Emitimos FINISHED para registrar la sesión en ProcessSessionUseCase y UI
+
+            if (!shouldAutoPlay) {
+              Future.delayed(const Duration(milliseconds: 200), () {
+                _status = PomodoroStatus.paused;
+                _prePauseStatus = PomodoroStatus.running;
+                _remainingTime = _duration; // Reseteamos el contador
+                _timerService.start(startDuration: _remainingTime);
+                _timerService.pause();
+                _emitState(); // Emitimos PAUSED para retener el widget en Dynamic Island
+              });
+            }
           }
         });
       }
@@ -341,6 +358,10 @@ class FocusSessionManager {
   }
 
   // --- Actions ---
+
+  void setAppInForeground(bool inForeground) {
+    _isAppInForeground = inForeground;
+  }
 
   void setDuration(Duration duration) {
     if (_status == PomodoroStatus.initial) {
