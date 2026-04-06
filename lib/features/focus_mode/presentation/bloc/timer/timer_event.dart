@@ -16,6 +16,8 @@ class StartTimer extends TimerEvent {}
 
 class PauseTimer extends TimerEvent {}
 
+class SkipToNextPhase extends TimerEvent {}
+
 class ResetTimer extends TimerEvent {}
 
 class StopAlarm extends TimerEvent {}

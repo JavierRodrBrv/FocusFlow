@@ -20,17 +20,20 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<UpdateConsentStatus>(_onUpdateConsentStatus);
     on<UpdateSettingsPremiumStatus>(_onUpdatePremiumStatus);
     on<SetDefaultBreakDuration>(_onSetDefaultBreakDuration);
+    on<ToggleAutoTransitionWhenForeground>(_onToggleAutoTransition);
   }
 
   void _onInitializeSettings(InitializeSettings event, Emitter<SettingsState> emit) {
     final box = Hive.box('settings');
-    final defaultBreakMinutes = box.get('default_break_duration') as int?;
+    final defaultBreakDurationMinutes = box.get('default_break_duration') as int?;
+    final autoTransition = box.get('auto_transition_when_foreground') as bool? ?? true;
     
     emit(state.copyWith(
       isPremium: event.isPremium,
       backgroundEffect: _sessionManager.currentState.backgroundEffect,
       isAlarmSoundEnabled: _sessionManager.isAlarmSoundEnabled,
-      defaultBreakDuration: defaultBreakMinutes != null ? Duration(minutes: defaultBreakMinutes) : null,
+      defaultBreakDuration: defaultBreakDurationMinutes != null ? Duration(minutes: defaultBreakDurationMinutes) : null,
+      autoTransitionWhenForeground: autoTransition,
     ));
   }
 
@@ -65,5 +68,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       box.put('default_break_duration', event.duration!.inMinutes);
       emit(state.copyWith(defaultBreakDuration: event.duration));
     }
+  }
+
+  void _onToggleAutoTransition(ToggleAutoTransitionWhenForeground event, Emitter<SettingsState> emit) {
+    bool newValue = !state.autoTransitionWhenForeground;
+    Hive.box('settings').put('auto_transition_when_foreground', newValue);
+    emit(state.copyWith(autoTransitionWhenForeground: newValue));
   }
 }

@@ -45,6 +45,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     let pauseName = "com.andaluzcode.focusflow.pause" as CFString
     let playName  = "com.andaluzcode.focusflow.play"  as CFString
     let stopName  = "com.andaluzcode.focusflow.stop"  as CFString
+    let nextName  = "com.andaluzcode.focusflow.next"  as CFString
     
     CFNotificationCenterAddObserver(center, nil, { _, _, _, _, _ in
       // FIX #A2: Registrar timestamp del Intent para aplicar cooldown
@@ -60,6 +61,11 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     CFNotificationCenterAddObserver(center, nil, { _, _, _, _, _ in
       FocusFlowNotificationPlugin.notifyFlutter("STOP_ACTION")
     }, stopName, nil, .deliverImmediately)
+    
+    CFNotificationCenterAddObserver(center, nil, { _, _, _, _, _ in
+      FocusFlowNotificationPlugin.lastIntentActionTime = Date()
+      FocusFlowNotificationPlugin.notifyFlutter("NEXT_ACTION")
+    }, nextName, nil, .deliverImmediately)
   }
 
   // --- ESCUCHA DE CICLO DE VIDA ---
@@ -172,9 +178,9 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       if let defaults = UserDefaults(suiteName: "group.com.andaluzcode.focusFlow") {
           defaults.set(args["isPaused"] as? Bool ?? false, forKey: "isPaused")
           defaults.set(args["remainingSeconds"] as? Int ?? 0, forKey: "remainingSeconds")
-          defaults.set(args["startDate"] as? Int ?? 0, forKey: "startDate")
-          defaults.set(args["targetEndTime"] as? Int ?? 0, forKey: "targetEndTime")
-          defaults.set(args["totalDuration"] as? Int ?? 0, forKey: "totalDuration")
+          defaults.set(args["cycleStartDate"] as? Int ?? 0, forKey: "cycleStartDate")
+          defaults.set(args["focusDuration"] as? Int ?? 0, forKey: "focusDuration")
+          defaults.set(args["breakDuration"] as? Int ?? 0, forKey: "breakDuration")
           defaults.set(args["status"] as? String ?? "focus", forKey: "status")
           defaults.set(false, forKey: "isStopped")
           defaults.synchronize()
@@ -190,9 +196,9 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           finalArgs = inputArgs
       } else if let defaults = UserDefaults(suiteName: "group.com.andaluzcode.focusFlow") {
           // Reclaiming staged state
-          finalArgs["startDate"] = defaults.integer(forKey: "startDate")
-          finalArgs["targetEndTime"] = defaults.integer(forKey: "targetEndTime")
-          finalArgs["totalDuration"] = defaults.integer(forKey: "totalDuration")
+          finalArgs["cycleStartDate"] = defaults.integer(forKey: "cycleStartDate")
+          finalArgs["focusDuration"] = defaults.integer(forKey: "focusDuration")
+          finalArgs["breakDuration"] = defaults.integer(forKey: "breakDuration")
           finalArgs["status"] = defaults.string(forKey: "status") ?? "focus"
           finalArgs["isPaused"] = defaults.bool(forKey: "isPaused")
           finalArgs["remainingSeconds"] = defaults.integer(forKey: "remainingSeconds")
@@ -203,24 +209,27 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       
       os_log("[FocusFlow] manageActivity executing with: %{public}@", log: .default, type: .info, String(describing: finalArgs))
       
-      let startDateMillis    = finalArgs["startDate"]     as? Int ?? Int(Date().timeIntervalSince1970 * 1000)
-      let targetEndTimeMillis = finalArgs["targetEndTime"] as? Int ?? 0
-      let totalDuration      = finalArgs["totalDuration"] as? Int ?? 0
+      let cycleStartDateMillis = finalArgs["cycleStartDate"] as? Int ?? Int(Date().timeIntervalSince1970 * 1000)
+      let focusDuration      = finalArgs["focusDuration"] as? Int ?? 0
+      let breakDuration      = finalArgs["breakDuration"] as? Int ?? 0
       let status             = finalArgs["status"]        as? String ?? "focus"
       let isPaused           = finalArgs["isPaused"]      as? Bool ?? false
       let remainingSeconds   = finalArgs["remainingSeconds"] as? Int ?? 0
       
-      let targetEndDate = Date(timeIntervalSince1970: TimeInterval(targetEndTimeMillis) / 1000)
-      let staleDate: Date? = isPaused ? nil : targetEndDate.addingTimeInterval(60)
-
+      let cycleStartDate = Date(timeIntervalSince1970: TimeInterval(cycleStartDateMillis) / 1000)
+      
       let state = FocusFlowAttributes.ContentState(
           isPaused: isPaused,
           status: status,
           remainingSeconds: remainingSeconds,
-          timerStartDate: Date(timeIntervalSince1970: TimeInterval(startDateMillis) / 1000),
-          timerEndDate: targetEndDate,
+          cycleStartDate: cycleStartDate,
+          focusDurationSeconds: focusDuration,
+          breakDurationSeconds: breakDuration,
           pauseDate: isPaused ? Date() : nil
       )
+      
+      // Use the computed endDate for stale configuration
+      let staleDate: Date? = isPaused ? nil : state.activePhaseInfo.endDate.addingTimeInterval(60)
       
       // --- GUARDA DE COLISIÓN (Proceso vs Proceso) ---
       if args == nil, let defaults = UserDefaults(suiteName: "group.com.andaluzcode.focusFlow") {
@@ -242,12 +251,26 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           defaults.synchronize()
       }
       
-      os_log("[FocusFlow] New ContentState created. isPaused: %d, targetEndDate: %{public}@", log: .default, type: .info, isPaused, String(describing: targetEndDate))
+      os_log("[FocusFlow] New ContentState created. isPaused: %d", log: .default, type: .info, isPaused)
       
       FocusFlowNotificationPlugin.updateQueue.async {
+          var bgTask: UIBackgroundTaskIdentifier = .invalid
+          bgTask = UIApplication.shared.beginBackgroundTask(withName: "UpdateLiveActivity") {
+              if bgTask != .invalid {
+                  UIApplication.shared.endBackgroundTask(bgTask)
+                  bgTask = .invalid
+              }
+          }
+          
           let semaphore = DispatchSemaphore(value: 0)
           Task {
-              defer { semaphore.signal() }
+              defer { 
+                  semaphore.signal() 
+                  if bgTask != .invalid {
+                      UIApplication.shared.endBackgroundTask(bgTask)
+                      bgTask = .invalid
+                  }
+              }
               
               let activities = Activity<FocusFlowAttributes>.activities
               
@@ -331,10 +354,11 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
                           currentState = activity.contentState
                       }
                       
-                      let isSameEndDate = abs(currentState.timerEndDate.timeIntervalSince(state.timerEndDate)) < 2.0
+                      let isSameCycleDate = abs(currentState.cycleStartDate.timeIntervalSince(state.cycleStartDate)) < 2.0
                       let isSameRemaining = abs(currentState.remainingSeconds - state.remainingSeconds) <= 1
                       let isPausedChanged = currentState.isPaused != state.isPaused
-                      let isRedundant = !isPausedChanged && (state.isPaused ? isSameRemaining : isSameEndDate)
+                      let isStatusChanged = currentState.status != state.status
+                      let isRedundant = !isPausedChanged && !isStatusChanged && (state.isPaused ? isSameRemaining : isSameCycleDate)
                       
                       if isRedundant {
                           os_log("[FocusFlow] Skipping redundant update.", log: .default, type: .info)

@@ -37,6 +37,7 @@ class FocusState extends Equatable {
   final bool isWaitingForFirstFlip;
   final Duration? defaultBreakDuration;
   final String? selectedAmbiencePath;
+  final bool autoTransitionWhenForeground;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -69,6 +70,7 @@ class FocusState extends Equatable {
     this.isWaitingForFirstFlip = false,
     this.defaultBreakDuration,
     this.selectedAmbiencePath,
+    this.autoTransitionWhenForeground = true,
   });
 
   Map<String, dynamic> toJson() {
@@ -112,6 +114,7 @@ class FocusState extends Equatable {
       'isWaitingForFirstFlip': isWaitingForFirstFlip,
       'defaultBreakDuration': defaultBreakDuration?.inSeconds,
       'selectedAmbiencePath': selectedAmbiencePath,
+      'autoTransitionWhenForeground': autoTransitionWhenForeground,
     };
   }
 
@@ -161,6 +164,7 @@ class FocusState extends Equatable {
           ? Duration(seconds: json['defaultBreakDuration'] as int)
           : null,
       selectedAmbiencePath: json['selectedAmbiencePath'] as String?,
+      autoTransitionWhenForeground: json['autoTransitionWhenForeground'] as bool? ?? true,
     );
   }
 
@@ -196,6 +200,7 @@ class FocusState extends Equatable {
     Duration? defaultBreakDuration,
     String? selectedAmbiencePath,
     bool clearSelectedAmbience = false,
+    bool? autoTransitionWhenForeground,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -228,6 +233,7 @@ class FocusState extends Equatable {
       isWaitingForFirstFlip: isWaitingForFirstFlip ?? this.isWaitingForFirstFlip,
       defaultBreakDuration: defaultBreakDuration ?? this.defaultBreakDuration,
       selectedAmbiencePath: clearSelectedAmbience ? null : (selectedAmbiencePath ?? this.selectedAmbiencePath),
+      autoTransitionWhenForeground: autoTransitionWhenForeground ?? this.autoTransitionWhenForeground,
     );
   }
 
@@ -263,5 +269,6 @@ class FocusState extends Equatable {
         isWaitingForFirstFlip,
         defaultBreakDuration,
         selectedAmbiencePath,
+        autoTransitionWhenForeground,
       ];
 }

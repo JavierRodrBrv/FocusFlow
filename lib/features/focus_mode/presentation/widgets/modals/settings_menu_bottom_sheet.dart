@@ -192,6 +192,29 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
               activeThumbColor: Colors.amberAccent,
             ),
 
+            SwitchListTile(
+              secondary: Icon(
+                state.autoTransitionWhenForeground ? Icons.autorenew : Icons.sync_disabled,
+                color: state.autoTransitionWhenForeground ? Colors.greenAccent : Colors.grey,
+              ),
+              title: const Text(
+                'Transición Automática',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: const Text(
+                'Solo funciona con la app abierta. En segundo plano será manual.',
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              value: state.autoTransitionWhenForeground,
+              onChanged: (bool value) {
+                FlutterBackgroundService().invoke('sendEvent', {
+                  'event': 'toggleAutoTransition',
+                });
+              },
+              activeTrackColor: Colors.green,
+              activeThumbColor: Colors.greenAccent,
+            ),
+
             ListTile(
               leading: const Icon(
                 Icons.coffee,

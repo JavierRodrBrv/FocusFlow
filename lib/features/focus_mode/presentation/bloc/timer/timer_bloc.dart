@@ -26,6 +26,7 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
     on<InitializeTimer>(_onInitializeTimer);
     on<StartTimer>(_onStartTimer);
     on<PauseTimer>(_onPauseTimer);
+    on<SkipToNextPhase>(_onSkipToNextPhase);
     on<ResetTimer>(_onResetTimer);
     on<StopAlarm>(_onStopAlarm);
     on<UpdatePomodoroDuration>(_onUpdateDuration);
@@ -64,6 +65,10 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
 
   Future<void> _onPauseTimer(PauseTimer event, Emitter<TimerState> emit) async {
     await _sessionManager.pauseTimer();
+  }
+
+  Future<void> _onSkipToNextPhase(SkipToNextPhase event, Emitter<TimerState> emit) async {
+    await _sessionManager.skipToNextPhase();
   }
 
   Future<void> _onResetTimer(ResetTimer event, Emitter<TimerState> emit) async {

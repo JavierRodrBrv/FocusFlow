@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:focus_flow/core/services/dnd_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:injectable/injectable.dart';
@@ -154,38 +154,46 @@ class FocusSessionManager {
 
       if (_remainingTime.inSeconds == 0) {
         Future.microtask(() {
+          bool autoTransition = _settingsBox?.get('auto_transition_when_foreground', defaultValue: true) as bool? ?? true;
+          bool isAppInForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+          bool shouldAutoPlay = autoTransition && isAppInForeground;
+
           if (_status == PomodoroStatus.running && _breakDuration != null) {
-            // Finaliza sesión de foco, inicia descanso (Focus Loop)
-
-            _status = PomodoroStatus.resting;
-
+            // Finaliza sesión de foco, prepara o inicia descanso
             _remainingTime = _breakDuration!;
-
-            _timerService.start(startDuration: _remainingTime);
-
-            _notifyTransition(isStartingBreak: true);
+            
+            if (shouldAutoPlay) {
+              _status = PomodoroStatus.resting;
+              _timerService.start(startDuration: _remainingTime);
+              _notifyTransition(isStartingBreak: true);
+            } else {
+              _status = PomodoroStatus.paused;
+              _prePauseStatus = PomodoroStatus.resting;
+              _triggerAlarm(); // Suena la alarma de fin de foco
+            }
 
             _emitState();
           } else if (_status == PomodoroStatus.resting) {
-            // Finaliza descanso, reinicia sesión de foco
-
-            _status = PomodoroStatus.running;
-
+            // Finaliza descanso, prepara o inicia focus
             _remainingTime = _duration;
 
-            _timerService.start(startDuration: _remainingTime);
-
-            // Solo vibramos al llegar a 0 (el sonido ya sonó a los 5s)
-
-            _hapticService.startAlarmVibration();
-
-            Future.delayed(const Duration(seconds: 2), () {
-              _hapticService.stopAlarmVibration();
-
-              // APAGAR EL SONIDO 2 segundos después de empezar el foco
-
-              _audioManager.stopBreakEndSound();
-            });
+            if (shouldAutoPlay) {
+              _status = PomodoroStatus.running;
+              _timerService.start(startDuration: _remainingTime);
+              _hapticService.startAlarmVibration();
+              Future.delayed(const Duration(seconds: 2), () {
+                _hapticService.stopAlarmVibration();
+                _audioManager.stopBreakEndSound();
+              });
+            } else {
+              _status = PomodoroStatus.paused;
+              _prePauseStatus = PomodoroStatus.running;
+              _hapticService.startAlarmVibration(); // Alarma de fin de descanso
+              Future.delayed(const Duration(seconds: 2), () {
+                _hapticService.stopAlarmVibration();
+                _audioManager.stopBreakEndSound();
+              });
+            }
 
             _emitState();
           } else if (_status == PomodoroStatus.running ||
@@ -447,6 +455,41 @@ class FocusSessionManager {
 
       _emitState();
     }
+  }
+
+  Future<void> skipToNextPhase() async {
+    _timerService.pause();
+    _audioManager.stopKeepAlive();
+    await stopAlarm();
+    
+    // Si estamos esperando para empezar un descanso (terminó foco pero no autotransisionó)
+    if (_status == PomodoroStatus.paused && _prePauseStatus == PomodoroStatus.resting) {
+       _status = PomodoroStatus.resting;
+       _remainingTime = _breakDuration!;
+       _timerService.start(startDuration: _remainingTime);
+       _notifyTransition(isStartingBreak: true);
+    } 
+    // Si estamos esperando para empezar foco (terminó descanso pero no autotransisionó)
+    else if (_status == PomodoroStatus.paused && _prePauseStatus == PomodoroStatus.running) {
+       _status = PomodoroStatus.running;
+       _remainingTime = _duration;
+       _timerService.start(startDuration: _remainingTime);
+    }
+    // Si estamos en foco actual, saltamos a descanso
+    else if (_status == PomodoroStatus.running && _breakDuration != null) {
+       _status = PomodoroStatus.resting;
+       _remainingTime = _breakDuration!;
+       _timerService.start(startDuration: _remainingTime);
+       _notifyTransition(isStartingBreak: true);
+    }
+    // Si estamos en descanso actual o cualquier otro caso, saltamos a foco
+    else {
+       _status = PomodoroStatus.running;
+       _remainingTime = _duration;
+       _timerService.start(startDuration: _remainingTime);
+    }
+    
+    _emitState();
   }
 
   Future<void> resetTimer() async {

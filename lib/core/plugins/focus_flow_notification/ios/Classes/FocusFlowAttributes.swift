@@ -8,22 +8,49 @@ public struct FocusFlowAttributes: ActivityAttributes {
         public var remainingSeconds: Int
         
         // --- NUEVO: Propiedades para Timer Nativo ---
-        // Al proveer The timestamp de inicio y fin, Text(timerInterval) de SwiftUI
-        // hace la cuenta regresiva nativamente sin consumir "updates" por segundo.
-        public var timerStartDate: Date
-        public var timerEndDate: Date
-        // Cuando pausamos, guardamos el timestamp de la pausa. Text() se quedará congelado ahí.
+        // --- NATIVE LOOP PARAMS ---
+        public var cycleStartDate: Date
+        public var focusDurationSeconds: Int
+        public var breakDurationSeconds: Int
         public var pauseDate: Date?
         
-        public init(isPaused: Bool, status: String, remainingSeconds: Int, timerStartDate: Date, timerEndDate: Date, pauseDate: Date?) {
+        public init(isPaused: Bool, status: String, remainingSeconds: Int, cycleStartDate: Date, focusDurationSeconds: Int, breakDurationSeconds: Int, pauseDate: Date?) {
             self.isPaused = isPaused
             self.status = status
             self.remainingSeconds = remainingSeconds
-            self.timerStartDate = timerStartDate
-            self.timerEndDate = timerEndDate
+            self.cycleStartDate = cycleStartDate
+            self.focusDurationSeconds = focusDurationSeconds
+            self.breakDurationSeconds = breakDurationSeconds
             self.pauseDate = pauseDate
         }
     }
     public var name: String
     public init(name: String) { self.name = name }
+}
+
+extension FocusFlowAttributes.ContentState {
+    var activePhaseInfo: (isBreak: Bool, startDate: Date, endDate: Date) {
+        if isPaused {
+            return (status == "break", Date(), Date().addingTimeInterval(TimeInterval(remainingSeconds)))
+        }
+        if breakDurationSeconds == 0 || status == "waiting" {
+            let start = cycleStartDate
+            let end = cycleStartDate.addingTimeInterval(TimeInterval(focusDurationSeconds))
+            return (status == "break", start, end)
+        }
+        let totalCycleSeconds = focusDurationSeconds + breakDurationSeconds
+        let elapsed = Int(Date().timeIntervalSince(cycleStartDate))
+        if elapsed < 0 {
+            return (false, cycleStartDate, cycleStartDate.addingTimeInterval(TimeInterval(focusDurationSeconds)))
+        }
+        let elapsedCycles = elapsed / totalCycleSeconds
+        let currentCycleStart = cycleStartDate.addingTimeInterval(TimeInterval(elapsedCycles * totalCycleSeconds))
+        let currentCycleCompletedDuration = elapsed % totalCycleSeconds
+        
+        if currentCycleCompletedDuration < focusDurationSeconds {
+            return (false, currentCycleStart, currentCycleStart.addingTimeInterval(TimeInterval(focusDurationSeconds)))
+        } else {
+            return (true, currentCycleStart.addingTimeInterval(TimeInterval(focusDurationSeconds)), currentCycleStart.addingTimeInterval(TimeInterval(totalCycleSeconds)))
+        }
+    }
 }
