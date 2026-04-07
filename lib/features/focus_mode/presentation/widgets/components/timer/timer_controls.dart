@@ -157,15 +157,12 @@ class TimerControls extends StatelessWidget {
                   child: GestureDetector(
                     onTap: () {
                       if (status == PomodoroStatus.initial) {
-                        if (state.defaultBreakDuration != null) {
                           service.invoke('sendEvent', {
                             'event': 'setBreakDuration',
-                            'durationMinutes': state.defaultBreakDuration!.inMinutes,
+                            'durationMinutes': state.defaultBreakDuration?.inMinutes,
                           });
                           service.invoke('sendEvent', {'event': 'startTimer'});
-                        } else {
-                          _showBreakSelectionDialog(context);
-                        }
+                        
                       } else {
                         // Si estamos esperando el primer volteo en modo Hardcore,
                         // mostramos aviso en lugar de pausar/reanudar.
@@ -220,6 +217,7 @@ class TimerControls extends StatelessWidget {
               ),
               
               // Skip Button Animated - Aparece solo si corre
+              if(state.defaultBreakDuration != null)
               AnimatedSize(
                 duration: const Duration(milliseconds: 350),
                 curve: Curves.easeOutBack,
