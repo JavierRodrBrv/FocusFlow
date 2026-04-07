@@ -182,6 +182,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           defaults.set(args["focusDuration"] as? Int ?? 0, forKey: "focusDuration")
           defaults.set(args["breakDuration"] as? Int ?? 0, forKey: "breakDuration")
           defaults.set(args["status"] as? String ?? "focus", forKey: "status")
+          defaults.set(args["showSkip"] as? Bool ?? true, forKey: "showSkip")
           defaults.set(false, forKey: "isStopped")
           defaults.synchronize()
           os_log("[FocusFlow] State STAGED in UserDefaults", log: .default, type: .info)
@@ -202,6 +203,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           finalArgs["status"] = defaults.string(forKey: "status") ?? "focus"
           finalArgs["isPaused"] = defaults.bool(forKey: "isPaused")
           finalArgs["remainingSeconds"] = defaults.integer(forKey: "remainingSeconds")
+          finalArgs["showSkip"] = defaults.object(forKey: "showSkip") as? Bool ?? true
           os_log("[FocusFlow] Reclaiming staged state from UserDefaults for COMMIT", log: .default, type: .info)
       }
       
@@ -221,6 +223,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       
       let isPaused           = finalArgs["isPaused"]      as? Bool ?? false
       let remainingSeconds   = finalArgs["remainingSeconds"] as? Int ?? 0
+      let showSkip           = finalArgs["showSkip"]      as? Bool ?? true
       
       let cycleStartDate = Date(timeIntervalSince1970: TimeInterval(cycleStartDateMillis) / 1000)
       
@@ -231,7 +234,8 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           cycleStartDate: cycleStartDate,
           focusDurationSeconds: focusDuration,
           breakDurationSeconds: breakDuration,
-          pauseDate: isPaused ? Date() : nil
+          pauseDate: isPaused ? Date() : nil,
+          showSkip: showSkip
       )
       
       // Use the computed endDate for stale configuration

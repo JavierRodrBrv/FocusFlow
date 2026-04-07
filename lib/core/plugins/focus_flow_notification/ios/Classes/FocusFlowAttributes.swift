@@ -13,8 +13,9 @@ public struct FocusFlowAttributes: ActivityAttributes {
         public var focusDurationSeconds: Int
         public var breakDurationSeconds: Int
         public var pauseDate: Date?
+        public var showSkip: Bool
         
-        public init(isPaused: Bool, status: String, remainingSeconds: Int, cycleStartDate: Date, focusDurationSeconds: Int, breakDurationSeconds: Int, pauseDate: Date?) {
+        public init(isPaused: Bool, status: String, remainingSeconds: Int, cycleStartDate: Date, focusDurationSeconds: Int, breakDurationSeconds: Int, pauseDate: Date?, showSkip: Bool) {
             self.isPaused = isPaused
             self.status = status
             self.remainingSeconds = remainingSeconds
@@ -22,6 +23,7 @@ public struct FocusFlowAttributes: ActivityAttributes {
             self.focusDurationSeconds = focusDurationSeconds
             self.breakDurationSeconds = breakDurationSeconds
             self.pauseDate = pauseDate
+            self.showSkip = showSkip
         }
     }
     public var name: String

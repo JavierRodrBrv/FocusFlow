@@ -23,8 +23,9 @@ public struct FocusFlowAttributes: ActivityAttributes {
         public var focusDurationSeconds: Int
         public var breakDurationSeconds: Int
         public var pauseDate: Date?
+        public var showSkip: Bool
         
-        public init(isPaused: Bool, status: String, remainingSeconds: Int, cycleStartDate: Date, focusDurationSeconds: Int, breakDurationSeconds: Int, pauseDate: Date?) {
+        public init(isPaused: Bool, status: String, remainingSeconds: Int, cycleStartDate: Date, focusDurationSeconds: Int, breakDurationSeconds: Int, pauseDate: Date?, showSkip: Bool) {
             self.isPaused = isPaused
             self.status = status
             self.remainingSeconds = remainingSeconds
@@ -32,6 +33,7 @@ public struct FocusFlowAttributes: ActivityAttributes {
             self.focusDurationSeconds = focusDurationSeconds
             self.breakDurationSeconds = breakDurationSeconds
             self.pauseDate = pauseDate
+            self.showSkip = showSkip
         }
     }
     public var name: String
@@ -131,14 +133,16 @@ struct FocusFlowLiveActivity: Widget {
                             .buttonStyle(.plain)
                         }
                         
-                        Button(intent: NextPhaseIntent()) {
-                            Image(systemName: "forward.end.fill")
-                                .font(.body)
-                                .frame(width: 34, height: 34)
-                                .background(Color.blue.opacity(0.2))
-                                .clipShape(Circle())
+                        if context.state.showSkip {
+                            Button(intent: NextPhaseIntent()) {
+                                Image(systemName: "forward.end.fill")
+                                    .font(.body)
+                                    .frame(width: 34, height: 34)
+                                    .background(Color.blue.opacity(0.2))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -196,14 +200,16 @@ struct FocusFlowLiveActivity: Widget {
                                 .buttonStyle(.plain)
                             }
 
-                            Button(intent: NextPhaseIntent()) {
-                                Image(systemName: "forward.end.fill")
-                                    .font(.title)
-                                    .frame(width: 50, height: 50)
-                                    .background(Color.blue.opacity(0.2))
-                                    .clipShape(Circle())
+                            if context.state.showSkip {
+                                Button(intent: NextPhaseIntent()) {
+                                    Image(systemName: "forward.end.fill")
+                                        .font(.title)
+                                        .frame(width: 50, height: 50)
+                                        .background(Color.blue.opacity(0.2))
+                                        .clipShape(Circle())
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
 
                             Button(intent: StopIntent()) {
                                 Image(systemName: "xmark")
@@ -322,7 +328,8 @@ struct PauseIntent: LiveActivityIntent {
                 cycleStartDate: stateOld.cycleStartDate,
                 focusDurationSeconds: stateOld.focusDurationSeconds,
                 breakDurationSeconds: stateOld.breakDurationSeconds,
-                pauseDate: now
+                pauseDate: now,
+                showSkip: stateOld.showSkip
             )
             
             if #available(iOS 16.2, *) {
@@ -393,7 +400,8 @@ struct ResumeIntent: LiveActivityIntent {
                 cycleStartDate: newCycleStart,
                 focusDurationSeconds: stateOld.focusDurationSeconds,
                 breakDurationSeconds: stateOld.breakDurationSeconds,
-                pauseDate: nil
+                pauseDate: nil,
+                showSkip: stateOld.showSkip
             )
             
             if #available(iOS 16.2, *) {

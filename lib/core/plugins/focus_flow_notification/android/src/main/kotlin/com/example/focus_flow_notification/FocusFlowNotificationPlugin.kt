@@ -68,7 +68,8 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
                 val time = call.argument<String>("time") ?: "00:00"
                 val status = call.argument<String>("status") ?: "running"
                 val phase = call.argument<String>("phase") ?: "focus"
-                updateCustomNotification(time, status, phase)
+                val showSkip = call.argument<Boolean>("showSkip") ?: true
+                updateCustomNotification(time, status, phase, showSkip)
                 result.success(null)
             }
             else -> result.notImplemented()
@@ -80,7 +81,7 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     }
 
-    private fun updateCustomNotification(time: String, status: String, phase: String) {
+    private fun updateCustomNotification(time: String, status: String, phase: String, showSkip: Boolean) {
         val notificationId = 888 
         val channelId = "focus_flow_channel"
         val hostPackageName = context.packageName
@@ -116,7 +117,7 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
             remoteViews.setTextViewTextSize(tvTimeId, TypedValue.COMPLEX_UNIT_SP, 16f)
         } else {
             remoteViews.setViewVisibility(btnActionId, android.view.View.VISIBLE)
-            remoteViews.setViewVisibility(btnNextId, android.view.View.VISIBLE)
+            remoteViews.setViewVisibility(btnNextId, if (showSkip) android.view.View.VISIBLE else android.view.View.GONE)
             
             // Text color logic: Red if running/resting, Adaptive if paused
             if (status == "running" || status == "resting") {

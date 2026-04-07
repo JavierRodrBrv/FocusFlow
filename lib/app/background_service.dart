@@ -180,6 +180,7 @@ void onStart(ServiceInstance service) async {
       'status': customStatus,
       'isPaused': isPaused,
       'remainingSeconds': state.remainingTime.inSeconds,
+      'showSkip': settingsBloc?.state.defaultBreakDuration != null,
     };
 
     // 3. STAGE (Guardado ligero en UserDefaults)
@@ -500,6 +501,7 @@ void onStart(ServiceInstance service) async {
             'time': time,
             'status': notificationStatus,
             'phase': customStatus,
+            'showSkip': settingsBloc?.state.defaultBreakDuration != null,
           });
         }
 
