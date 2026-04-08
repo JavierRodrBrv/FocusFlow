@@ -9,6 +9,7 @@ import 'package:showcaseview/showcaseview.dart';
 
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/services/focus_coordinator_service.dart';
+import 'package:focus_flow/app/background_service.dart';
 
 import '../models/focus_state.dart';
 import 'dialogs/session_completion_dialog.dart';
@@ -45,6 +46,8 @@ class _FocusViewState extends State<FocusView> {
   FocusState? _lastKnownState;
   late Stream<Map<String, dynamic>?> _updateStream;
   bool _isResuming = false;
+  int _loadingTicks = 0;
+  bool _serviceIsAlive = false;
 
   // Zoom Mode Local State
   bool _overlayVisible = true;
@@ -60,15 +63,46 @@ class _FocusViewState extends State<FocusView> {
     );
     _updateStream = FlutterBackgroundService().on('update');
 
+    // Escuchar señales de vida del servicio
+    FlutterBackgroundService().on('serviceReady').listen((_) {
+      debugPrint('[FocusView] Background Isolate is alive');
+      if (mounted) setState(() => _serviceIsAlive = true);
+    });
+
+    FlutterBackgroundService().on('serviceInitialized').listen((_) {
+      debugPrint('[FocusView] Background Service fully initialized');
+      _requestState();
+    });
+
     _initDeepLinks();
 
     _requestState();
     _startHeartbeat();
 
-    _handshakeTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    // Watchdog Agresivo: Chequeo cada segundo
+    _handshakeTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_lastKnownState == null ||
           _lastKnownState!.status == AppStatus.loading) {
+        _loadingTicks++;
+        
+        // Cada segundo pedimos el estado
         _requestState();
+
+        // 1. Si tras 3s no sabemos NADA (ni siquiera si el Isolate ha arrancado) -> Re-kick
+        if (!_serviceIsAlive && _loadingTicks >= 3) {
+          debugPrint('[FocusView] Watchdog: Isolate dead detected. Re-kicking...');
+          initializeService();
+          _loadingTicks = 0;
+        } 
+        // 2. Si el Isolate arrancó pero llevamos > 5s sin recibir el estado real -> Re-kick
+        // (Esto cubre bloqueos lógicos como el error de Hive que vimos en logs)
+        else if (_loadingTicks >= 5) {
+          debugPrint('[FocusView] Watchdog: Service logic hang. Re-kicking...');
+          initializeService();
+          _loadingTicks = 0;
+        }
+      } else {
+        _loadingTicks = 0;
       }
     });
 

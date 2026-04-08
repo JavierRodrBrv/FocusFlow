@@ -180,7 +180,7 @@ void onStart(ServiceInstance service) async {
       'status': customStatus,
       'isPaused': isPaused,
       'remainingSeconds': state.remainingTime.inSeconds,
-      'showSkip': settingsBloc?.state.defaultBreakDuration != null,
+      'showSkip': state.hasBreak,
     };
 
     // 3. STAGE (Guardado ligero en UserDefaults)
@@ -254,43 +254,75 @@ void onStart(ServiceInstance service) async {
     }
   });
 
+  // --- INITIALIZATION ---
+  service.invoke('serviceReady');
+  debugPrint('[BackgroundService] Starting...') ;
+
+  // 1. Storage & Core (Critical)
   try {
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
-    if (!Hive.isAdapterRegistered(0)) {
-      Hive.registerAdapter(PremiumStatusAdapter());
-    }
-    if (!Hive.isAdapterRegistered(1)) {
-      Hive.registerAdapter(SoundMixModelAdapter());
-    }
-    if (!Hive.isAdapterRegistered(2)) {
-      Hive.registerAdapter(FocusSessionModelAdapter());
-    }
+    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(PremiumStatusAdapter());
+    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SoundMixModelAdapter());
+    if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(FocusSessionModelAdapter());
+  } catch (e) {
+    debugPrint('[BackgroundService] Hive init error: $e');
+    // If Hive fails (e.g. lock file), we continue to allow the app to show a UI
+    // but without persistence. This is better than a black/loading screen.
+  }
 
+  // 2. Dependencies
+  try {
     await configureDependencies();
     await LocalNotificationService().init();
+  } catch (e) {
+    debugPrint('[BackgroundService] Injection/Notification error: $e');
+  }
 
-    timerBloc = getIt<TimerBloc>();
-    audioBloc = getIt<AudioMixBloc>();
-    settingsBloc = getIt<SettingsBloc>();
+  // 3. Bloc Initialization (With Fallbacks)
+  try {
+    debugPrint('[BackgroundService] Starting Bloc setup...');
+    timerBloc = getIt.isRegistered<TimerBloc>() ? getIt<TimerBloc>() : null;
+    audioBloc = getIt.isRegistered<AudioMixBloc>() ? getIt<AudioMixBloc>() : null;
+    settingsBloc = getIt.isRegistered<SettingsBloc>() ? getIt<SettingsBloc>() : null;
+    
+    final focusManager = getIt.isRegistered<FocusSessionManager>() ? getIt<FocusSessionManager>() : null;
+    if (focusManager != null) {
+      debugPrint('[BackgroundService] Initializing FocusSessionManager...');
+      await focusManager.init();
+    }
 
-    final focusManager = getIt<FocusSessionManager>();
-    await focusManager.init();
+    bool isPremium = false;
+    try {
+      debugPrint('[BackgroundService] Opening settings box...');
+      final settingsBox = await Hive.openBox('settings').timeout(const Duration(seconds: 3));
+      isPremium = settingsBox.get('is_premium', defaultValue: false);
+      debugPrint('[BackgroundService] Settings loaded. Premium: $isPremium');
+    } catch (e) {
+       debugPrint('[BackgroundService] Settings box ERROR (Xiaomi workaround might be needed): $e');
+    }
 
-    final settingsBox = await Hive.openBox('settings');
-    final isPremium = settingsBox.get('is_premium', defaultValue: false);
-
-    timerBloc.add(InitializeTimer(isPremium: isPremium));
-    audioBloc.add(InitializeAudio(isPremium: isPremium));
-    settingsBloc.add(InitializeSettings(isPremium: isPremium));
+    debugPrint('[BackgroundService] Sending Initialize events to Blocs...');
+    timerBloc?.add(InitializeTimer(isPremium: isPremium));
+    audioBloc?.add(InitializeAudio(isPremium: isPremium));
+    settingsBloc?.add(InitializeSettings(isPremium: isPremium));
 
     // Listen to all blocs to broadcast state
-    timerBloc.stream.listen((_) => broadcastState());
-    audioBloc.stream.listen((_) => broadcastState());
-    settingsBloc.stream.listen((_) => broadcastState());
+    timerBloc?.stream.listen((_) => broadcastState());
+    audioBloc?.stream.listen((_) => broadcastState());
+    settingsBloc?.stream.listen((_) => broadcastState());
+    
+    // Initial broadcast
+    broadcastState();
+    debugPrint('[BackgroundService] Blocs initialized and broadcasting');
+
   } catch (e) {
-    debugPrint('[BackgroundService] Fatal init error: $e');
+    debugPrint('[BackgroundService] Bloc init error: $e');
   }
+
+  debugPrint('[BackgroundService] Fully initialized');
+  service.invoke('serviceInitialized');
+
 
   service.on('sendEvent').listen((event) async {
     if (event == null ||
@@ -378,6 +410,9 @@ void onStart(ServiceInstance service) async {
       timerBloc.add(
         SetBreakDuration(minutes != null ? Duration(minutes: minutes) : null),
       );
+      forceNextUpdate = true;
+    } else if (name == 'skipToNextPhase') {
+      timerBloc.add(SkipToNextPhase());
       forceNextUpdate = true;
     } else if (name == 'requestState') {
       broadcastState();
@@ -501,7 +536,7 @@ void onStart(ServiceInstance service) async {
             'time': time,
             'status': notificationStatus,
             'phase': customStatus,
-            'showSkip': settingsBloc?.state.defaultBreakDuration != null,
+            'showSkip': state.hasBreak,
           });
         }
 

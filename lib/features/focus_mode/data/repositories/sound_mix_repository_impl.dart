@@ -74,10 +74,10 @@ class SoundMixRepositoryImpl implements ISoundMixRepository {
   @override
   Future<Result<List<SoundMix>, Failure>> getSavedMixes() async {
     try {
-      return await _withTypedBox(
+      return await _withTypedBox<Result<List<SoundMix>, Failure>, SoundMixModel>(
         name: _boxName,
         action: (box) async {
-          final mixes = (box as Box<SoundMixModel>).values
+          final mixes = box.values
               .map((m) => m.toEntity())
               .toList();
           return Success(mixes);

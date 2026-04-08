@@ -216,8 +216,8 @@ class TimerControls extends StatelessWidget {
                 ),
               ),
               
-              // Skip Button Animated - Aparece solo si corre
-              if(state.defaultBreakDuration != null)
+              // Skip Button Animated - Aparece solo si el estado actual tiene un descanso configurado
+              if(state.hasBreak)
               AnimatedSize(
                 duration: const Duration(milliseconds: 350),
                 curve: Curves.easeOutBack,
@@ -243,7 +243,7 @@ class TimerControls extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
-                        service.invoke('sendEvent', {'event': 'skipNextPhase'});
+                        service.invoke('sendEvent', {'event': 'skipToNextPhase'});
                       },
                     ),
                   ) : const SizedBox.shrink(key: ValueKey('emptySkipBtn')),

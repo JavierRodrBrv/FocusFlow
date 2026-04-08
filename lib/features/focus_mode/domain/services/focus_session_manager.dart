@@ -109,9 +109,9 @@ class FocusSessionManager {
     orientation: _orientation,
     isHardcore: _isHardcore,
     isAlarmSoundEnabled: _isAlarmSoundEnabled,
-    isResting:
-        _status == PomodoroStatus.resting ||
-        _prePauseStatus == PomodoroStatus.resting,
+    isResting: _status == PomodoroStatus.resting ||
+        (_status == PomodoroStatus.paused &&
+            _prePauseStatus == PomodoroStatus.resting),
     hasBreak: _breakDuration != null,
     penaltyCount: _penaltyCount,
     totalPenaltyTime: _totalPenaltyTime,
@@ -423,6 +423,7 @@ class FocusSessionManager {
       _timerService.resume();
 
       _status = _prePauseStatus ?? PomodoroStatus.running;
+      _prePauseStatus = null;
     } else if (_status == PomodoroStatus.initial) {
       // REQUISITO: Si es Hardcore, no arranca el timer de inmediato
       if (_isHardcore) {
@@ -479,37 +480,50 @@ class FocusSessionManager {
   }
 
   Future<void> skipToNextPhase() async {
+    // Si no hay descansos configurados o estamos en estado inicial/terminado, ignoramos el skip
+    if (_breakDuration == null || 
+        _status == PomodoroStatus.initial || 
+        _status == PomodoroStatus.finished) {
+      debugPrint('[FocusSessionManager] Skip ignored: No break configured or invalid status.');
+      return;
+    }
+
     _timerService.pause();
     _audioManager.stopKeepAlive();
     await stopAlarm();
     
-    // Si estamos esperando para empezar un descanso (terminó foco pero no autotransisionó)
-    if (_status == PomodoroStatus.paused && _prePauseStatus == PomodoroStatus.resting) {
-       _status = PomodoroStatus.resting;
-       _remainingTime = _breakDuration!;
-       _timerService.start(startDuration: _remainingTime);
-       _notifyTransition(isStartingBreak: true);
+    // CASO 1: Estamos pausados esperando para empezar/reanudar algo
+    if (_status == PomodoroStatus.paused) {
+      // Si el que estaba "en cola" o pausado era un descanso, saltamos a foco
+      if (_prePauseStatus == PomodoroStatus.resting) {
+        _status = PomodoroStatus.running;
+        _remainingTime = _duration;
+        _prePauseStatus = null;
+      } 
+      // Si el que estaba pausado era foco, saltamos a descanso
+      else {
+        _status = PomodoroStatus.resting;
+        _remainingTime = _breakDuration!;
+        _prePauseStatus = null;
+        _notifyTransition(isStartingBreak: true);
+      }
     } 
-    // Si estamos esperando para empezar foco (terminó descanso pero no autotransisionó)
-    else if (_status == PomodoroStatus.paused && _prePauseStatus == PomodoroStatus.running) {
-       _status = PomodoroStatus.running;
-       _remainingTime = _duration;
-       _timerService.start(startDuration: _remainingTime);
+    // CASO 2: Estamos en plena ejecución de Foco
+    else if (_status == PomodoroStatus.running) {
+      _status = PomodoroStatus.resting;
+      _remainingTime = _breakDuration!;
+      _prePauseStatus = null;
+      _notifyTransition(isStartingBreak: true);
     }
-    // Si estamos en foco actual, saltamos a descanso
-    else if (_status == PomodoroStatus.running && _breakDuration != null) {
-       _status = PomodoroStatus.resting;
-       _remainingTime = _breakDuration!;
-       _timerService.start(startDuration: _remainingTime);
-       _notifyTransition(isStartingBreak: true);
+    // CASO 3: Estamos en plena ejecución de Descanso
+    else if (_status == PomodoroStatus.resting) {
+      _status = PomodoroStatus.running;
+      _remainingTime = _duration;
+      _prePauseStatus = null;
     }
-    // Si estamos en descanso actual o cualquier otro caso, saltamos a foco
-    else {
-       _status = PomodoroStatus.running;
-       _remainingTime = _duration;
-       _timerService.start(startDuration: _remainingTime);
-    }
-    
+
+    // Reiniciamos el timer con el nuevo tiempo y estado
+    _timerService.start(startDuration: _remainingTime);
     _emitState();
   }
 
@@ -675,9 +689,9 @@ class FocusSessionManager {
         orientation: _orientation,
         isHardcore: _isHardcore,
         isAlarmSoundEnabled: _isAlarmSoundEnabled,
-        isResting:
-            _status == PomodoroStatus.resting ||
-            _prePauseStatus == PomodoroStatus.resting,
+        isResting: _status == PomodoroStatus.resting ||
+            (_status == PomodoroStatus.paused &&
+                _prePauseStatus == PomodoroStatus.resting),
         hasBreak: _breakDuration != null,
         penaltyCount: _penaltyCount,
         totalPenaltyTime: _totalPenaltyTime,
