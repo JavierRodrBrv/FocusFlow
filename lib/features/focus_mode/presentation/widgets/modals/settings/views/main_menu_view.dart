@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:focus_flow/features/focus_mode/presentation/models/focus_state.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class MainMenuView extends StatelessWidget {
   final FocusState state;
@@ -166,14 +167,20 @@ class MainMenuView extends StatelessWidget {
         ),
 
         const SizedBox(height: 16),
-        Center(
-          child: Text(
-            l10n.versionInfo('1.0.4'),
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white38,
-            ),
-          ),
+        FutureBuilder<PackageInfo>(
+          future: PackageInfo.fromPlatform(),
+          builder: (context, snapshot) {
+            final versionText = snapshot.data?.version ?? '...';
+            return Center(
+              child: Text(
+                l10n.versionInfo(versionText),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white38,
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
