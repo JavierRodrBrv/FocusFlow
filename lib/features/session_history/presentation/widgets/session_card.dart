@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 
 class SessionCard extends StatelessWidget {
   final FocusSession session;
@@ -10,7 +11,8 @@ class SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd MMM yyyy, HH:mm', 'es');
+    final l10n = AppLocalizations.of(context)!;
+    final dateFormat = DateFormat('dd MMM yyyy, HH:mm', Localizations.localeOf(context).languageCode);
     final durationFormat = _formatDuration(session.actualDuration);
 
     return Card(
@@ -55,9 +57,9 @@ class SessionCard extends StatelessWidget {
                             color: Colors.red.withValues(alpha: 0.5),
                           ),
                         ),
-                        child: const Text(
-                          'FOCUS',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.focusMode.toUpperCase(),
+                          style: const TextStyle(
                             color: Colors.redAccent,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -83,8 +85,8 @@ class SessionCard extends StatelessWidget {
                         children: [
                           Text(
                             session.isResting
-                                ? 'Descanso'
-                                : 'Sesión de Enfoque',
+                                ? l10n.breakLabel
+                                : l10n.focusSession,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -92,7 +94,7 @@ class SessionCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'Duración: $durationFormat',
+                            l10n.durationLabel(durationFormat),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 14,

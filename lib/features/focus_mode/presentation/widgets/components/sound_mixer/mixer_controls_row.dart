@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import '../../../models/focus_state.dart';
 import '../../modals/saved_mixes_bottom_sheet.dart';
 import 'circular_action_button.dart';
@@ -35,10 +36,10 @@ class MixerControlsRow extends StatelessWidget {
             } else {
               showDialog(
                 context: context,
-                builder: (context) => const PremiumFeatureDialog(
-                  featureName: 'Cargar mezclas guardadas',
+                builder: (context) => PremiumFeatureDialog(
+                  featureName: AppLocalizations.of(context)!.premiumLoadMixTitle,
                   featureDescription:
-                      'Accede y carga al instante tus mezclas de sonido personalizadas que has guardado previamente.',
+                      AppLocalizations.of(context)!.premiumLoadMixDesc,
                 ),
               );
             }
@@ -93,18 +94,18 @@ class MixerControlsRow extends StatelessWidget {
             if (state.isPremium) {
               service.invoke('sendEvent', {'event': 'saveMix'});
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Mix guardado.'),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context)!.mixSaved),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             } else {
               showDialog(
                 context: context,
-                builder: (context) => const PremiumFeatureDialog(
-                  featureName: 'Guardar mezclas de sonido',
+                builder: (context) => PremiumFeatureDialog(
+                  featureName: AppLocalizations.of(context)!.saveSoundMixes,
                   featureDescription:
-                      'Guarda tus configuraciones de sonido ambientale para usarlas más tarde.',
+                      AppLocalizations.of(context)!.saveSoundMixesDesc,
                 ),
               );
             }

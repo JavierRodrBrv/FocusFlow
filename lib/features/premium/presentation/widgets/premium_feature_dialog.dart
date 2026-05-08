@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/flavors.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 
 class PremiumFeatureDialog extends StatelessWidget {
   final String featureName;
@@ -16,6 +17,8 @@ class PremiumFeatureDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       backgroundColor: const Color(0xFF1E293B),
@@ -27,7 +30,7 @@ class PremiumFeatureDialog extends StatelessWidget {
             const Icon(Icons.workspace_premium, size: 48, color: Colors.amber),
             const SizedBox(height: 16),
             Text(
-              'Función Premium',
+              l10n.premiumFeature,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -35,7 +38,7 @@ class PremiumFeatureDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Desbloquea "$featureName"',
+              l10n.unlockFeature(featureName),
               style: const TextStyle(
                 color: Colors.blueAccent,
                 fontWeight: FontWeight.w600,
@@ -49,16 +52,16 @@ class PremiumFeatureDialog extends StatelessWidget {
               style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 24),
-            _buildPriceCard(),
+            _buildPriceCard(l10n),
             const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(color: Colors.white60),
+                    child: Text(
+                      l10n.cancel,
+                      style: const TextStyle(color: Colors.white60),
                     ),
                   ),
                 ),
@@ -76,10 +79,8 @@ class PremiumFeatureDialog extends StatelessWidget {
                         if (onPurchase != null) onPurchase!();
 
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              '¡Premium activado! Funcionalidad desbloqueada (DEV).',
-                            ),
+                          SnackBar(
+                            content: Text(l10n.premiumActivated),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -87,8 +88,8 @@ class PremiumFeatureDialog extends StatelessWidget {
                         // Lógica de compras reales (PRO - Futuro)
                         // TODO: Implementar In-App Purchases
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Compras próximamente.'),
+                          SnackBar(
+                            content: Text(l10n.purchasesSoon),
                             backgroundColor: Colors.amber,
                           ),
                         );
@@ -99,7 +100,7 @@ class PremiumFeatureDialog extends StatelessWidget {
                       foregroundColor: Colors.black,
                       elevation: 0,
                     ),
-                    child: const Text('Obtener'),
+                    child: Text(l10n.getAccess),
                   ),
                 ),
               ],
@@ -110,7 +111,7 @@ class PremiumFeatureDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceCard() {
+  Widget _buildPriceCard(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -120,17 +121,17 @@ class PremiumFeatureDialog extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Text('Solo ', style: TextStyle(color: Colors.white70)),
+        children: [
+          Text(l10n.priceOnly, style: const TextStyle(color: Colors.white70)),
           Text(
-            '4,99 €',
-            style: TextStyle(
+            l10n.premiumPrice,
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
           ),
-          Text(' / pago único', style: TextStyle(color: Colors.white70)),
+          Text(l10n.oneTimePayment, style: const TextStyle(color: Colors.white70)),
         ],
       ),
     );

@@ -35,52 +35,62 @@ class LocalNotificationService {
     );
   }
 
-  Future<void> showTimerCompleteNotification() async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+  Future<void> showTimerCompleteNotification({
+    required String title,
+    required String body,
+    String? channelName,
+    String? channelDescription,
+  }) async {
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
           'focus_flow_alerts',
-          'Alertas de FocusFlow',
-          channelDescription: 'Notificaciones informativas de la aplicación',
+          channelName ?? 'Alertas de FocusFlow',
+          channelDescription: channelDescription ?? 'Notificaciones informativas de la aplicación',
           importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/launcher_icon',
         );
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails();
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOSPlatformChannelSpecifics,
     );
 
     await flutterLocalNotificationsPlugin.show(
       id: 0,
-      title: '¡Tiempo completado!',
-      body: 'Buen trabajo. Tómate un merecido descanso.',
+      title: title,
+      body: body,
       notificationDetails: platformChannelSpecifics,
     );
   }
 
-  Future<void> showPenaltyWarningNotification() async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+  Future<void> showPenaltyWarningNotification({
+    required String title,
+    required String body,
+    String? channelName,
+    String? channelDescription,
+  }) async {
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
           'focus_flow_alerts',
-          'Alertas de FocusFlow',
-          channelDescription: 'Notificaciones informativas de la aplicación',
+          channelName ?? 'Alertas de FocusFlow',
+          channelDescription: channelDescription ?? 'Notificaciones informativas de la aplicación',
           importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/launcher_icon',
         );
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails();
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOSPlatformChannelSpecifics,
     );
 
     await flutterLocalNotificationsPlugin.show(
       id: 2,
-      title: '¡Vuelve a tu foco!',
-      body: 'Por favor, voltea tu teléfono boca abajo para continuar.',
+      title: title,
+      body: body,
       notificationDetails: platformChannelSpecifics,
     );
   }
@@ -89,22 +99,27 @@ class LocalNotificationService {
     await flutterLocalNotificationsPlugin.cancel(id: 2);
   }
 
-  Future<void> scheduleReminderNotification() async {
+  Future<void> scheduleReminderNotification({
+    required String title,
+    required String body,
+    String? channelName,
+    String? channelDescription,
+  }) async {
     // Cancelar cualquier recordatorio anterior para que no se acumulen
     await flutterLocalNotificationsPlugin.cancel(id: 1);
 
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
           'focus_flow_reminders',
-          'Recordatorios',
-          channelDescription: 'Recordatorios para mantener el enfoque',
+          channelName ?? 'Recordatorios',
+          channelDescription: channelDescription ?? 'Recordatorios para mantener el enfoque',
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
           icon: '@mipmap/launcher_icon',
         );
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails();
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOSPlatformChannelSpecifics,
     );
@@ -112,8 +127,8 @@ class LocalNotificationService {
     // Programar para dentro de 24 horas
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id: 1,
-      title: '¡Es hora de enfocarse!',
-      body: 'Abre FocusFlow y alcanza tus metas de hoy.',
+      title: title,
+      body: body,
       scheduledDate: tz.TZDateTime.now(tz.local).add(const Duration(hours: 24)),
       notificationDetails: platformChannelSpecifics,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

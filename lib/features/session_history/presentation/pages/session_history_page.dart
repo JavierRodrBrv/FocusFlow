@@ -7,6 +7,7 @@ import 'package:focus_flow/features/session_history/presentation/widgets/group_d
 import 'package:focus_flow/features/session_history/presentation/widgets/grouped_session_card.dart';
 import 'package:focus_flow/features/session_history/presentation/widgets/session_card.dart';
 import 'package:focus_flow/features/session_history/presentation/widgets/session_detail_modal.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 
 import 'package:intl/intl.dart';
 
@@ -102,9 +103,9 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: const Text(
-            'Historial de Sesiones',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: Text(
+            AppLocalizations.of(context)!.historyTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new),
@@ -131,7 +132,7 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
                         const Icon(Icons.calendar_today_rounded, color: Colors.blueAccent, size: 18),
                         const SizedBox(width: 8),
                         Text(
-                          'Mostrando resultados del ${DateFormat('dd MMM').format(_currentFilterDate!)}',
+                          AppLocalizations.of(context)!.showingResultsFor(DateFormat('dd MMM').format(_currentFilterDate!)),
                           style: const TextStyle(
                             color: Colors.blueAccent,
                             fontWeight: FontWeight.w600,
@@ -170,7 +171,7 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
                   if (state.status == SessionHistoryStatus.error) {
                     return Center(
                       child: Text(
-                        state.errorMessage ?? 'Error desconocido',
+                        state.errorMessage ?? AppLocalizations.of(context)!.unknownError,
                         style: const TextStyle(color: Colors.redAccent),
                       ),
                     );
@@ -191,8 +192,8 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
                           const SizedBox(height: 16),
                           Text(
                             _currentFilterDate != null 
-                              ? 'No hay sesiones para esta fecha' 
-                              : 'No hay sesiones registradas',
+                              ? AppLocalizations.of(context)!.noSessionsForDate 
+                              : AppLocalizations.of(context)!.noSessionsRegistered,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 16,
@@ -233,14 +234,15 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
 
   Widget _buildDateHeader(DateTime date) {
     final now = DateTime.now();
+    final l10n = AppLocalizations.of(context)!;
     String titleText;
     
     if (date.year == now.year && date.month == now.month && date.day == now.day) {
-      titleText = 'Hoy';
+      titleText = l10n.today;
     } else if (date.year == now.year && date.month == now.month && date.day == now.day - 1) {
-      titleText = 'Ayer';
+      titleText = l10n.yesterday;
     } else {
-      titleText = DateFormat("EEEE, d 'de' MMMM", 'es').format(date);
+      titleText = DateFormat.yMMMMEEEEd(Localizations.localeOf(context).languageCode).format(date);
       // Ensure first letter is capitalized
       if (titleText.isNotEmpty) {
         titleText = titleText[0].toUpperCase() + titleText.substring(1);

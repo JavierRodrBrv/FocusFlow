@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import '../../../models/focus_state.dart';
 import 'ambience_list.dart';
 import 'mixer_controls_row.dart';
@@ -84,6 +85,7 @@ class _ExpandableSoundMixerState extends State<ExpandableSoundMixer>
     final isPlaying = widget.state.isPlayingMix;
     final state = widget.state;
     final service = widget.service;
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       elevation: 0,
@@ -122,9 +124,9 @@ class _ExpandableSoundMixerState extends State<ExpandableSoundMixer>
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
                       children: [
-                        _buildTabButton('Mezclador', 0),
+                        _buildTabButton(l10n.mixerTab, 0),
                         const SizedBox(width: 8),
-                        _buildTabButton('Sonido de fondo', 1),
+                        _buildTabButton(l10n.backgroundSoundTab, 1),
                       ],
                     ),
                   ),
@@ -133,19 +135,19 @@ class _ExpandableSoundMixerState extends State<ExpandableSoundMixer>
 
                   if (_selectedTabIndex == 0) ...[
                     MixerSlider(
-                      label: 'Lluvia',
+                      label: l10n.rainLabel,
                       icon: Icons.water_drop,
                       value: state.rainVolume,
                       onChanged: (v) => service.invoke('sendEvent', {'event': 'updateRainVolume', 'volume': v}),
                     ),
                     MixerSlider(
-                      label: 'Fuego',
+                      label: l10n.fireLabel,
                       icon: Icons.local_fire_department,
                       value: state.fireVolume,
                       onChanged: (v) => service.invoke('sendEvent', {'event': 'updateFireVolume', 'volume': v}),
                     ),
                     MixerSlider(
-                      label: 'Olas',
+                      label: l10n.wavesLabel,
                       icon: Icons.waves,
                       value: state.brownNoiseVolume,
                       onChanged: (v) => service.invoke('sendEvent', {'event': 'updateBrownNoiseVolume', 'volume': v}),

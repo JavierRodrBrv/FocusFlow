@@ -1,0 +1,351 @@
+{
+  "@@locale": "en",
+  "appTitle": "FocusFlow",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "focusMode": "Focus",
+  "shortBreak": "Short Break",
+  "longBreak": "Long Break",
+  "start": "Start",
+  "pause": "Pause",
+  "resume": "Resume",
+  "skip": "Skip",
+  "reset": "Reset",
+  "settings": "Settings",
+  "language": "Language",
+  "spanish": "Spanish",
+  "english": "English",
+  "initializationError": "Fatal initialization error",
+  "minBreak": "{minutes} min break",
+  "@minBreak": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timerShowcaseTitle": "Timer",
+  "timerShowcaseDesc": "Adjust your focus time. Tap the center to use the precise time selector.",
+  "controlsShowcaseTitle": "Session Controls",
+  "controlsShowcaseDesc": "Start, pause, or reset your session. Use the Immersive Mode button (right) to hide distractions.",
+  "settingsAndHelp": "Settings & Help",
+  "alarmSound": "Alarm Sound",
+  "alarmSoundSubtitle": "If disabled, it will only vibrate when finished.",
+  "autoTransition": "Auto Transition",
+  "autoTransitionSubtitle": "Only works with app open. In background it will be manual.",
+  "breaks": "Breaks",
+  "breaksSubtitle": "Configure your automatic breaks",
+  "breaksPresetSubtitle": "{minutes} min preset",
+  "@breaksPresetSubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "wallpaper": "Wallpaper",
+  "viewTutorial": "View Tutorial",
+  "feedback": "Send Feedback / Report Bug",
+  "feedbackSubtitle": "Your opinion helps us improve!",
+  "versionInfo": "Version {version} (Beta)",
+  "@versionInfo": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "languageMenuTitle": "Language",
+  "selectLanguage": "Select your preferred language",
+  "save": "Save",
+  "back": "Back",
+  "bugReport": "Is it a Bug? 🐞",
+  "featureIdea": "An Idea? 💡",
+  "bugHint": "Describe the error you found...",
+  "ideaHint": "Tell us what you'd like to see...",
+  "submitFeedback": "Send Feedback",
+  "thanks": "Thanks!",
+  "errorSending": "Error sending: {error}",
+  "@errorSending": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "solid": "Solid",
+  "gradient": "Gradient",
+  "deletePreset": "Delete preset",
+  "accept": "Accept",
+  "sessionsHistory": "Session History",
+  "sessionsHistoryDesc": "Review your performance, focused time, and completed cycles.",
+  "premiumExperience": "Premium Experience",
+  "premiumExperienceDesc": "Unlock all ambient sound mixes, remove ads, and access exclusive features for total focus.",
+  "premiumFeatureTitle": "Premium",
+  "premiumFeatureDesc": "Unlock all features and remove ads.",
+  "soundMixerTitle": "Sound Mixer",
+  "focusModeTitle": "Focus Mode",
+  "lockDuringSession": "Locked during session",
+  "flipToStart": "The timer will only start when you put the phone face down.",
+  "disableHardcoreWarning": "To disable this mode, you must reset the session completely.",
+  "outOfFocus": "OUT OF FOCUS! Put the phone face down.",
+  "activatedFlipToStart": "Activated! Flip the phone to start.",
+  "deepFocusActive": "Deep focus active. Keep it up.",
+  "beCarefulFlip": "Be careful! Put the phone face down.",
+  "focusModeArmed": "Focus mode armed. Press Play and flip the phone.",
+  "sessionCompletedTitle": "Session Completed!",
+  "timesLifted": "Times lifted",
+  "timeLost": "Time lost",
+  "valueYourTime": "Do you really value your time?",
+  "notMuch": "Not much",
+  "yesValue": "Yes, I value it",
+  "finishSession": "Finish session",
+  "perfPerfect": "Almost perfect! A small slip, but you made it.",
+  "perfNotBad": "Not bad, but you need a bit more discipline.",
+  "perfMosquito": "Need a compass? You have less concentration than a mosquito. Better luck next time!",
+  "perfGood": "You've stayed focused successfully. Great job!",
+  "dogPhrase1": "Ordering a gourmet bone on Amazon... 🍖",
+  "dogPhrase2": "Calculating how many sausages I can buy with your distraction... 🌭",
+  "dogPhrase3": "Your lack of focus is an opportunity to get a new toy... 🧸",
+  "dogPhrase4": "Saving for the 'How to bark at the mailman without waking you up' course... 📬",
+  "dogPhrase5": "Thanks for funding my retirement in the park... 🌳",
+  "dogPhrase6": "Your lost time has turned into bacon treats... 🥓",
+  "dogPhrase7": "Investing in the 'Unlimited Tennis Balls' fund... 🎾",
+  "dogPhrase8": "Managing the 'Smells of the World' premium subscription... 🐕",
+  "dogPhrase9": "Converting your lost money into a luxury orthopedic bed... 💤",
+  "dogPhrase10": "Your distraction pays for this month's dog spa sessions... 🧼",
+  "mixerLabel": "Ambience",
+  "mixerDesc": "Create your ideal atmosphere by combining sounds of rain, fire, or brown noise. Adjust levels to your liking to isolate yourself from distractions.",
+  "settingsHelpDesc": "Manage app preferences to your liking.",
+  "ambienceShowcaseTitle": "Custom Ambience",
+  "ambienceShowcaseDesc": "Create your ideal atmosphere by combining sounds of rain, fire, or brown noise. Adjust levels to your liking to isolate yourself from distractions.",
+  "focusModeShowcaseTitle": "Deep Focus Mode",
+  "focusModeShowcaseDesc": "Activate this mode to force yourself to leave the phone face down. If you lift it, the session will pause, helping you avoid temptations.",
+  "timeLostEquivalent": "That lost time is equivalent to:",
+  "donationQuestion": "If you don't value that money, would you like to donate it to the friend in the photo?",
+  "noThanks": "No, thanks",
+  "sure": "Sure!",
+  "donationFuture": "In the future, you will be able to donate and leave your review here. Thanks for valuing our work!",
+  "comingSoon": "Coming soon...",
+  "breaksDesc": "Configure a default break time. If you do, sessions will start automatically without asking every time.",
+  "sendFeedback": "Send Feedback",
+  "errorSending": "Error sending: {error}",
+  "@errorSending": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "resetSessionTitle": "Reset session?",
+  "resetSessionMessage": "Current session progress will be lost.",
+  "cancel": "Cancel",
+  "tapToAdjust": "TAP TO ADJUST",
+  "minOnly": "{minutes} min",
+  "@minOnly": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "ready": "Ready",
+  "mixerTab": "Mixer",
+  "backgroundSoundTab": "Background Sound",
+  "rainLabel": "Rain",
+  "fireLabel": "Fire",
+  "wavesLabel": "Waves",
+  "premiumLoadMixTitle": "Load saved mixes",
+  "premiumLoadMixDesc": "Instantly access and load your previously saved custom sound mixes.",
+  "mixer": "Mixer",
+  "backgroundSound": "Background sound",
+  "rain": "Rain",
+  "fire": "Fire",
+  "waves": "Waves",
+  "mixSaved": "Mix saved.",
+  "saveSoundMixes": "Save sound mixes",
+  "saveSoundMixesDesc": "Save your ambient sound configurations for later use.",
+  "none": "None",
+  "frogs": "Frogs",
+  "library": "Library",
+  "park": "Park",
+  "stream": "Stream",
+  "midnight": "Midnight",
+  "noSavedMixes": "You don't have saved mixes yet.",
+  "savedMixesTitle": "Saved Mixes",
+  "lastMixLabel": "(Last)",
+  "getAccess": "Get Access",
+  "showingResultsFor": "Showing results for {date}",
+  "@showingResultsFor": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "noSessionsForDate": "No sessions for this date",
+  "noSessionsRegistered": "No sessions registered",
+  "unknownError": "Unknown error",
+  "focusSession": "Focus Session",
+  "breakLabel": "Break",
+  "durationLabel": "Duration: {duration}",
+  "@durationLabel": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "endFocusCycleTitle": "End focus cycle?",
+  "endFocusCycleMessage": "You are in a session with scheduled breaks. If you reset now, the entire current cycle will be canceled and you will return to the beginning.\n\nAre you sure you want to end?",
+  "cancelCurrentSessionMessage": "The current session will be canceled.\n\nAre you sure you want to continue?",
+  "sessionCycle": "Session Cycle",
+  "focusCount": "{count, plural, =1{1 Focus} other{{count} Focuses}}",
+  "@focusCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "breakCount": "{count, plural, =1{1 Break} other{{count} Breaks}}",
+  "@breakCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "totalTimeLabel": "Total time: {time}",
+  "@totalTimeLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "historyTitle": "Session History",
+  "premiumFeature": "Premium Feature",
+  "unlockFeature": "Unlock \"{feature}\"",
+  "@unlockFeature": {
+    "placeholders": {
+      "feature": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumActivated": "Premium activated! Functionality unlocked (DEV).",
+  "purchasesSoon": "Purchases coming soon.",
+  "priceOnly": "Only ",
+  "oneTimePayment": " / one-time payment",
+  "noSavedMixes": "You don't have any saved mixes yet.",
+  "savedMixesTitle": "Saved Mixes",
+  "lastActivatedLabel": " (Last)",
+  "mixDetail": "Rain: {rain}% • Fire: {fire}% • Waves: {waves}%{last}",
+  "@mixDetail": {
+    "placeholders": {
+      "rain": {
+        "type": "int"
+      },
+      "fire": {
+        "type": "int"
+      },
+      "waves": {
+        "type": "int"
+      },
+      "last": {
+        "type": "String"
+      }
+    }
+  },
+  "devVersionTitle": "Development Version",
+  "devVersionDesc": "You are using a testing version (Dev).\n• Premium features can be simulated.\n• It may contain experimental bugs.\n• Help us improve! Send your ideas or report bugs from the Settings menu (☰ icon).",
+  "devVersionAction": "I understand",
+  "statistics": "Statistics",
+  "currentStreak": "Current Streak",
+  "streakDays": "{count, plural, =1{1 Day} other{{count} Days}}",
+  "@streakDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "totalFocused": "Total Focused",
+  "thisWeek": "This Week",
+  "weekRange": "Week {start} - {end}",
+  "@weekRange": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLoadingStats": "Error loading statistics:",
+  "close": "Close",
+  "breakFinished": "Break Finished",
+  "startTimeLabel": "Start time",
+  "plannedDurationLabel": "Planned duration",
+  "actualDurationLabel": "Actual duration",
+  "focusModeLabel": "FOCUS Mode",
+  "activated": "Activated",
+  "disabled": "Disabled",
+  "distractionsLabel": "Distractions",
+  "distractionsTimes": "{count, plural, =1{1 time} other{{count} times}}",
+  "@distractionsTimes": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "cycleSummary": "Cycle Summary",
+  "cycleBreakdown": "Cycle breakdown",
+  "focusTime": "Focus time",
+  "breakTime": "Break time",
+  "totalDistractions": "Total distractions",
+  "totalTimeLostLabel": "Total time lost",
+  "sessionsGroupTitle": "{count, plural, =1{1 Session} other{{count} Sessions}}",
+  "@sessionsGroupTitle": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "canceledStatus": "Canceled",
+  "addBreakTitle": "Add break?",
+  "addBreakMessage": "Do you want to add a break time after this session?",
+  "hardcoreFlipMessage": "Focus Mode active: Flip the phone face down to start the timer.",
+  "hourSuffixShort": "h",
+  "minuteSuffixShort": "m",
+  "secondSuffixShort": "s",
+  "premiumPrice": "4.99 $",
+  "notificationTimerCompleteTitle": "Time Complete!",
+  "notificationTimerCompleteBody": "Good job. Take a well-deserved break.",
+  "notificationPenaltyTitle": "Back to focus!",
+  "notificationPenaltyBody": "Please flip your phone face down to continue.",
+  "notificationReminderTitle": "Time to focus!",
+  "notificationReminderBody": "Open FocusFlow and reach your goals today.",
+  "notificationChannelAlertsName": "FocusFlow Alerts",
+  "notificationChannelAlertsDescription": "Informative app notifications",
+  "notificationChannelRemindersName": "Reminders",
+  "notificationChannelRemindersDescription": "Reminders to maintain focus",
+  "notificationRemainingTime": "Remaining time: {time}",
+  "@notificationRemainingTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "phaseFocus": "Focus",
+  "phaseBreak": "Break",
+  "phaseWaiting": "Preparation"
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
 
@@ -9,8 +10,10 @@ class SessionDetailModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('EEEE, d MMMM yyyy', 'es');
-    final timeFormat = DateFormat('HH:mm', 'es');
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
+    final dateFormat = DateFormat('EEEE, d MMMM yyyy', locale);
+    final timeFormat = DateFormat('HH:mm', locale);
 
     return Container(
       decoration: const BoxDecoration(
@@ -57,8 +60,8 @@ class SessionDetailModal extends StatelessWidget {
                   children: [
                     Text(
                       session.isResting
-                          ? 'Descanso Finalizado'
-                          : 'Sesión de Enfoque',
+                          ? l10n.breakFinished
+                          : l10n.focusSession,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -80,35 +83,35 @@ class SessionDetailModal extends StatelessWidget {
           const SizedBox(height: 32),
           _buildDetailRow(
             Icons.access_time,
-            'Hora de inicio',
+            l10n.startTimeLabel,
             timeFormat.format(session.startTime),
           ),
           _buildDetailRow(
             Icons.timer_outlined,
-            'Duración planeada',
+            l10n.plannedDurationLabel,
             _formatDuration(session.plannedDuration),
           ),
           _buildDetailRow(
             Icons.check_circle_outline,
-            'Duración real',
+            l10n.actualDurationLabel,
             _formatDuration(session.actualDuration),
             highlight: true,
           ),
           _buildDetailRow(
             Icons.security,
-            'Modo FOCUS',
-            session.isHardcoreMode ? 'Activado' : 'Desactivado',
+            l10n.focusModeLabel,
+            session.isHardcoreMode ? l10n.activated : l10n.disabled,
             textColor: session.isHardcoreMode ? Colors.redAccent : null,
           ),
           if (!session.isResting) ...[
             _buildDetailRow(
               Icons.warning_amber_rounded,
-              'Distracciones',
-              '${session.penaltyCount} veces',
+              l10n.distractionsLabel,
+              l10n.distractionsTimes(session.penaltyCount),
             ),
             _buildDetailRow(
               Icons.history_toggle_off,
-              'Tiempo perdido',
+              l10n.totalTimeLostLabel,
               _formatDuration(session.totalPenaltyTime),
               textColor: session.totalPenaltyTime.inSeconds > 0
                   ? Colors.orangeAccent
@@ -128,7 +131,7 @@ class SessionDetailModal extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Cerrar'),
+              child: Text(l10n.close),
             ),
           ),
         ],

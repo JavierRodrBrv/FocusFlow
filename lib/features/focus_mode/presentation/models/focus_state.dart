@@ -38,6 +38,7 @@ class FocusState extends Equatable {
   final Duration? defaultBreakDuration;
   final String? selectedAmbiencePath;
   final bool autoTransitionWhenForeground;
+  final String? languageCode;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -71,6 +72,7 @@ class FocusState extends Equatable {
     this.defaultBreakDuration,
     this.selectedAmbiencePath,
     this.autoTransitionWhenForeground = true,
+    this.languageCode,
   });
 
   Map<String, dynamic> toJson() {
@@ -115,6 +117,7 @@ class FocusState extends Equatable {
       'defaultBreakDuration': defaultBreakDuration?.inSeconds,
       'selectedAmbiencePath': selectedAmbiencePath,
       'autoTransitionWhenForeground': autoTransitionWhenForeground,
+      'languageCode': languageCode,
     };
   }
 
@@ -165,6 +168,7 @@ class FocusState extends Equatable {
           : null,
       selectedAmbiencePath: json['selectedAmbiencePath'] as String?,
       autoTransitionWhenForeground: json['autoTransitionWhenForeground'] as bool? ?? true,
+      languageCode: json['languageCode'] as String?,
     );
   }
 
@@ -201,6 +205,8 @@ class FocusState extends Equatable {
     String? selectedAmbiencePath,
     bool clearSelectedAmbience = false,
     bool? autoTransitionWhenForeground,
+    String? languageCode,
+    bool clearLanguageCode = false,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -234,6 +240,7 @@ class FocusState extends Equatable {
       defaultBreakDuration: defaultBreakDuration ?? this.defaultBreakDuration,
       selectedAmbiencePath: clearSelectedAmbience ? null : (selectedAmbiencePath ?? this.selectedAmbiencePath),
       autoTransitionWhenForeground: autoTransitionWhenForeground ?? this.autoTransitionWhenForeground,
+      languageCode: clearLanguageCode ? null : (languageCode ?? this.languageCode),
     );
   }
 
@@ -270,5 +277,7 @@ class FocusState extends Equatable {
         defaultBreakDuration,
         selectedAmbiencePath,
         autoTransitionWhenForeground,
+        languageCode,
       ];
 }
+

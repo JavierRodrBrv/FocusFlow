@@ -226,15 +226,19 @@ class _FocusViewState extends State<FocusView> {
   }
 
   void _startShowcase() {
-    ShowCaseWidget.of(context).startShowCase([
-      _timerKey,
-      _controlsKey,
-      _mixerKey,
-      _focusModeKey,
-      _tutorialKey,
-      _historyKey,
-      _premiumKey,
-    ]);
+    // Wait for the modal to be fully dismissed
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      ShowCaseWidget.of(context).startShowCase([
+        _timerKey,
+        _controlsKey,
+        _mixerKey,
+        _focusModeKey,
+        _tutorialKey,
+        _historyKey,
+        _premiumKey,
+      ]);
+    });
   }
 
   void _showMixerModal(FocusState state) {

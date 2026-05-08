@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/focus_mode/presentation/bloc/timer/timer_bloc.dart';
@@ -62,7 +63,19 @@ void onStart(ServiceInstance service) async {
   // --- FIX iOS: Tracking limits variables ---
   bool? lastIsPaused;
 
+  AppLocalizations? localizations;
+  String? lastLanguageCode;
+
+  Future<void> ensureLocalizations() async {
+    final lang = settingsBloc?.state.languageCode ?? 'es';
+    if (localizations == null || lastLanguageCode != lang) {
+      localizations = await AppLocalizations.delegate.load(Locale(lang));
+      lastLanguageCode = lang;
+    }
+  }
+
   FocusState getCombinedState() {
+// ...
     final ts = timerBloc?.state ?? TimerState.initial();
     final ams = audioBloc?.state ?? AudioMixState.initial();
     final ss = settingsBloc?.state ?? SettingsState.initial();
@@ -101,6 +114,7 @@ void onStart(ServiceInstance service) async {
       defaultBreakDuration: ss.defaultBreakDuration,
       selectedAmbiencePath: ams.selectedAmbiencePath,
       autoTransitionWhenForeground: ss.autoTransitionWhenForeground,
+      languageCode: ss.languageCode,
     );
   }
 
@@ -113,6 +127,7 @@ void onStart(ServiceInstance service) async {
     TimerState state,
     PomodoroStatus status,
     String customStatus,
+    String phaseLabel,
     bool isFinished,
     bool isInitial,
     bool isPaused,
@@ -178,6 +193,7 @@ void onStart(ServiceInstance service) async {
       'focusDuration': focusDurationSeconds,
       'breakDuration': breakDurationSeconds,
       'status': customStatus,
+      'phaseLabel': phaseLabel,
       'isPaused': isPaused,
       'remainingSeconds': state.remainingTime.inSeconds,
       'showSkip': state.hasBreak,
@@ -214,17 +230,24 @@ void onStart(ServiceInstance service) async {
         status == PomodoroStatus.paused || state.isWaitingForFirstFlip;
     bool isInitial = status == PomodoroStatus.initial;
 
+    await ensureLocalizations();
+    final l = localizations!;
+
     String customStatus = 'focus';
+    String phaseLabel = l.phaseFocus;
     if (state.isWaitingForFirstFlip) {
       customStatus = 'waiting';
+      phaseLabel = l.phaseWaiting;
     } else if (state.isResting) {
       customStatus = 'break';
+      phaseLabel = l.phaseBreak;
     }
 
     await syncIosWidget(
       state,
       status,
       customStatus,
+      phaseLabel,
       isFinished,
       isInitial,
       isPaused,
@@ -346,7 +369,7 @@ void onStart(ServiceInstance service) async {
       timerBloc.add(StopAlarm());
     } else if (name == 'toggleHardcore') {
       timerBloc.add(ToggleHardcoreMode());
-    } else if (name == 'toggleAlarmSound') {
+    } else if (name == 'toggleAlarmSound' || name == 'toggleAlarm') {
       settingsBloc.add(ToggleAlarmSound());
     } else if (name == 'toggleAutoTransition') {
       settingsBloc.add(ToggleAutoTransitionWhenForeground());
@@ -362,14 +385,17 @@ void onStart(ServiceInstance service) async {
       timerBloc.add(UpdateTimerPremiumStatus(newStatus));
       audioBloc.add(UpdatePremiumStatus(newStatus));
       settingsBloc.add(UpdateSettingsPremiumStatus(newStatus));
+    } else if (name == 'setLanguageCode') {
+      final code = event['code'] as String;
+      settingsBloc.add(SetLanguageCode(code));
     } else if (name == 'updateConsentStatus') {
       final canRequest = event['canRequest'] as bool;
       settingsBloc.add(UpdateConsentStatus(canRequest));
     } else if (name == 'setDefaultBreakDuration') {
-      final minutes = event['durationMinutes'] as int?;
+      final seconds = event['duration'] as int?;
       settingsBloc.add(
         SetDefaultBreakDuration(
-          minutes != null ? Duration(minutes: minutes) : null,
+          seconds != null ? Duration(seconds: seconds) : null,
         ),
       );
     } else if (name == 'updateRainVolume') {
@@ -464,6 +490,9 @@ void onStart(ServiceInstance service) async {
   });
 
   timerBloc?.stream.listen((state) async {
+    await ensureLocalizations();
+    final l = localizations!;
+
     final time =
         '${state.remainingTime.inMinutes.toString().padLeft(2, '0')}:${(state.remainingTime.inSeconds % 60).toString().padLeft(2, '0')}';
     final status = state.pomodoroStatus;
@@ -473,10 +502,13 @@ void onStart(ServiceInstance service) async {
     bool isInitial = status == PomodoroStatus.initial;
 
     String customStatus = 'focus';
+    String phaseLabel = l.phaseFocus;
     if (state.isWaitingForFirstFlip) {
       customStatus = 'waiting';
+      phaseLabel = l.phaseWaiting;
     } else if (state.isResting) {
       customStatus = 'break';
+      phaseLabel = l.phaseBreak;
     }
 
     // --- ORQUESTACIÓN DE SERVICIOS ---
@@ -502,10 +534,6 @@ void onStart(ServiceInstance service) async {
     bool wasForcedUpdate = forceNextUpdate;
     bool shouldUpdate = wasForcedUpdate || statusChanged;
 
-    // Android: actualiza la notificación cada segundo para el contador visible.
-    // iOS NO actualiza cada segundo — el estilo .timer de SwiftUI cuenta de forma
-    // nativa hasta targetEndDate. Enviar updates/seg supera el rate limit de
-    // ActivityKit y causa drops silenciosos → Dynamic Island congelado.
     if (Platform.isAndroid) shouldUpdate = shouldUpdate || timeDifference;
 
     if (shouldUpdate) {
@@ -513,7 +541,12 @@ void onStart(ServiceInstance service) async {
       try {
         bool wentToBreak = lastStatus == PomodoroStatus.running && status == PomodoroStatus.resting;
         if (statusChanged && (isFinished || wentToBreak)) {
-          await LocalNotificationService().showTimerCompleteNotification();
+          await LocalNotificationService().showTimerCompleteNotification(
+            title: l.notificationTimerCompleteTitle,
+            body: l.notificationTimerCompleteBody,
+            channelName: l.notificationChannelAlertsName,
+            channelDescription: l.notificationChannelAlertsDescription,
+          );
           await Future.delayed(const Duration(milliseconds: 100));
           service.invoke('refresh_history');
         }
@@ -521,7 +554,12 @@ void onStart(ServiceInstance service) async {
         bool penaltyChanged = lastPenaltyState != state.isInPenaltyBox;
         if (penaltyChanged) {
           if (state.isInPenaltyBox) {
-            await LocalNotificationService().showPenaltyWarningNotification();
+            await LocalNotificationService().showPenaltyWarningNotification(
+              title: l.notificationPenaltyTitle,
+              body: l.notificationPenaltyBody,
+              channelName: l.notificationChannelAlertsName,
+              channelDescription: l.notificationChannelAlertsDescription,
+            );
           } else {
             await LocalNotificationService().cancelPenaltyWarningNotification();
           }
@@ -536,15 +574,25 @@ void onStart(ServiceInstance service) async {
             'time': time,
             'status': notificationStatus,
             'phase': customStatus,
+            'phaseLabel': phaseLabel,
             'showSkip': state.hasBreak,
           });
         }
 
         if (Platform.isIOS) {
+          // Actualización de notificación local (fallback si no hay Live Activity)
+          if (!isFinished && !isInitial) {
+            await _notificationChannel.invokeMethod('updateNotification', {
+              'title': 'FocusFlow',
+              'body': isPaused ? phaseLabel : l.notificationRemainingTime(time),
+            });
+          }
+
           await syncIosWidget(
             state,
             status,
             customStatus,
+            phaseLabel,
             isFinished,
             isInitial,
             isPaused,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 
 class ResetConfirmationDialog extends StatelessWidget {
   final VoidCallback onConfirm;
@@ -12,10 +13,11 @@ class ResetConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = hasBreak ? '¿Terminar ciclo de foco?' : '¿Reiniciar sesión?';
+    final l10n = AppLocalizations.of(context)!;
+    final title = hasBreak ? l10n.endFocusCycleTitle : l10n.resetSessionTitle;
     final content = hasBreak
-        ? 'Estás en una sesión con descansos programados. Si reinicias ahora, se cancelará todo el ciclo actual y volverás al inicio.\n\n¿Estás seguro de que quieres terminar?'
-        : 'La sesión actual se cancelará.\n\n¿Estás seguro de que quieres continuar?';
+        ? l10n.endFocusCycleMessage
+        : l10n.cancelCurrentSessionMessage;
 
     return AlertDialog(
       backgroundColor: const Color(0xFF1E293B),
@@ -46,9 +48,9 @@ class ResetConfirmationDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
-            'Cancelar',
-            style: TextStyle(
+          child: Text(
+            l10n.cancel,
+            style: const TextStyle(
               color: Colors.white54,
               fontWeight: FontWeight.w600,
             ),
@@ -68,9 +70,9 @@ class ResetConfirmationDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            'Reiniciar',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          child: Text(
+            l10n.reset,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
       ],

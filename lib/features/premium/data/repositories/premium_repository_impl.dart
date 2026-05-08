@@ -10,33 +10,39 @@ const String _premiumStatusKey = 'premiumStatus';
 
 @LazySingleton(as: PremiumRepository)
 class PremiumRepositoryImpl implements PremiumRepository {
-  final Box<PremiumStatus> box;
+  PremiumRepositoryImpl();
 
-  PremiumRepositoryImpl(this.box);
+  Future<Box<PremiumStatus>> get _box async {
+    if (Hive.isBoxOpen(_premiumBox)) {
+      return Hive.box<PremiumStatus>(_premiumBox);
+    }
+    return await Hive.openBox<PremiumStatus>(_premiumBox).timeout(const Duration(seconds: 3));
+  }
 
   @override
   Future<bool> isPremium() async {
-    final status = box.get(
-      _premiumStatusKey,
-      defaultValue: PremiumStatus(isPremium: false),
-    );
-    debugPrint('[PremiumRepository] Getting premium status: ${status!.isPremium}');
-    return status.isPremium;
+    try {
+      final box = await _box;
+      final status = box.get(
+        _premiumStatusKey,
+        defaultValue: PremiumStatus(isPremium: false),
+      );
+      debugPrint('[PremiumRepository] Getting premium status: ${status!.isPremium}');
+      return status.isPremium;
+    } catch (e) {
+      debugPrint('[PremiumRepository] Error getting premium status: $e');
+      return false;
+    }
   }
 
   @override
   Future<void> setPremiumStatus(bool isPremium) async {
-    debugPrint('[PremiumRepository] Setting premium status to: $isPremium');
-    await box.put(_premiumStatusKey, PremiumStatus(isPremium: isPremium));
-  }
-}
-
-// Factory to open the box before the repository is created.
-@module
-abstract class HiveModule {
-  @preResolve
-  @lazySingleton
-  Future<Box<PremiumStatus>> get premiumBox async {
-    return await Hive.openBox<PremiumStatus>(_premiumBox);
+    try {
+      debugPrint('[PremiumRepository] Setting premium status to: $isPremium');
+      final box = await _box;
+      await box.put(_premiumStatusKey, PremiumStatus(isPremium: isPremium));
+    } catch (e) {
+      debugPrint('[PremiumRepository] Error setting premium status: $e');
+    }
   }
 }

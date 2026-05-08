@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 
 class GroupedSessionCard extends StatelessWidget {
   final DateTime startTime;
@@ -23,7 +24,8 @@ class GroupedSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd MMM yyyy, HH:mm', 'es');
+    final l10n = AppLocalizations.of(context)!;
+    final dateFormat = DateFormat('dd MMM yyyy, HH:mm', Localizations.localeOf(context).languageCode);
     final totalDurationFormat = _formatDuration(
       totalFocusActual + totalBreakActual,
     );
@@ -73,9 +75,9 @@ class GroupedSessionCard extends StatelessWidget {
                             color: Colors.red.withValues(alpha: 0.5),
                           ),
                         ),
-                        child: const Text(
-                          'FOCUS',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.focusMode.toUpperCase(),
+                          style: const TextStyle(
                             color: Colors.redAccent,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -104,23 +106,23 @@ class GroupedSessionCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Ciclo de Sesiones',
-                            style: TextStyle(
+                          Text(
+                            l10n.sessionCycle,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            '$focusCount Focos • $breakCount Descansos',
+                            '${l10n.focusCount(focusCount)} • ${l10n.breakCount(breakCount)}',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 14,
                             ),
                           ),
                           Text(
-                            'Tiempo total: $totalDurationFormat',
+                            l10n.totalTimeLabel(totalDurationFormat),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 12,

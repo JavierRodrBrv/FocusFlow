@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:focus_flow/core/utils/duration_extensions.dart';
 import 'session_completion/stat_row.dart';
@@ -38,7 +39,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   bool _isAdLoading = false;
   bool _isWaitingForAd = false;
   late final String _randomJoyImage;
-  late final String _randomDogPhrase;
+  String _randomDogPhrase = '';
 
   final List<String> _joyImages = [
     'assets/images/joy_2.jpeg',
@@ -47,18 +48,21 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     'assets/images/joy_5.JPG',
   ];
 
-  final List<String> _dogPhrases = [
-    'Haciendo pedido por Amazon de un hueso gourmet... 🍖',
-    'Calculando cuántas salchichas puede comprar con tu distracción... 🌭',
-    'Tu falta de foco es su oportunidad de conseguir un juguete nuevo... 🧸',
-    'Ahorrando para el curso de "Cómo ladrarle al cartero sin despertarte"... 📬',
-    'Gracias por financiar su jubilación en el parque... 🌳',
-    'Tu tiempo perdido se ha convertido en premios de bacon... 🥓',
-    'Invirtiendo en el fondo de inversión "Pelotas de Tenis Ilimitadas"... 🎾',
-    'Gestionando la suscripción premium de "Olores del Mundo"... 🐕',
-    'Convertiremos tu dinero perdido en una cama ortopédica de lujo... 💤',
-    'Tu distracción paga las sesiones de spa canino de este mes... 🧼',
-  ];
+  List<String> _getDogPhrases(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      l10n.dogPhrase1,
+      l10n.dogPhrase2,
+      l10n.dogPhrase3,
+      l10n.dogPhrase4,
+      l10n.dogPhrase5,
+      l10n.dogPhrase6,
+      l10n.dogPhrase7,
+      l10n.dogPhrase8,
+      l10n.dogPhrase9,
+      l10n.dogPhrase10,
+    ];
+  }
 
   @override
   void initState() {
@@ -67,7 +71,6 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
       _loadInterstitialAd();
     }
     _randomJoyImage = _joyImages[math.Random().nextInt(_joyImages.length)];
-    _randomDogPhrase = _dogPhrases[math.Random().nextInt(_dogPhrases.length)];
 
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() => _isStatsExpanded = true);
@@ -81,6 +84,11 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
       precacheImage(AssetImage(image), context);
     }
     precacheImage(const AssetImage('assets/images/joy_1.png'), context);
+
+    if (_randomDogPhrase.isEmpty) {
+      final phrases = _getDogPhrases(context);
+      _randomDogPhrase = phrases[math.Random().nextInt(phrases.length)];
+    }
   }
 
   void _loadInterstitialAd() {
@@ -179,18 +187,19 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     if (mounted) Navigator.of(context).pop();
   }
 
-  String get _performanceMessage {
+  String _getPerformanceMessage(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (!widget.isHardcoreMode || widget.totalPenaltyTime.inSeconds == 0) {
-      return 'Has mantenido el foco con éxito. ¡Gran trabajo!';
+      return l10n.perfGood;
     }
     final seconds = widget.totalPenaltyTime.inSeconds;
     if (seconds <= 30) {
-      return '¡Casi perfecto! Un pequeño desliz, pero lo has logrado.';
+      return l10n.perfPerfect;
     }
     if (seconds <= 60) {
-      return 'No ha estado mal, pero necesitas un poco más de disciplina.';
+      return l10n.perfNotBad;
     }
-    return '¿Necesitas una brújula? Tienes menos concentración que un mosquito. ¡A la próxima mejor!';
+    return l10n.perfMosquito;
   }
 
   @override
@@ -204,14 +213,14 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildHeader(),
+              _buildHeader(context),
               const SizedBox(height: 16),
               Text(
-                _performanceMessage,
+                _getPerformanceMessage(context),
                 style: const TextStyle(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
-              _buildStats(),
+              _buildStats(context),
               const SizedBox(height: 24),
               const Divider(color: Colors.white10),
               const SizedBox(height: 16),
@@ -223,7 +232,8 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         GestureDetector(
@@ -243,9 +253,9 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
-          '¡Sesión Completada!',
-          style: TextStyle(
+        Text(
+          l10n.sessionCompletedTitle,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -256,7 +266,8 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     );
   }
 
-  Widget _buildStats() {
+  Widget _buildStats(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AnimatedSize(
       duration: const Duration(milliseconds: 400),
       curve: Curves.fastOutSlowIn,
@@ -275,7 +286,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                 children: [
                   StatRow(
                     icon: Icons.phone_android_rounded,
-                    label: 'Veces levantado',
+                    label: l10n.timesLifted,
                     value: '${widget.penaltyCount}',
                     color: widget.penaltyCount == 0
                         ? Colors.greenAccent
@@ -287,7 +298,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                   ),
                   StatRow(
                     icon: Icons.timer_outlined,
-                    label: 'Tiempo perdido',
+                    label: l10n.timeLost,
                     value: widget.totalPenaltyTime.toShortPrettyString(),
                     color: widget.totalPenaltyTime.inSeconds == 0
                         ? Colors.greenAccent
@@ -338,18 +349,19 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: const Text(
-          'Terminar sesión',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        child: Text(
+          AppLocalizations.of(context)!.finishSession,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       );
     }
 
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        const Text(
-          '¿Realmente valoras tu tiempo?',
-          style: TextStyle(
+        Text(
+          l10n.valueYourTime,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 16,
@@ -375,7 +387,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                         color: Colors.white54,
                       ),
                     )
-                  : const Text('No mucho'),
+                  : Text(l10n.notMuch),
             ),
             ElevatedButton(
               onPressed: () => setState(() {
@@ -386,7 +398,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                 backgroundColor: Colors.blueAccent,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Sí, lo valoro'),
+              child: Text(l10n.yesValue),
             ),
           ],
         ),

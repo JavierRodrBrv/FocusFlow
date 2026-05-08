@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import '../../models/focus_state.dart';
 import '../components/sound_mixer/sound_mixer_content.dart';
 import '../components/special_modes/hardcore_mode_card.dart';
@@ -48,7 +49,7 @@ class SoundMixerModal extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Mezclador de Sonido',
+                AppLocalizations.of(context)!.soundMixerTitle,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -110,7 +111,7 @@ class FocusModeModal extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Modo Foco',
+                AppLocalizations.of(context)!.focusModeTitle,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

@@ -69,7 +69,8 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
                 val status = call.argument<String>("status") ?: "running"
                 val phase = call.argument<String>("phase") ?: "focus"
                 val showSkip = call.argument<Boolean>("showSkip") ?: true
-                updateCustomNotification(time, status, phase, showSkip)
+                val phaseLabel = call.argument<String>("phaseLabel") ?: "Focus"
+                updateCustomNotification(time, status, phase, showSkip, phaseLabel)
                 result.success(null)
             }
             else -> result.notImplemented()
@@ -81,7 +82,7 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     }
 
-    private fun updateCustomNotification(time: String, status: String, phase: String, showSkip: Boolean) {
+    private fun updateCustomNotification(time: String, status: String, phase: String, showSkip: Boolean, phaseLabel: String) {
         val notificationId = 888 
         val channelId = "focus_flow_channel"
         val hostPackageName = context.packageName
@@ -99,15 +100,8 @@ class FocusFlowNotificationPlugin: FlutterPlugin, MethodCallHandler {
         val darkMode = isDarkMode()
         val adaptiveColor = if (darkMode) Color.WHITE else Color.BLACK
 
-        // 1. Set the Text
         remoteViews.setTextViewText(tvTimeId, time)
-        
-        val displayStatus = when (phase) {
-            "waiting" -> "Preparación"
-            "break" -> "Descanso"
-            else -> "Enfoque"
-        }
-        remoteViews.setTextViewText(tvStatusId, displayStatus)
+        remoteViews.setTextViewText(tvStatusId, phaseLabel)
 
         // 2. Logic for visibility, colors and sizes based on status
         if (status == "initial" || status == "finished") {

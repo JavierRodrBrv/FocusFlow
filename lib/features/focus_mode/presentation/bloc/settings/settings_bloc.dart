@@ -21,19 +21,19 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<UpdateSettingsPremiumStatus>(_onUpdatePremiumStatus);
     on<SetDefaultBreakDuration>(_onSetDefaultBreakDuration);
     on<ToggleAutoTransitionWhenForeground>(_onToggleAutoTransition);
+    on<SetLanguageCode>(_onSetLanguageCode);
   }
 
   void _onInitializeSettings(InitializeSettings event, Emitter<SettingsState> emit) {
-    final box = Hive.box('settings');
-    final defaultBreakDurationMinutes = box.get('default_break_duration') as int?;
-    final autoTransition = box.get('auto_transition_when_foreground') as bool? ?? true;
+    final ms = _sessionManager.currentState;
     
     emit(state.copyWith(
       isPremium: event.isPremium,
-      backgroundEffect: _sessionManager.currentState.backgroundEffect,
-      isAlarmSoundEnabled: _sessionManager.isAlarmSoundEnabled,
-      defaultBreakDuration: defaultBreakDurationMinutes != null ? Duration(minutes: defaultBreakDurationMinutes) : null,
-      autoTransitionWhenForeground: autoTransition,
+      backgroundEffect: ms.backgroundEffect,
+      isAlarmSoundEnabled: ms.isAlarmSoundEnabled,
+      defaultBreakDuration: ms.defaultBreakDuration,
+      languageCode: ms.languageCode ?? 'es',
+      autoTransitionWhenForeground: ms.autoTransitionWhenForeground,
     ));
   }
 
@@ -48,7 +48,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
   void _onToggleAlarmSound(ToggleAlarmSound event, Emitter<SettingsState> emit) {
     _sessionManager.toggleAlarmSound();
-    emit(state.copyWith(isAlarmSoundEnabled: _sessionManager.isAlarmSoundEnabled));
+    emit(state.copyWith(isAlarmSoundEnabled: _sessionManager.currentState.isAlarmSoundEnabled));
   }
 
   void _onUpdateConsentStatus(UpdateConsentStatus event, Emitter<SettingsState> emit) {
@@ -60,19 +60,21 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   }
 
   void _onSetDefaultBreakDuration(SetDefaultBreakDuration event, Emitter<SettingsState> emit) {
-    final box = Hive.box('settings');
+    _sessionManager.setDefaultBreakDuration(event.duration);
     if (event.duration == null) {
-      box.delete('default_break_duration');
       emit(state.copyWith(clearDefaultBreakDuration: true));
     } else {
-      box.put('default_break_duration', event.duration!.inMinutes);
       emit(state.copyWith(defaultBreakDuration: event.duration));
     }
   }
 
   void _onToggleAutoTransition(ToggleAutoTransitionWhenForeground event, Emitter<SettingsState> emit) {
-    bool newValue = !state.autoTransitionWhenForeground;
-    Hive.box('settings').put('auto_transition_when_foreground', newValue);
-    emit(state.copyWith(autoTransitionWhenForeground: newValue));
+    _sessionManager.toggleAutoTransition();
+    emit(state.copyWith(autoTransitionWhenForeground: _sessionManager.currentState.autoTransitionWhenForeground));
+  }
+
+  void _onSetLanguageCode(SetLanguageCode event, Emitter<SettingsState> emit) {
+    _sessionManager.setLanguageCode(event.code);
+    emit(state.copyWith(languageCode: event.code));
   }
 }

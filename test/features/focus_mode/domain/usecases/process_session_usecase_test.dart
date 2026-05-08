@@ -40,6 +40,7 @@ SessionState _state({
   totalPenaltyTime: totalPenaltyTime,
   backgroundEffect: BackgroundEffect.gradient,
   isWaitingForFirstFlip: isWaitingForFirstFlip,
+  autoTransitionWhenForeground: true,
 );
 
 // --- Helper: construye ProcessSessionParams ---

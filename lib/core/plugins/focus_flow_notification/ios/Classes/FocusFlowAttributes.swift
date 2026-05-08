@@ -5,6 +5,7 @@ public struct FocusFlowAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         public var isPaused: Bool
         public var status: String
+        public var phaseLabel: String
         public var remainingSeconds: Int
         
         // --- NUEVO: Propiedades para Timer Nativo ---
@@ -15,9 +16,10 @@ public struct FocusFlowAttributes: ActivityAttributes {
         public var pauseDate: Date?
         public var showSkip: Bool
         
-        public init(isPaused: Bool, status: String, remainingSeconds: Int, cycleStartDate: Date, focusDurationSeconds: Int, breakDurationSeconds: Int, pauseDate: Date?, showSkip: Bool) {
+        public init(isPaused: Bool, status: String, phaseLabel: String, remainingSeconds: Int, cycleStartDate: Date, focusDurationSeconds: Int, breakDurationSeconds: Int, pauseDate: Date?, showSkip: Bool) {
             self.isPaused = isPaused
             self.status = status
+            self.phaseLabel = phaseLabel
             self.remainingSeconds = remainingSeconds
             self.cycleStartDate = cycleStartDate
             self.focusDurationSeconds = focusDurationSeconds

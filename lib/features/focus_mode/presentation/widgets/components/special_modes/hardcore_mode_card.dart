@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import '../../../models/focus_state.dart';
 
 class HardcoreModeCard extends StatelessWidget {
@@ -17,6 +18,7 @@ class HardcoreModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isSessionActive = state.pomodoroStatus != PomodoroStatus.initial;
 
     final borderColor = state.isInPenaltyBox
@@ -43,9 +45,9 @@ class HardcoreModeCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Modo Focus',
-                      style: TextStyle(
+                    Text(
+                      l10n.focusModeTitle,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -53,8 +55,8 @@ class HardcoreModeCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       isSessionActive
-                          ? 'Bloqueado durante la sesión'
-                          : 'El temporizador solo iniciará cuando pongas el móvil boca abajo.',
+                          ? l10n.lockDuringSession
+                          : l10n.flipToStart,
                       style: TextStyle(
                         fontSize: 12,
                         color: isSessionActive
@@ -95,14 +97,14 @@ class HardcoreModeCard extends StatelessWidget {
 
           if (isSessionActive && state.isHardcoreMode) ...[
             const SizedBox(height: 8),
-            const Row(
+            Row(
               children: [
-                Icon(Icons.lock_clock_rounded, color: Colors.amber, size: 14),
-                SizedBox(width: 8),
+                const Icon(Icons.lock_clock_rounded, color: Colors.amber, size: 14),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Para desactivar este modo, debes reiniciar la sesión por completo.',
-                    style: TextStyle(color: Colors.amber, fontSize: 10),
+                    l10n.disableHardcoreWarning,
+                    style: const TextStyle(color: Colors.amber, fontSize: 10),
                   ),
                 ),
               ],
@@ -121,11 +123,13 @@ class _StatusMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (state.isInPenaltyBox) {
       return _buildRow(
         icon: Icons.error_outline,
         color: Colors.orangeAccent,
-        text: '¡FUERA DE FOCO! Pon el móvil boca abajo.',
+        text: l10n.outOfFocus,
         isBold: true,
       );
     }
@@ -135,7 +139,7 @@ class _StatusMessage extends StatelessWidget {
         return _buildRow(
           icon: Icons.screen_rotation_rounded,
           color: Colors.blueAccent,
-          text: '¡Activado! Voltea el móvil para comenzar.',
+          text: l10n.activatedFlipToStart,
           isBold: true,
         );
       }
@@ -143,15 +147,15 @@ class _StatusMessage extends StatelessWidget {
         return _buildRow(
           icon: Icons.check_circle_outline,
           color: Colors.greenAccent,
-          text: 'Foco profundo activo. Sigue así.',
+          text: l10n.deepFocusActive,
         );
       } else {
         // En teoría, si corre y no está boca abajo, debería entrar en penalty.
-        // Pero puede haber un micro-lag o estar en el umbral.
+        // Pero puede haber un micro-lag o estar en el unbral.
         return _buildRow(
           icon: Icons.warning_amber_rounded,
           color: Colors.amber,
-          text: '¡Cuidado! Pon el móvil boca abajo.',
+          text: l10n.beCarefulFlip,
         );
       }
     } else {
@@ -159,7 +163,7 @@ class _StatusMessage extends StatelessWidget {
       return _buildRow(
         icon: Icons.info_outline,
         color: Colors.white54,
-        text: 'Modo Focus armado. Pulsa Play y voltea el móvil.',
+        text: l10n.focusModeArmed,
       );
     }
   }

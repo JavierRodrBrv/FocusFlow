@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import '../../models/focus_state.dart';
 
 class SavedMixesBottomSheet extends StatelessWidget {
@@ -30,13 +31,14 @@ class SavedMixesBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (state.savedMixes.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 200,
         child: Center(
           child: Text(
-            'No tienes mezclas guardadas aún.',
-            style: TextStyle(color: Colors.white70),
+            l10n.noSavedMixes,
+            style: const TextStyle(color: Colors.white70),
           ),
         ),
       );
@@ -49,7 +51,7 @@ class SavedMixesBottomSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Mezclas Guardadas',
+            l10n.savedMixesTitle,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -106,7 +108,12 @@ class SavedMixesBottomSheet extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    'Lluvia: ${(mix.rainVolume * 100).toInt()}% • Fuego: ${(mix.fireVolume * 100).toInt()}% • Olas: ${(mix.brownNoiseVolume * 100).toInt()}%${isHistory ? " (Última)" : ""}',
+                    l10n.mixDetail(
+                      (mix.rainVolume * 100).toInt(),
+                      (mix.fireVolume * 100).toInt(),
+                      (mix.brownNoiseVolume * 100).toInt(),
+                      isHistory ? l10n.lastActivatedLabel : "",
+                    ),
                     style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   onTap: () {

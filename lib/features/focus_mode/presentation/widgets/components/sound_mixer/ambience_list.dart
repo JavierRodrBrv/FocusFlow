@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import '../../../models/focus_state.dart';
-
+import 'package:focus_flow/features/focus_mode/presentation/models/focus_state.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class AmbienceList extends StatelessWidget {
@@ -12,30 +12,31 @@ class AmbienceList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final ambiences = [
-      {'name': 'Ninguno', 'path': null, 'icon': Icons.music_off_outlined},
+      {'name': l10n.none, 'path': null, 'icon': Icons.music_off_outlined},
       {
-        'name': 'Ranas',
+        'name': l10n.frogs,
         'path': 'assets/audio/frogs_sound.mp3',
         'svgPath': 'assets/icons/frog.svg',
       },
       {
-        'name': 'Biblioteca',
+        'name': l10n.library,
         'path': 'assets/audio/library_sound.wav',
         'svgPath': 'assets/icons/library.svg',
       },
       {
-        'name': 'Parque',
+        'name': l10n.park,
         'path': 'assets/audio/park_ambience.mp3',
         'icon': Icons.park,
       },
       {
-        'name': 'Arroyo',
+        'name': l10n.stream,
         'path': 'assets/audio/stream_ambience.mp3',
         'svgPath': 'assets/icons/arroyo.svg',
       },
       {
-        'name': 'Media noche',
+        'name': l10n.midnight,
         'path': 'assets/audio/summer_midnight.wav',
         'icon': Icons.nights_stay,
       },

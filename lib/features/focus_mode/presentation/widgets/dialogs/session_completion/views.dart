@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 
 class MoneyFlowView extends StatelessWidget {
   final String imageAsset;
@@ -16,6 +17,7 @@ class MoneyFlowView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         ClipRRect(
@@ -34,9 +36,9 @@ class MoneyFlowView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Ese tiempo perdido equivale a:',
-          style: TextStyle(color: Colors.white70, fontSize: 14),
+        Text(
+          l10n.timeLostEquivalent,
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -49,9 +51,9 @@ class MoneyFlowView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Si no valoras ese dinero, ¿te gustaría donárselo al amigo de la foto?',
-          style: TextStyle(color: Colors.white70, fontSize: 13),
+        Text(
+          l10n.donationQuestion,
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -60,9 +62,9 @@ class MoneyFlowView extends StatelessWidget {
           children: [
             TextButton(
               onPressed: onBack,
-              child: const Text(
-                'No, gracias',
-                style: TextStyle(color: Colors.white54),
+              child: Text(
+                l10n.noThanks,
+                style: const TextStyle(color: Colors.white54),
               ),
             ),
             ElevatedButton(
@@ -71,7 +73,7 @@ class MoneyFlowView extends StatelessWidget {
                 backgroundColor: Colors.amber,
                 foregroundColor: Colors.black,
               ),
-              child: const Text('¡Claro!'),
+              child: Text(l10n.sure),
             ),
           ],
         ),
@@ -92,6 +94,7 @@ class DonationPromptView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -127,9 +130,9 @@ class DonationPromptView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
-        const Text(
-          'En el futuro aquí podrás donar y dejar tu reseña. ¡Gracias por valorar nuestro trabajo!',
-          style: TextStyle(color: Colors.white70, fontSize: 13),
+        Text(
+          l10n.donationFuture,
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -139,7 +142,7 @@ class DonationPromptView extends StatelessWidget {
             backgroundColor: Colors.pink,
             foregroundColor: Colors.white,
           ),
-          child: const Text('Próximamente...'),
+          child: Text(l10n.comingSoon),
         ),
       ],
     );

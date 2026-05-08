@@ -5,6 +5,7 @@ import 'package:focus_flow/features/stats/presentation/screens/dashboard_screen.
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
 import 'package:focus_flow/features/session_history/presentation/pages/session_history_page.dart';
 import 'package:focus_flow/flavors.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import '../../models/focus_state.dart';
@@ -30,6 +31,7 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AppBar(
       title: const Text(
         'FocusFlow',
@@ -44,8 +46,8 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       leading: Showcase(
         key: tutorialKey,
-        title: 'Ajustes y Ayuda',
-        description: 'Gestiona las preferencias de la app a tu gusto.',
+        title: l10n.settingsAndHelp,
+        description: l10n.settingsHelpDesc,
         child: IconButton(
           icon: const Icon(Icons.notes_rounded, color: Colors.white70),
           onPressed: () async {
@@ -77,9 +79,8 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         Showcase(
           key: historyKey,
-          title: 'Historial de Sesiones',
-          description:
-              'Revisa tu rendimiento, tiempo enfocado y ciclos completados.',
+          title: l10n.sessionsHistory,
+          description: l10n.sessionsHistoryDesc,
           child: IconButton(
             icon: const Icon(Icons.history_rounded, color: Colors.white70),
             onPressed: () {
@@ -94,9 +95,8 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         Showcase(
           key: premiumKey,
-          title: 'Experiencia Premium',
-          description:
-              'Desbloquea todas las mezclas de sonido ambiental, elimina los anuncios y accede a funciones exclusivas para un enfoque total.',
+          title: l10n.premiumExperience,
+          description: l10n.premiumExperienceDesc,
           child: IconButton(
             icon: Icon(
               state.isPremium
@@ -112,10 +112,9 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
               } else if (!state.isPremium) {
                 showDialog(
                   context: context,
-                  builder: (context) => const PremiumFeatureDialog(
-                    featureName: 'Premium',
-                    featureDescription:
-                        'Desbloquea todas las funciones y elimina los anuncios.',
+                  builder: (context) => PremiumFeatureDialog(
+                    featureName: l10n.premiumFeatureTitle,
+                    featureDescription: l10n.premiumFeatureDesc,
                   ),
                 );
               }

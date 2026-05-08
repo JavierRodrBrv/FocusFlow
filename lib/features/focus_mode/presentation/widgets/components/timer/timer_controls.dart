@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/shared/bouncing_button.dart';
@@ -25,13 +26,13 @@ class TimerControls extends StatelessWidget {
       barrierDismissible: true,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey.shade900,
-        title: const Text(
-          '¿Añadir descanso?',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          AppLocalizations.of(context)!.addBreakTitle,
+          style: const TextStyle(color: Colors.white),
         ),
-        content: const Text(
-          '¿Quieres añadir un tiempo de descanso después de esta sesión?',
-          style: TextStyle(color: Colors.white70),
+        content: Text(
+          AppLocalizations.of(context)!.addBreakMessage,
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -43,9 +44,9 @@ class TimerControls extends StatelessWidget {
               service.invoke('sendEvent', {'event': 'startTimer'});
               Navigator.pop(context);
             },
-            child: const Text(
-              'No, gracias',
-              style: TextStyle(color: Colors.white54),
+            child: Text(
+              AppLocalizations.of(context)!.noThanks,
+              style: const TextStyle(color: Colors.white54),
             ),
           ),
           TextButton(
@@ -57,7 +58,7 @@ class TimerControls extends StatelessWidget {
               service.invoke('sendEvent', {'event': 'startTimer'});
               Navigator.pop(context);
             },
-            child: const Text('5 min', style: TextStyle(color: Colors.blue)),
+            child: Text(AppLocalizations.of(context)!.minOnly(5), style: const TextStyle(color: Colors.blue)),
           ),
           TextButton(
             onPressed: () {
@@ -68,7 +69,7 @@ class TimerControls extends StatelessWidget {
               service.invoke('sendEvent', {'event': 'startTimer'});
               Navigator.pop(context);
             },
-            child: const Text('10 min', style: TextStyle(color: Colors.blue)),
+            child: Text(AppLocalizations.of(context)!.minOnly(10), style: const TextStyle(color: Colors.blue)),
           ),
         ],
       ),
@@ -168,12 +169,12 @@ class TimerControls extends StatelessWidget {
                         // mostramos aviso en lugar de pausar/reanudar.
                         if (state.isHardcoreMode && state.isWaitingForFirstFlip) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
-                                'Modo Focus activo: Voltea el móvil boca abajo para que el tiempo empiece a correr.',
+                                AppLocalizations.of(context)!.hardcoreFlipMessage,
                               ),
                               backgroundColor: Colors.redAccent,
-                              duration: Duration(seconds: 3),
+                              duration: const Duration(seconds: 3),
                             ),
                           );
                           return;

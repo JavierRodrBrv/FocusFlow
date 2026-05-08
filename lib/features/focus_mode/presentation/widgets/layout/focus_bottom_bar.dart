@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/shared/bottom_action_item.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import '../../models/focus_state.dart';
@@ -63,7 +64,7 @@ class FocusBottomBar extends StatelessWidget {
                         ),
                 ),
               ),
-              _buildContent(),
+              _buildContent(context),
             ],
           ),
         ),
@@ -71,18 +72,18 @@ class FocusBottomBar extends StatelessWidget {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Showcase(
           key: mixerKey,
-          title: 'Ambiente Personalizado',
-          description:
-              'Crea tu atmósfera ideal combinando sonidos de lluvia, fuego o ruido marrón. Ajusta los niveles a tu gusto para aislarte de distracciones.',
+          title: l10n.ambienceShowcaseTitle,
+          description: l10n.ambienceShowcaseDesc,
           child: BottomActionItem(
             icon: Icons.tune_rounded,
-            label: 'Ambiente',
+            label: l10n.mixerLabel,
             onTap: onMixerTap,
           ),
         ),
@@ -93,12 +94,11 @@ class FocusBottomBar extends StatelessWidget {
         ),
         Showcase(
           key: focusModeKey,
-          title: 'Modo Foco Profundo',
-          description:
-              'Activa este modo para obligarte a dejar el móvil boca abajo. Si lo levantas, la sesión se pausará, ayudándote a evitar tentaciones.',
+          title: l10n.focusModeShowcaseTitle,
+          description: l10n.focusModeShowcaseDesc,
           child: BottomActionItem(
             icon: Icons.psychology_rounded,
-            label: 'Modo Foco',
+            label: l10n.focusModeTitle,
             iconColor: state.isHardcoreMode
                 ? Colors.redAccent
                 : Colors.blueAccent,

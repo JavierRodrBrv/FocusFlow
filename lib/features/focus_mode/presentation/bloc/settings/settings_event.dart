@@ -37,3 +37,11 @@ class SetDefaultBreakDuration extends SettingsEvent {
 }
 
 class ToggleAutoTransitionWhenForeground extends SettingsEvent {}
+
+class SetLanguageCode extends SettingsEvent {
+  final String code;
+  const SetLanguageCode(this.code);
+
+  @override
+  List<Object?> get props => [code];
+}

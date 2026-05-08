@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import '../../../models/focus_state.dart';
 import '../shared/bouncing_button.dart';
 import '../../modals/saved_mixes_bottom_sheet.dart';
@@ -63,6 +64,8 @@ class _SoundMixerContentState extends State<SoundMixerContent>
     final state = widget.state;
     final service = widget.service;
 
+    final l10n = AppLocalizations.of(context)!;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -71,9 +74,9 @@ class _SoundMixerContentState extends State<SoundMixerContent>
           padding: const EdgeInsets.only(bottom: 20.0),
           child: Row(
             children: [
-              _buildTabButton('Mezclador', 0),
+              _buildTabButton(l10n.mixerTab, 0),
               const SizedBox(width: 8),
-              _buildTabButton('Sonido de fondo', 1),
+              _buildTabButton(l10n.backgroundSoundTab, 1),
             ],
           ),
         ),
@@ -92,7 +95,7 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       MixerSlider(
-                        label: 'Lluvia',
+                        label: l10n.rainLabel,
                         icon: Icons.water_drop,
                         value: state.rainVolume,
                         onChanged: (value) {
@@ -103,7 +106,7 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                         },
                       ),
                       MixerSlider(
-                        label: 'Fuego',
+                        label: l10n.fireLabel,
                         icon: Icons.local_fire_department,
                         value: state.fireVolume,
                         onChanged: (value) {
@@ -114,7 +117,7 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                         },
                       ),
                       MixerSlider(
-                        label: 'Olas',
+                        label: l10n.wavesLabel,
                         icon: Icons.waves,
                         value: state.brownNoiseVolume,
                         onChanged: (value) {
@@ -140,10 +143,9 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                                 showDialog(
                                   context: context,
                                   builder: (context) =>
-                                      const PremiumFeatureDialog(
-                                    featureName: 'Cargar mezclas guardadas',
-                                    featureDescription:
-                                        'Accede y carga al instante tus mezclas de sonido personalizadas que has guardado previamente.',
+                                      PremiumFeatureDialog(
+                                    featureName: l10n.premiumLoadMixTitle,
+                                    featureDescription: l10n.premiumLoadMixDesc,
                                   ),
                                 );
                               }
@@ -190,22 +192,21 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                             color: Colors.blueAccent,
                             onPressed: () {
                               if (state.isPremium) {
-                                service
-                                    .invoke('sendEvent', {'event': 'saveMix'});
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Mix guardado.'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
+                                  service
+                                      .invoke('sendEvent', {'event': 'saveMix'});
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(l10n.mixSaved),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
                               } else {
                                 showDialog(
                                   context: context,
                                   builder: (context) =>
-                                      const PremiumFeatureDialog(
-                                    featureName: 'Guardar mezclas de sonido',
-                                    featureDescription:
-                                        'Guarda tus configuraciones de sonido ambientale para usarlas más tarde.',
+                                      PremiumFeatureDialog(
+                                    featureName: l10n.saveSoundMixes,
+                                    featureDescription: l10n.saveSoundMixesDesc,
                                   ),
                                 );
                               }

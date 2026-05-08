@@ -1,0 +1,350 @@
+{
+  "@@locale": "es",
+  "appTitle": "FocusFlow",
+  "focusMode": "Enfoque",
+  "shortBreak": "Descanso Corto",
+  "longBreak": "Descanso Largo",
+  "start": "Empezar",
+  "pause": "Pausa",
+  "resume": "Continuar",
+  "skip": "Saltar",
+  "reset": "Reiniciar",
+  "settings": "Ajustes",
+  "language": "Idioma",
+  "spanish": "Español",
+  "english": "Inglés",
+  "initializationError": "Error fatal de inicialización",
+  "minBreak": "{minutes} min descanso",
+  "@minBreak": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timerShowcaseTitle": "Temporizador",
+  "timerShowcaseDesc": "Ajusta tu tiempo de enfoque. Pulsa el centro para usar el selector preciso de tiempo.",
+  "controlsShowcaseTitle": "Controles de Sesión",
+  "controlsShowcaseDesc": "Inicia, pausa o reinicia tu sesión. Usa el botón de Modo Inmersivo (derecha) para ocultar distracciones.",
+  "settingsAndHelp": "Ajustes y Ayuda",
+  "alarmSound": "Sonido de Alarma",
+  "alarmSoundSubtitle": "Si se desactiva, solo vibrará al finalizar.",
+  "autoTransition": "Transición Automática",
+  "autoTransitionSubtitle": "Solo funciona con la app abierta. En segundo plano será manual.",
+  "breaks": "Descansos",
+  "breaksSubtitle": "Configura tus descansos automáticos",
+  "breaksPresetSubtitle": "{minutes} min preestablecidos",
+  "@breaksPresetSubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "wallpaper": "Fondo de Pantalla",
+  "viewTutorial": "Ver Tutorial",
+  "feedback": "Enviar Feedback / Reportar Bug",
+  "feedbackSubtitle": "¡Tu opinión nos ayuda a mejorar!",
+  "versionInfo": "Versión {version} (Beta)",
+  "@versionInfo": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "languageMenuTitle": "Idioma",
+  "selectLanguage": "Selecciona tu idioma preferido",
+  "save": "Guardar",
+  "back": "Atrás",
+  "bugReport": "¿Es un Bug? 🐞",
+  "featureIdea": "¿Una Idea? 💡",
+  "bugHint": "Describe el error que encontraste...",
+  "ideaHint": "Cuéntanos qué te gustaría ver...",
+  "submitFeedback": "Enviar Feedback",
+  "thanks": "¡Gracias!",
+  "errorSending": "Error al enviar: {error}",
+  "@errorSending": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "solid": "Sólido",
+  "gradient": "Gradiente",
+  "deletePreset": "Eliminar preajuste",
+  "accept": "Aceptar",
+  "sessionsHistory": "Historial de Sesiones",
+  "sessionsHistoryDesc": "Revisa tu rendimiento, tiempo enfocado y ciclos completados.",
+  "premiumExperience": "Experiencia Premium",
+  "premiumExperienceDesc": "Desbloquea todas las mezclas de sonido ambiental, elimina los anuncios y accede a funciones exclusivas para un enfoque total.",
+  "premiumFeatureTitle": "Premium",
+  "premiumFeatureDesc": "Desbloquea todas las funciones y elimina los anuncios.",
+  "soundMixerTitle": "Mezclador de Sonido",
+  "focusModeTitle": "Modo Foco",
+  "lockDuringSession": "Bloqueado durante la sesión",
+  "flipToStart": "El temporizador solo iniciará cuando pongas el móvil boca abajo.",
+  "disableHardcoreWarning": "Para desactivar este modo, debes reiniciar la sesión por completo.",
+  "outOfFocus": "¡FUERA DE FOCO! Pon el móvil boca abajo.",
+  "activatedFlipToStart": "¡Activado! Voltea el móvil para comenzar.",
+  "deepFocusActive": "Foco profundo activo. Sigue así.",
+  "beCarefulFlip": "¡Cuidado! Pon el móvil boca abajo.",
+  "focusModeArmed": "Modo Focus armado. Pulsa Play y voltea el móvil.",
+  "sessionCompletedTitle": "¡Sesión Completada!",
+  "timesLifted": "Veces levantado",
+  "timeLost": "Tiempo perdido",
+  "valueYourTime": "¿Realmente valoras tu tiempo?",
+  "notMuch": "No mucho",
+  "yesValue": "Sí, lo valoro",
+  "finishSession": "Terminar sesión",
+  "perfPerfect": "¡Casi perfecto! Un pequeño desliz, pero lo has logrado.",
+  "perfNotBad": "No ha estado mal, pero necesitas un poco más de disciplina.",
+  "perfMosquito": "¿Necesitas una brújula? Tienes menos concentración que un mosquito. ¡A la próxima mejor!",
+  "perfGood": "Has mantenido el foco con éxito. ¡Gran trabajo!",
+  "dogPhrase1": "Haciendo pedido por Amazon de un hueso gourmet... 🍖",
+  "dogPhrase2": "Calculando cuántas salchichas puede comprar con tu distracción... 🌭",
+  "dogPhrase3": "Tu falta de foco es su oportunidad de conseguir un juguete nuevo... 🧸",
+  "dogPhrase4": "Ahorrando para el curso de 'Cómo ladrarle al cartero sin despertarte'... 📬",
+  "dogPhrase5": "Gracias por financiar su jubilación en el parque... 🌳",
+  "dogPhrase6": "Tu tiempo perdido se ha convertido en premios de bacon... 🥓",
+  "dogPhrase7": "Invirtiendo en el fondo de inversión 'Pelotas de Tenis Ilimitadas'... 🎾",
+  "dogPhrase8": "Gestionando la suscripción premium de 'Olores del Mundo'... 🐕",
+  "dogPhrase9": "Convertiremos tu dinero perdido en una cama ortopédica de lujo... 💤",
+  "dogPhrase10": "Tu distracción paga las sesiones de spa canino de este mes... 🧼",
+  "mixerLabel": "Ambiente",
+  "mixerDesc": "Crea tu atmósfera ideal combinando sonidos de lluvia, fuego o ruido marrón. Ajusta los niveles a tu gusto para aislarte de distracciones.",
+  "settingsHelpDesc": "Gestiona las preferencias de la app a tu gusto.",
+  "ambienceShowcaseTitle": "Ambiente Personalizado",
+  "ambienceShowcaseDesc": "Crea tu atmósfera ideal combinando sonidos de lluvia, fuego o ruido marrón. Ajusta los niveles a tu gusto para aislarte de distracciones.",
+  "focusModeShowcaseTitle": "Modo Foco Profundo",
+  "focusModeShowcaseDesc": "Activa este modo para obligarte a dejar el móvil boca abajo. Si lo levantas, la sesión se pausará, ayudándote a evitar tentaciones.",
+  "timeLostEquivalent": "Ese tiempo perdido equivale a:",
+  "donationQuestion": "Si no valoras ese dinero, ¿te gustaría donárselo al amigo de la foto?",
+  "noThanks": "No, gracias",
+  "sure": "¡Claro!",
+  "donationFuture": "En el futuro aquí podrás donar y dejar tu reseña. ¡Gracias por valorar nuestro trabajo!",
+  "comingSoon": "Próximamente...",
+  "breaksDesc": "Configura un tiempo de descanso predeterminado. Si lo haces, las sesiones comenzarán automáticamente sin preguntar cada vez.",
+  "sendFeedback": "Enviar Feedback",
+  "errorSending": "Error al enviar: {error}",
+  "@errorSending": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "resetSessionTitle": "¿Reiniciar sesión?",
+  "resetSessionMessage": "Se perderá el progreso de la sesión actual.",
+  "cancel": "Cancelar",
+  "tapToAdjust": "TOCA PARA AJUSTAR",
+  "minOnly": "{minutes} min",
+  "@minOnly": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "ready": "Listo",
+  "mixerTab": "Mezclador",
+  "backgroundSoundTab": "Sonido de fondo",
+  "rainLabel": "Lluvia",
+  "fireLabel": "Fuego",
+  "wavesLabel": "Olas",
+  "premiumLoadMixTitle": "Cargar mezclas guardadas",
+  "premiumLoadMixDesc": "Accede y carga al instante tus mezclas de sonido personalizadas que has guardado previamente.",
+  "mixer": "Mezclador",
+  "backgroundSound": "Sonido de fondo",
+  "rain": "Lluvia",
+  "fire": "Fuego",
+  "waves": "Olas",
+  "loadSavedMixes": "Cargar mezclas guardadas",
+  "loadSavedMixesDesc": "Accede y carga al instante tus mezclas de sonido personalizadas que has guardado previamente.",
+  "mixSaved": "Mix guardado.",
+  "saveSoundMixes": "Guardar mezclas de sonido",
+  "saveSoundMixesDesc": "Guarda tus configuraciones de sonido ambientale para usarlas más tarde.",
+  "none": "Ninguno",
+  "frogs": "Ranas",
+  "library": "Biblioteca",
+  "park": "Parque",
+  "stream": "Arroyo",
+  "midnight": "Media noche",
+  "noSavedMixes": "No tienes mezclas guardadas aún.",
+  "savedMixesTitle": "Mezclas Guardadas",
+  "lastMixLabel": "(Última)",
+  "getAccess": "Obtener",
+  "showingResultsFor": "Mostrando resultados del {date}",
+  "@showingResultsFor": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "today": "Hoy",
+  "yesterday": "Ayer",
+  "noSessionsForDate": "No hay sesiones para esta fecha",
+  "noSessionsRegistered": "No hay sesiones registradas",
+  "unknownError": "Error desconocido",
+  "focusSession": "Sesión de Enfoque",
+  "breakLabel": "Descanso",
+  "durationLabel": "Duración: {duration}",
+  "@durationLabel": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "endFocusCycleTitle": "¿Terminar ciclo de foco?",
+  "endFocusCycleMessage": "Estás en una sesión con descansos programados. Si reinicias ahora, se cancelará todo el ciclo actual y volverás al inicio.\n\n¿Estás seguro de que quieres terminar?",
+  "cancelCurrentSessionMessage": "La sesión actual se cancelará.\n\n¿Estás seguro de que quieres continuar?",
+  "sessionCycle": "Ciclo de Sesiones",
+  "focusCount": "{count, plural, =1{1 Enfoque} other{{count} Enfoques}}",
+  "@focusCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "breakCount": "{count, plural, =1{1 Descanso} other{{count} Descansos}}",
+  "@breakCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "totalTimeLabel": "Tiempo total: {time}",
+  "@totalTimeLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "historyTitle": "Historial de Sesiones",
+  "premiumFeature": "Función Premium",
+  "unlockFeature": "Desbloquea \"{feature}\"",
+  "@unlockFeature": {
+    "placeholders": {
+      "feature": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumActivated": "¡Premium activado! Funcionalidad desbloqueada (DEV).",
+  "purchasesSoon": "Compras próximamente.",
+  "priceOnly": "Solo ",
+  "oneTimePayment": " / pago único",
+  "noSavedMixes": "No tienes mezclas guardadas aún.",
+  "savedMixesTitle": "Mezclas Guardadas",
+  "lastActivatedLabel": " (Última)",
+  "mixDetail": "Lluvia: {rain}% • Fuego: {fire}% • Olas: {waves}%{last}",
+  "@mixDetail": {
+    "placeholders": {
+      "rain": {
+        "type": "int"
+      },
+      "fire": {
+        "type": "int"
+      },
+      "waves": {
+        "type": "int"
+      },
+      "last": {
+        "type": "String"
+      }
+    }
+  },
+  "devVersionTitle": "Versión de Desarrollo",
+  "devVersionDesc": "Estás utilizando una versión de prueba (Dev).\n• Las funciones Premium se pueden simular.\n• Puede contener errores experimentales.\n• ¡Ayúdanos a mejorar! Envía tus ideas o reporta fallos desde el menú de Ajustes (icono ☰).",
+  "devVersionAction": "Entendido",
+  "statistics": "Estadísticas",
+  "currentStreak": "Racha Actual",
+  "streakDays": "{count, plural, =1{1 Día} other{{count} Días}}",
+  "@streakDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "totalFocused": "Total Enfocado",
+  "thisWeek": "Esta Semana",
+  "weekRange": "Semana {start} - {end}",
+  "@weekRange": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLoadingStats": "Error cargando estadísticas:",
+  "close": "Cerrar",
+  "breakFinished": "Descanso Finalizado",
+  "startTimeLabel": "Hora de inicio",
+  "plannedDurationLabel": "Duración planeada",
+  "actualDurationLabel": "Duración real",
+  "focusModeLabel": "Modo FOCUS",
+  "activated": "Activado",
+  "disabled": "Desactivado",
+  "distractionsLabel": "Distracciones",
+  "distractionsTimes": "{count, plural, =1{1 vez} other{{count} veces}}",
+  "@distractionsTimes": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "cycleSummary": "Resumen del Ciclo",
+  "cycleBreakdown": "Desglose del ciclo",
+  "focusTime": "Tiempo de foco",
+  "breakTime": "Tiempo de descanso",
+  "totalDistractions": "Distracciones totales",
+  "totalTimeLostLabel": "Tiempo perdido total",
+  "sessionsGroupTitle": "{count, plural, =1{1 Sesión} other{{count} Sesiones}}",
+  "@sessionsGroupTitle": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "canceledStatus": "Cancelado",
+  "addBreakTitle": "¿Añadir descanso?",
+  "addBreakMessage": "¿Quieres añadir un tiempo de descanso después de esta sesión?",
+  "hardcoreFlipMessage": "Modo Focus activo: Voltea el móvil boca abajo para que el tiempo empiece a correr.",
+  "hourSuffixShort": "h",
+  "minuteSuffixShort": "m",
+  "secondSuffixShort": "s",
+  "premiumPrice": "4,99 €",
+  "notificationTimerCompleteTitle": "¡Tiempo completado!",
+  "notificationTimerCompleteBody": "Buen trabajo. Tómate un merecido descanso.",
+  "notificationPenaltyTitle": "¡Vuelve a tu foco!",
+  "notificationPenaltyBody": "Por favor, voltea tu teléfono boca abajo para continuar.",
+  "notificationReminderTitle": "¡Es hora de enfocarse!",
+  "notificationReminderBody": "Abre FocusFlow y alcanza tus metas de hoy.",
+  "notificationChannelAlertsName": "Alertas de FocusFlow",
+  "notificationChannelAlertsDescription": "Notificaciones informativas de la aplicación",
+  "notificationChannelRemindersName": "Recordatorios",
+  "notificationChannelRemindersDescription": "Recordatorios para mantener el enfoque",
+  "notificationRemainingTime": "Tiempo restante: {time}",
+  "@notificationRemainingTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "phaseFocus": "Enfoque",
+  "phaseBreak": "Descanso",
+  "phaseWaiting": "Preparación"
+}

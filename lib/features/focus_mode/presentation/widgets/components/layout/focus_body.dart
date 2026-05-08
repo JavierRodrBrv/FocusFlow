@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
@@ -27,12 +28,14 @@ class FocusBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     if (state.status == AppStatus.initial ||
         state.status == AppStatus.loading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state.status == AppStatus.error) {
-      return const Center(child: Text("Error fatal de inicialización"));
+      return Center(child: Text(l10n.initializationError));
     }
 
     final isZoomMode = state.isZoomMode;
@@ -72,7 +75,6 @@ class FocusBody extends StatelessWidget {
                                   backgroundColor: Colors.transparent,
                                   builder: (context) => SettingsMenuBottomSheet(
                                     initialState: state,
-                                    initialView: 3,
                                   ),
                                 );
                               },
@@ -98,7 +100,7 @@ class FocusBody extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      '${state.defaultBreakDuration!.inMinutes} min descanso',
+                                      l10n.minBreak(state.defaultBreakDuration!.inMinutes),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 14,
@@ -118,9 +120,8 @@ class FocusBody extends StatelessWidget {
                     curve: Curves.easeInOut,
                     child: Showcase(
                       key: timerKey,
-                      title: 'Temporizador',
-                      description:
-                          'Ajusta tu tiempo de enfoque. Pulsa el centro para usar el selector preciso de tiempo.',
+                      title: l10n.timerShowcaseTitle,
+                      description: l10n.timerShowcaseDesc,
                       child: TimerDisplay(state: state, service: service),
                     ),
                   ),
@@ -136,9 +137,8 @@ class FocusBody extends StatelessWidget {
                       ignoring: !showUI,
                       child: Showcase(
                         key: controlsKey,
-                        title: 'Controles de Sesión',
-                        description:
-                            'Inicia, pausa o reinicia tu sesión. Usa el botón de Modo Inmersivo (derecha) para ocultar distracciones.',
+                        title: l10n.controlsShowcaseTitle,
+                        description: l10n.controlsShowcaseDesc,
                         child: TimerControls(state: state, service: service),
                       ),
                     ),

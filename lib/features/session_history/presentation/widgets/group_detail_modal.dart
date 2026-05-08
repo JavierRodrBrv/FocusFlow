@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
 
@@ -9,9 +10,10 @@ class GroupDetailModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('EEEE, d MMMM yyyy', 'es');
-    final startTime =
-        group.last.startTime; // Last in list is chronologically first
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).languageCode;
+    final dateFormat = DateFormat('EEEE, d MMMM', locale);
+    final startTime = group.last.startTime; // Last in list is chronologically first
 
     // Calculate stats
     int focusCount = 0;
@@ -78,9 +80,9 @@ class GroupDetailModal extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Resumen del Ciclo',
-                      style: TextStyle(
+                    Text(
+                      l10n.sessionsGroupTitle(group.length),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -105,7 +107,7 @@ class GroupDetailModal extends StatelessWidget {
               child: Column(
                 children: [
                   _buildSummaryCard(
-                    context,
+                    l10n,
                     focusCount,
                     breakCount,
                     totalFocusActual,
@@ -115,11 +117,11 @@ class GroupDetailModal extends StatelessWidget {
                     totalPenalty,
                   ),
                   const SizedBox(height: 24),
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Desglose del ciclo',
-                      style: TextStyle(
+                      l10n.cycleBreakdown,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -127,7 +129,7 @@ class GroupDetailModal extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...group.map((session) => _buildTimelineItem(session)),
+                  ...group.map((session) => _buildTimelineItem(session, l10n)),
                 ],
               ),
             ),
@@ -146,7 +148,7 @@ class GroupDetailModal extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Cerrar'),
+              child: Text(l10n.close),
             ),
           ),
         ],
@@ -155,7 +157,7 @@ class GroupDetailModal extends StatelessWidget {
   }
 
   Widget _buildSummaryCard(
-    BuildContext context,
+    AppLocalizations l10n,
     int focusCount,
     int breakCount,
     Duration totalFocus,
@@ -175,13 +177,13 @@ class GroupDetailModal extends StatelessWidget {
         children: [
           _buildDetailRow(
             Icons.psychology,
-            'Tiempo de foco',
+            l10n.focusTime,
             '${_formatDuration(totalFocus)} ($focusCount)',
             textColor: Colors.blueAccent,
           ),
           _buildDetailRow(
             Icons.coffee,
-            'Tiempo de descanso',
+            l10n.breakTime,
             '${_formatDuration(totalBreak)} ($breakCount)',
             textColor: Colors.greenAccent,
           ),
@@ -190,12 +192,12 @@ class GroupDetailModal extends StatelessWidget {
             const SizedBox(height: 8),
             _buildDetailRow(
               Icons.warning_amber_rounded,
-              'Distracciones totales',
-              '$distractions veces',
+              l10n.totalDistractions,
+              l10n.distractionsTimes(distractions),
             ),
             _buildDetailRow(
               Icons.history_toggle_off,
-              'Tiempo perdido total',
+              l10n.totalTimeLostLabel,
               _formatDuration(penaltyTime),
               textColor: penaltyTime.inSeconds > 0 ? Colors.orangeAccent : null,
             ),
@@ -205,8 +207,9 @@ class GroupDetailModal extends StatelessWidget {
     );
   }
 
-  Widget _buildTimelineItem(FocusSession session) {
-    final timeFormat = DateFormat('HH:mm', 'es');
+  Widget _buildTimelineItem(FocusSession session, AppLocalizations l10n) {
+    final locale = l10n.localeName;
+    final timeFormat = DateFormat('HH:mm', locale);
     final isFocus = !session.isResting;
 
     return Padding(
@@ -240,14 +243,14 @@ class GroupDetailModal extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isFocus ? 'Sesión de Foco' : 'Descanso',
+                  isFocus ? l10n.focusSession : l10n.breakLabel,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  'Duración: ${_formatDuration(session.actualDuration)}',
+                  l10n.durationLabel(_formatDuration(session.actualDuration)),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 12,
@@ -263,9 +266,9 @@ class GroupDetailModal extends StatelessWidget {
                 color: Colors.orange.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
-                'Cancelado',
-                style: TextStyle(color: Colors.orangeAccent, fontSize: 10),
+              child: Text(
+                l10n.canceledStatus,
+                style: const TextStyle(color: Colors.orangeAccent, fontSize: 10),
               ),
             ),
         ],

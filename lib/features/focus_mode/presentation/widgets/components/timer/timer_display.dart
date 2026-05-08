@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/shared/bouncing_button.dart';
@@ -47,11 +48,11 @@ class TimerDisplay extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CupertinoButton(
-                    child: const Text('Cancelar'),
+                    child: Text(AppLocalizations.of(context)!.cancel),
                     onPressed: () => Navigator.pop(context),
                   ),
                   CupertinoButton(
-                    child: const Text('Listo'),
+                    child: Text(AppLocalizations.of(context)!.ready),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -133,7 +134,7 @@ class TimerDisplay extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 12.0),
                 child: Text(
-                  "TOCA PARA AJUSTAR",
+                  AppLocalizations.of(context)!.tapToAdjust,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,

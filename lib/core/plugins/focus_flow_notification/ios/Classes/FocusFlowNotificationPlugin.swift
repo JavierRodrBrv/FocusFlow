@@ -136,9 +136,9 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       }
     case "updateNotification":
       if let args = call.arguments as? [String: Any],
-         let time = args["time"] as? String,
-         let status = args["status"] as? String {
-          showLocalNotification(time: time, status: status)
+         let title = args["title"] as? String,
+         let body = args["body"] as? String {
+          showLocalNotification(title: title, body: body)
           result(nil)
       }
     case "syncWidgetState":
@@ -164,10 +164,10 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
     }
   }
 
-  private func showLocalNotification(time: String, status: String) {
+  private func showLocalNotification(title: String, body: String) {
       let content = UNMutableNotificationContent()
-      content.title = "FocusFlow"
-      content.body = status == "finished" ? "¡Sesión completada!" : "Tiempo restante: \(time)"
+      content.title = title
+      content.body = body
       content.sound = UNNotificationSound.default
 
       let request = UNNotificationRequest(identifier: "focus_flow_update", content: content, trigger: nil)
@@ -182,6 +182,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           defaults.set(args["focusDuration"] as? Int ?? 0, forKey: "focusDuration")
           defaults.set(args["breakDuration"] as? Int ?? 0, forKey: "breakDuration")
           defaults.set(args["status"] as? String ?? "focus", forKey: "status")
+          defaults.set(args["phaseLabel"] as? String ?? "", forKey: "phaseLabel")
           defaults.set(args["showSkip"] as? Bool ?? true, forKey: "showSkip")
           defaults.set(false, forKey: "isStopped")
           defaults.synchronize()
@@ -201,6 +202,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
           finalArgs["focusDuration"] = defaults.integer(forKey: "focusDuration")
           finalArgs["breakDuration"] = defaults.integer(forKey: "breakDuration")
           finalArgs["status"] = defaults.string(forKey: "status") ?? "focus"
+          finalArgs["phaseLabel"] = defaults.string(forKey: "phaseLabel") ?? ""
           finalArgs["isPaused"] = defaults.bool(forKey: "isPaused")
           finalArgs["remainingSeconds"] = defaults.integer(forKey: "remainingSeconds")
           finalArgs["showSkip"] = defaults.object(forKey: "showSkip") as? Bool ?? true
@@ -215,6 +217,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       let focusDuration      = finalArgs["focusDuration"] as? Int ?? 0
       let breakDuration      = finalArgs["breakDuration"] as? Int ?? 0
       let status             = finalArgs["status"]        as? String ?? "focus"
+      let phaseLabel         = finalArgs["phaseLabel"]    as? String ?? ""
       
       if status == "initial" || status == "finished" {
           os_log("[FocusFlow] manageActivity skipped because status is %{public}@", log: .default, type: .info, status)
@@ -230,6 +233,7 @@ public class FocusFlowNotificationPlugin: NSObject, FlutterPlugin, UNUserNotific
       let state = FocusFlowAttributes.ContentState(
           isPaused: isPaused,
           status: status,
+          phaseLabel: phaseLabel,
           remainingSeconds: remainingSeconds,
           cycleStartDate: cycleStartDate,
           focusDurationSeconds: focusDuration,

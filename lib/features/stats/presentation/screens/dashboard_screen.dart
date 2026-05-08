@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 
 import '../bloc/stats_bloc.dart';
 import '../bloc/stats_event.dart';
@@ -29,7 +30,7 @@ class DashboardView extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A), // Slate 900
       appBar: AppBar(
-        title: const Text('Estadísticas', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context)!.statistics, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -71,7 +72,7 @@ class DashboardView extends StatelessWidget {
                 } else if (state is StatsError) {
                   return Center(
                     child: Text(
-                      'Error cargando estadísticas:\n${state.message}',
+                      '${AppLocalizations.of(context)!.errorLoadingStats}\n${state.message}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.redAccent),
                     ),
@@ -86,8 +87,8 @@ class DashboardView extends StatelessWidget {
                           Expanded(
                             child: _buildGlassCard(
                               child: _buildStatItem(
-                                title: 'Racha Actual',
-                                value: '${state.currentStreak} Días',
+                                title: AppLocalizations.of(context)!.currentStreak,
+                                value: AppLocalizations.of(context)!.streakDays(state.currentStreak),
                                 icon: Icons.local_fire_department_rounded,
                                 color: Colors.orangeAccent,
                               ),
@@ -97,8 +98,8 @@ class DashboardView extends StatelessWidget {
                           Expanded(
                             child: _buildGlassCard(
                               child: _buildStatItem(
-                                title: 'Total Enfocado',
-                                value: _formatDuration(state.totalSecondsFocus),
+                                title: AppLocalizations.of(context)!.totalFocused,
+                                value: _formatDuration(context, state.totalSecondsFocus),
                                 icon: Icons.timer_rounded,
                                 color: Colors.blueAccent,
                               ),
@@ -126,8 +127,11 @@ class DashboardView extends StatelessWidget {
                           Expanded(
                             child: Text(
                               state.nextWeekDate == null 
-                                  ? 'Esta Semana'
-                                  : 'Semana ${state.currentWeekStart.day}/${state.currentWeekStart.month} \n ${state.currentWeekStart.add(const Duration(days: 6)).day}/${state.currentWeekStart.add(const Duration(days: 6)).month}',
+                                  ? AppLocalizations.of(context)!.thisWeek
+                                  : AppLocalizations.of(context)!.weekRange(
+                                      '${state.currentWeekStart.day}/${state.currentWeekStart.month}',
+                                      '${state.currentWeekStart.add(const Duration(days: 6)).day}/${state.currentWeekStart.add(const Duration(days: 6)).month}',
+                                    ),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -259,16 +263,17 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  String _formatDuration(int totalSeconds) {
-    if (totalSeconds == 0) return '0s';
+  String _formatDuration(BuildContext context, int totalSeconds) {
+    final l10n = AppLocalizations.of(context)!;
+    if (totalSeconds == 0) return '0${l10n.secondSuffixShort}';
     int h = totalSeconds ~/ 3600;
     int m = (totalSeconds % 3600) ~/ 60;
     int s = totalSeconds % 60;
     
     List<String> parts = [];
-    if (h > 0) parts.add('${h}h');
-    if (m > 0) parts.add('${m}m');
-    if (s > 0) parts.add('${s}s');
+    if (h > 0) parts.add('$h${l10n.hourSuffixShort}');
+    if (m > 0) parts.add('$m${l10n.minuteSuffixShort}');
+    if (s > 0) parts.add('$s${l10n.secondSuffixShort}');
     
     return parts.join(' ');
   }

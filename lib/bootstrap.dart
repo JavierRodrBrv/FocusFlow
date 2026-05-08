@@ -11,8 +11,9 @@ import 'package:focus_flow/core/services/local_notification_service.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'features/focus_mode/data/models/sound_mix_model.dart';
 import 'features/premium/data/models/premium_status.dart';
-import 'features/session_history/data/models/focus_session_model.dart';
-import 'app/background_service.dart';
+import 'package:focus_flow/features/session_history/data/models/focus_session_model.dart';
+import 'package:focus_flow/app/background_service.dart';
+import 'package:focus_flow/l10n/app_localizations.dart';
 
 /// Inicializa los sistemas críticos antes de lanzar la UI.
 Future<void> bootstrap() async {
@@ -69,7 +70,18 @@ Future<void> bootstrap() async {
   // 5. Inicializar Notificaciones Locales Informativas
   final localNotifications = LocalNotificationService();
   await localNotifications.init();
-  await localNotifications.scheduleReminderNotification();
+
+  // Cargar localización para el recordatorio diario
+  final settingsBox = await Hive.openBox('settings');
+  final langCode = settingsBox.get('language_code', defaultValue: 'es');
+  final l10n = await AppLocalizations.delegate.load(Locale(langCode));
+
+  await localNotifications.scheduleReminderNotification(
+    title: l10n.notificationReminderTitle,
+    body: l10n.notificationReminderBody,
+    channelName: l10n.notificationChannelRemindersName,
+    channelDescription: l10n.notificationChannelRemindersDescription,
+  );
 
   // 6. Servicio en Segundo Plano
   // GUARD: Si el servicio ya está corriendo (p.ej. la app se abrió desde el

@@ -8,6 +8,7 @@ class SettingsState extends Equatable {
   final bool isPremium;
   final Duration? defaultBreakDuration;
   final bool autoTransitionWhenForeground;
+  final String? languageCode;
 
   const SettingsState({
     required this.isZoomMode,
@@ -17,6 +18,7 @@ class SettingsState extends Equatable {
     required this.isPremium,
     this.defaultBreakDuration,
     required this.autoTransitionWhenForeground,
+    this.languageCode,
   });
 
   factory SettingsState.initial() => const SettingsState(
@@ -27,6 +29,7 @@ class SettingsState extends Equatable {
         isPremium: false,
         defaultBreakDuration: null,
         autoTransitionWhenForeground: true,
+        languageCode: null,
       );
 
   SettingsState copyWith({
@@ -38,6 +41,7 @@ class SettingsState extends Equatable {
     Duration? defaultBreakDuration,
     bool clearDefaultBreakDuration = false,
     bool? autoTransitionWhenForeground,
+    String? languageCode,
   }) {
     return SettingsState(
       isZoomMode: isZoomMode ?? this.isZoomMode,
@@ -47,6 +51,7 @@ class SettingsState extends Equatable {
       isPremium: isPremium ?? this.isPremium,
       defaultBreakDuration: clearDefaultBreakDuration ? null : (defaultBreakDuration ?? this.defaultBreakDuration),
       autoTransitionWhenForeground: autoTransitionWhenForeground ?? this.autoTransitionWhenForeground,
+      languageCode: languageCode ?? this.languageCode,
     );
   }
 
@@ -59,5 +64,6 @@ class SettingsState extends Equatable {
         isPremium,
         defaultBreakDuration,
         autoTransitionWhenForeground,
+        languageCode,
       ];
 }
