@@ -13,7 +13,12 @@ class GroupDetailModal extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).languageCode;
     final dateFormat = DateFormat('EEEE, d MMMM', locale);
-    final startTime = group.last.startTime; // Last in list is chronologically first
+
+    // Sort group chronologically (oldest first) so that the timeline starts with the first study session
+    final chronologicalGroup = List<FocusSession>.from(group)
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    final startTime = chronologicalGroup.first.startTime;
 
     // Calculate stats
     int focusCount = 0;
@@ -36,6 +41,8 @@ class GroupDetailModal extends StatelessWidget {
       }
       if (s.isHardcoreMode) anyHardcore = true;
     }
+
+    final isPomodoro = group.any((s) => s.isPomodoroMode);
 
     return Container(
       decoration: const BoxDecoration(
@@ -66,12 +73,14 @@ class GroupDetailModal extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blueAccent.withValues(alpha: 0.2),
+                  color: isPomodoro
+                      ? Colors.orangeAccent.withValues(alpha: 0.15)
+                      : Colors.blueAccent.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.loop_rounded,
-                  color: Colors.blueAccent,
+                child: Icon(
+                  isPomodoro ? Icons.av_timer_rounded : Icons.loop_rounded,
+                  color: isPomodoro ? Colors.orangeAccent : Colors.blueAccent,
                   size: 32,
                 ),
               ),
@@ -81,7 +90,7 @@ class GroupDetailModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l10n.sessionsGroupTitle(group.length),
+                      isPomodoro ? 'Detalles de Ciclo Pomodoro' : l10n.sessionsGroupTitle(group.length),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -129,7 +138,7 @@ class GroupDetailModal extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...group.map((session) => _buildTimelineItem(session, l10n)),
+                  ...chronologicalGroup.map((session) => _buildTimelineItem(session, l10n, isPomodoro)),
                 ],
               ),
             ),
@@ -207,7 +216,7 @@ class GroupDetailModal extends StatelessWidget {
     );
   }
 
-  Widget _buildTimelineItem(FocusSession session, AppLocalizations l10n) {
+  Widget _buildTimelineItem(FocusSession session, AppLocalizations l10n, bool isPomodoro) {
     final locale = l10n.localeName;
     final timeFormat = DateFormat('HH:mm', locale);
     final isFocus = !session.isResting;
@@ -227,13 +236,19 @@ class GroupDetailModal extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (isFocus ? Colors.blueAccent : Colors.greenAccent)
-                  .withValues(alpha: 0.2),
+              color: (isPomodoro
+                      ? (isFocus ? Colors.orangeAccent : Colors.tealAccent)
+                      : (isFocus ? Colors.blueAccent : Colors.greenAccent))
+                  .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              isFocus ? Icons.psychology : Icons.coffee,
-              color: isFocus ? Colors.blueAccent : Colors.greenAccent,
+              isPomodoro
+                  ? (isFocus ? Icons.local_fire_department_rounded : Icons.coffee_rounded)
+                  : (isFocus ? Icons.psychology : Icons.coffee),
+              color: isPomodoro
+                  ? (isFocus ? Colors.orangeAccent : Colors.tealAccent)
+                  : (isFocus ? Colors.blueAccent : Colors.greenAccent),
               size: 16,
             ),
           ),
@@ -243,7 +258,13 @@ class GroupDetailModal extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isFocus ? l10n.focusSession : l10n.breakLabel,
+                  isPomodoro
+                      ? (isFocus 
+                          ? 'Sesión de Estudio (${_formatPlanned(session.plannedDuration)})' 
+                          : 'Descanso Pomodoro (${_formatPlanned(session.plannedDuration)})')
+                      : (isFocus 
+                          ? '${l10n.focusSession} (${_formatPlanned(session.plannedDuration)})' 
+                          : '${l10n.breakLabel} (${_formatPlanned(session.plannedDuration)})'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -318,5 +339,13 @@ class GroupDetailModal extends StatelessWidget {
       return "${twoDigits(duration.inHours)}h ${twoDigitMinutes}m ${twoDigitSeconds}s";
     }
     return "${twoDigitMinutes}m ${twoDigitSeconds}s";
+  }
+
+  String _formatPlanned(Duration duration) {
+    if (duration.inSeconds % 60 == 0) {
+      return '${duration.inMinutes} min';
+    }
+    final sec = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    return '${duration.inMinutes}:$sec min';
   }
 }

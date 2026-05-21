@@ -11,6 +11,7 @@ class FocusSession extends Equatable {
   final Duration totalPenaltyTime;
   final bool isResting;
   final bool isCompleted;
+  final bool isPomodoroMode;
 
   const FocusSession({
     required this.id,
@@ -23,6 +24,7 @@ class FocusSession extends Equatable {
     required this.totalPenaltyTime,
     required this.isResting,
     required this.isCompleted,
+    this.isPomodoroMode = false,
   });
 
   @override
@@ -37,5 +39,6 @@ class FocusSession extends Equatable {
     totalPenaltyTime,
     isResting,
     isCompleted,
+    isPomodoroMode,
   ];
 }

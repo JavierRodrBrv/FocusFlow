@@ -294,6 +294,7 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
     // Determine overall stats
     final startTime = group.last.startTime;
     int focusCount = 0;
+    int completedFocusCount = 0;
     int breakCount = 0;
     Duration totalFocusActual = Duration.zero;
     Duration totalBreakActual = Duration.zero;
@@ -306,6 +307,9 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
       } else {
         focusCount++;
         totalFocusActual += s.actualDuration;
+        if (s.isCompleted) {
+          completedFocusCount++;
+        }
       }
       if (s.isHardcoreMode) anyHardcore = true;
     }
@@ -335,10 +339,12 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
         child: GroupedSessionCard(
           startTime: startTime,
           focusCount: focusCount,
+          completedFocusCount: completedFocusCount,
           breakCount: breakCount,
           totalFocusActual: totalFocusActual,
           totalBreakActual: totalBreakActual,
           isHardcoreMode: anyHardcore,
+          isPomodoroMode: group.any((s) => s.isPomodoroMode),
           onTap: () => _showGroupDetails(context, group),
         ),
       ),

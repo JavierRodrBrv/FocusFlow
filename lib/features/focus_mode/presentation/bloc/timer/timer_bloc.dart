@@ -33,7 +33,7 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
     on<SetBreakDuration>(_onSetBreakDuration);
     on<ToggleHardcoreMode>(_onToggleHardcore);
     on<UpdateTimerPremiumStatus>(_onUpdatePremiumStatus);
-    on<_SessionStateChanged>(_onSessionStateChanged);
+    on<_SessionStateChanged>(_onSessionStateChanged, transformer: _sequential());
     on<SyncWithWidgetState>(_onSyncWithWidget);
 
     _sessionSubscription = _sessionManager.stateStream.listen((sessionState) {
@@ -55,6 +55,11 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
         pomodoroStatus: _sessionManager.currentState.status,
         remainingTime: _sessionManager.currentState.remainingTime,
         pomodoroDuration: _sessionManager.currentState.pomodoroDuration,
+        isPomodoroMode: _sessionManager.currentState.isPomodoroMode,
+        shortBreakDuration: _sessionManager.currentState.shortBreakDuration,
+        longBreakDuration: _sessionManager.currentState.longBreakDuration,
+        completedPomodoros: _sessionManager.currentState.completedPomodoros,
+        hasCompletedPomodoroCycle: _sessionManager.currentState.hasCompletedPomodoroCycle,
       ),
     );
   }
@@ -116,6 +121,7 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
         hasSavedAtLeastOneInGroup: _hasSavedAtLeastOneSessionInCurrentGroup,
         plannedDuration: state.pomodoroDuration,
         isHardcore: state.isHardcoreMode,
+        wasRestingState: state.isResting,
       ),
     );
 
@@ -136,6 +142,11 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
         penaltyCount: s.penaltyCount,
         totalPenaltyTime: s.totalPenaltyTime,
         isWaitingForFirstFlip: s.isWaitingForFirstFlip,
+        isPomodoroMode: s.isPomodoroMode,
+        shortBreakDuration: s.shortBreakDuration,
+        longBreakDuration: s.longBreakDuration,
+        completedPomodoros: s.completedPomodoros,
+        hasCompletedPomodoroCycle: s.hasCompletedPomodoroCycle,
       ),
     );
   }
@@ -164,4 +175,6 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
     }
     // Si los estados ya coinciden, no hacemos nada.
   }
+
+  EventTransformer<E> _sequential<E>() => (events, mapper) => events.asyncExpand(mapper);
 }

@@ -39,6 +39,11 @@ class FocusState extends Equatable {
   final String? selectedAmbiencePath;
   final bool autoTransitionWhenForeground;
   final String? languageCode;
+  final bool isPomodoroMode;
+  final Duration shortBreakDuration;
+  final Duration longBreakDuration;
+  final int completedPomodoros;
+  final bool hasCompletedPomodoroCycle;
 
   const FocusState({
     this.status = AppStatus.initial,
@@ -73,6 +78,11 @@ class FocusState extends Equatable {
     this.selectedAmbiencePath,
     this.autoTransitionWhenForeground = true,
     this.languageCode,
+    this.isPomodoroMode = false,
+    this.shortBreakDuration = const Duration(minutes: 5),
+    this.longBreakDuration = const Duration(minutes: 15),
+    this.completedPomodoros = 0,
+    this.hasCompletedPomodoroCycle = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -118,6 +128,11 @@ class FocusState extends Equatable {
       'selectedAmbiencePath': selectedAmbiencePath,
       'autoTransitionWhenForeground': autoTransitionWhenForeground,
       'languageCode': languageCode,
+      'isPomodoroMode': isPomodoroMode,
+      'shortBreakDuration': shortBreakDuration.inSeconds,
+      'longBreakDuration': longBreakDuration.inSeconds,
+      'completedPomodoros': completedPomodoros,
+      'hasCompletedPomodoroCycle': hasCompletedPomodoroCycle,
     };
   }
 
@@ -169,6 +184,11 @@ class FocusState extends Equatable {
       selectedAmbiencePath: json['selectedAmbiencePath'] as String?,
       autoTransitionWhenForeground: json['autoTransitionWhenForeground'] as bool? ?? true,
       languageCode: json['languageCode'] as String?,
+      isPomodoroMode: json['isPomodoroMode'] as bool? ?? false,
+      shortBreakDuration: Duration(seconds: json['shortBreakDuration'] as int? ?? 300),
+      longBreakDuration: Duration(seconds: json['longBreakDuration'] as int? ?? 900),
+      completedPomodoros: json['completedPomodoros'] as int? ?? 0,
+      hasCompletedPomodoroCycle: json['hasCompletedPomodoroCycle'] as bool? ?? false,
     );
   }
 
@@ -207,6 +227,11 @@ class FocusState extends Equatable {
     bool? autoTransitionWhenForeground,
     String? languageCode,
     bool clearLanguageCode = false,
+    bool? isPomodoroMode,
+    Duration? shortBreakDuration,
+    Duration? longBreakDuration,
+    int? completedPomodoros,
+    bool? hasCompletedPomodoroCycle,
   }) {
     return FocusState(
       status: status ?? this.status,
@@ -241,6 +266,11 @@ class FocusState extends Equatable {
       selectedAmbiencePath: clearSelectedAmbience ? null : (selectedAmbiencePath ?? this.selectedAmbiencePath),
       autoTransitionWhenForeground: autoTransitionWhenForeground ?? this.autoTransitionWhenForeground,
       languageCode: clearLanguageCode ? null : (languageCode ?? this.languageCode),
+      isPomodoroMode: isPomodoroMode ?? this.isPomodoroMode,
+      shortBreakDuration: shortBreakDuration ?? this.shortBreakDuration,
+      longBreakDuration: longBreakDuration ?? this.longBreakDuration,
+      completedPomodoros: completedPomodoros ?? this.completedPomodoros,
+      hasCompletedPomodoroCycle: hasCompletedPomodoroCycle ?? this.hasCompletedPomodoroCycle,
     );
   }
 
@@ -278,6 +308,11 @@ class FocusState extends Equatable {
         selectedAmbiencePath,
         autoTransitionWhenForeground,
         languageCode,
+        isPomodoroMode,
+        shortBreakDuration,
+        longBreakDuration,
+        completedPomodoros,
+        hasCompletedPomodoroCycle,
       ];
 }
 

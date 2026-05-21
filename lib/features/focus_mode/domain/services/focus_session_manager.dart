@@ -28,6 +28,11 @@ class SessionState {
   final String? languageCode;
   final Duration? defaultBreakDuration;
   final bool autoTransitionWhenForeground;
+  final bool isPomodoroMode;
+  final Duration shortBreakDuration;
+  final Duration longBreakDuration;
+  final int completedPomodoros;
+  final bool hasCompletedPomodoroCycle;
 
   SessionState({
     required this.status,
@@ -46,6 +51,11 @@ class SessionState {
     this.languageCode,
     this.defaultBreakDuration,
     required this.autoTransitionWhenForeground,
+    required this.isPomodoroMode,
+    required this.shortBreakDuration,
+    required this.longBreakDuration,
+    required this.completedPomodoros,
+    required this.hasCompletedPomodoroCycle,
   });
 
   factory SessionState.initial() => SessionState(
@@ -65,6 +75,11 @@ class SessionState {
     languageCode: null,
     defaultBreakDuration: null,
     autoTransitionWhenForeground: true,
+    isPomodoroMode: false,
+    shortBreakDuration: const Duration(minutes: 5),
+    longBreakDuration: const Duration(minutes: 15),
+    completedPomodoros: 0,
+    hasCompletedPomodoroCycle: false,
   );
 }
 
@@ -93,6 +108,13 @@ class FocusSessionManager {
   bool _autoTransitionWhenForeground = true;
   BackgroundEffect _backgroundEffect = BackgroundEffect.gradient;
 
+  // Ciclo Pomodoro
+  bool _isPomodoroMode = false;
+  Duration _shortBreakDuration = const Duration(minutes: 5);
+  Duration _longBreakDuration = const Duration(minutes: 15);
+  int _completedPomodoros = 0;
+  bool _hasCompletedPomodoroCycle = false;
+
   // Métricas de distracción
   int _penaltyCount = 0;
   Duration _totalPenaltyTime = Duration.zero;
@@ -106,6 +128,8 @@ class FocusSessionManager {
   bool _isAppInForeground = true;
   bool _hasBeenFaceDownAtLeastOnce = false;
   PomodoroStatus? _prePauseStatus;
+
+  SessionState? _lastEmittedState;
 
   final _stateController = StreamController<SessionState>.broadcast();
   Stream<SessionState> get stateStream => _stateController.stream;
@@ -121,7 +145,7 @@ class FocusSessionManager {
     isResting: _status == PomodoroStatus.resting ||
         (_status == PomodoroStatus.paused &&
             _prePauseStatus == PomodoroStatus.resting),
-    hasBreak: _breakDuration != null,
+    hasBreak: _breakDuration != null || _isPomodoroMode,
     penaltyCount: _penaltyCount,
     totalPenaltyTime: _totalPenaltyTime,
     backgroundEffect: _backgroundEffect,
@@ -129,6 +153,11 @@ class FocusSessionManager {
     languageCode: _languageCode,
     defaultBreakDuration: _defaultBreakDuration,
     autoTransitionWhenForeground: _autoTransitionWhenForeground,
+    isPomodoroMode: _isPomodoroMode,
+    shortBreakDuration: _shortBreakDuration,
+    longBreakDuration: _longBreakDuration,
+    completedPomodoros: _completedPomodoros,
+    hasCompletedPomodoroCycle: _hasCompletedPomodoroCycle,
   );
 
   FocusSessionManager(
@@ -158,6 +187,12 @@ class FocusSessionManager {
       
       final breakMin = _settingsBox!.get('default_break_duration') as int?;
       _defaultBreakDuration = breakMin != null ? Duration(minutes: breakMin) : null;
+
+      _isPomodoroMode = _settingsBox!.get('is_pomodoro_mode', defaultValue: false);
+      final shortMin = _settingsBox!.get('short_break_duration', defaultValue: 5) as int;
+      _shortBreakDuration = Duration(minutes: shortMin);
+      final longMin = _settingsBox!.get('long_break_duration', defaultValue: 15) as int;
+      _longBreakDuration = Duration(minutes: longMin);
     } catch (e) {
       debugPrint('[FocusSessionManager] Hive open settings error/timeout: $e');
       _isAlarmSoundEnabled = true;
@@ -165,6 +200,9 @@ class FocusSessionManager {
       _autoTransitionWhenForeground = true;
       _backgroundEffect = BackgroundEffect.gradient;
       _defaultBreakDuration = null;
+      _isPomodoroMode = false;
+      _shortBreakDuration = const Duration(minutes: 5);
+      _longBreakDuration = const Duration(minutes: 15);
     }
 
     _initSubscriptions();
@@ -197,39 +235,61 @@ class FocusSessionManager {
   void _handlePhaseCompletion() {
     bool shouldAutoPlay = _autoTransitionWhenForeground && _isAppInForeground;
 
-    if (_status == PomodoroStatus.running && _breakDuration != null) {
-      _status = PomodoroStatus.resting;
-      _remainingTime = _breakDuration!;
-      _timerService.start(startDuration: _remainingTime);
-      _notifyTransition(isStartingBreak: true);
-      
-      if (!shouldAutoPlay) {
-        Future.delayed(const Duration(milliseconds: 200), () {
-          _status = PomodoroStatus.paused;
-          _prePauseStatus = PomodoroStatus.resting;
-          _timerService.pause();
-          _emitState();
-        });
-      }
-    } else if (_status == PomodoroStatus.resting) {
-      _status = PomodoroStatus.running;
-      _remainingTime = _duration;
-      _timerService.start(startDuration: _remainingTime);
-      _hapticService.startAlarmVibration();
-      Future.delayed(const Duration(seconds: 2), () {
-        _hapticService.stopAlarmVibration();
-        _audioManager.stopBreakEndSound();
-      });
+    if (_isPomodoroMode) {
+      if (_status == PomodoroStatus.running) {
+        _completedPomodoros++;
+        _status = PomodoroStatus.resting;
+        _remainingTime = _completedPomodoros == 4 ? _longBreakDuration : _shortBreakDuration;
+        _timerService.start(startDuration: _remainingTime);
+        _notifyTransition(isStartingBreak: true);
+        
+        if (!shouldAutoPlay) {
+          Future.delayed(const Duration(milliseconds: 200), () {
+            _status = PomodoroStatus.paused;
+            _prePauseStatus = PomodoroStatus.resting;
+            _timerService.pause();
+            _emitState();
+          });
+        }
+      } else if (_status == PomodoroStatus.resting) {
+        if (_completedPomodoros == 4) {
+          _completedPomodoros = 0;
+          _status = PomodoroStatus.finished;
+          _hasCompletedPomodoroCycle = true;
+          _stopPenaltyEffects();
+          _triggerAlarm();
+          
+          // Siempre pausar y resetear al finalizar el ciclo de descanso largo del Pomodoro
+          Future.delayed(const Duration(milliseconds: 200), () {
+            _status = PomodoroStatus.paused;
+            _prePauseStatus = PomodoroStatus.running;
+            _remainingTime = _duration;
+            _timerService.start(startDuration: _remainingTime);
+            _timerService.pause();
+            _emitState();
+          });
+        } else {
+          _status = PomodoroStatus.running;
+          _remainingTime = _duration;
+          _timerService.start(startDuration: _remainingTime);
+          _hapticService.startAlarmVibration();
+          Future.delayed(const Duration(seconds: 2), () {
+            _hapticService.stopAlarmVibration();
+            _audioManager.stopBreakEndSound();
+          });
 
-      if (!shouldAutoPlay) {
-        Future.delayed(const Duration(milliseconds: 200), () {
-          _status = PomodoroStatus.paused;
-          _prePauseStatus = PomodoroStatus.running;
-          _timerService.pause();
-          _emitState();
-        });
+          if (!shouldAutoPlay) {
+            Future.delayed(const Duration(milliseconds: 200), () {
+              _status = PomodoroStatus.paused;
+              _prePauseStatus = PomodoroStatus.running;
+              _timerService.pause();
+              _emitState();
+            });
+          }
+        }
       }
     } else {
+      // Temporizador normal
       _status = PomodoroStatus.finished;
       _stopPenaltyEffects();
       _triggerAlarm();
@@ -333,7 +393,32 @@ class FocusSessionManager {
   }
 
   void _emitState() {
-    _stateController.add(currentState);
+    final newState = currentState;
+    if (_lastEmittedState != null &&
+        _lastEmittedState!.status == newState.status &&
+        _lastEmittedState!.remainingTime == newState.remainingTime &&
+        _lastEmittedState!.isInPenalty == newState.isInPenalty &&
+        _lastEmittedState!.orientation == newState.orientation &&
+        _lastEmittedState!.isHardcore == newState.isHardcore &&
+        _lastEmittedState!.isAlarmSoundEnabled == newState.isAlarmSoundEnabled &&
+        _lastEmittedState!.isResting == newState.isResting &&
+        _lastEmittedState!.hasBreak == newState.hasBreak &&
+        _lastEmittedState!.penaltyCount == newState.penaltyCount &&
+        _lastEmittedState!.totalPenaltyTime == newState.totalPenaltyTime &&
+        _lastEmittedState!.backgroundEffect == newState.backgroundEffect &&
+        _lastEmittedState!.isWaitingForFirstFlip == newState.isWaitingForFirstFlip &&
+        _lastEmittedState!.languageCode == newState.languageCode &&
+        _lastEmittedState!.defaultBreakDuration == newState.defaultBreakDuration &&
+        _lastEmittedState!.autoTransitionWhenForeground == newState.autoTransitionWhenForeground &&
+        _lastEmittedState!.isPomodoroMode == newState.isPomodoroMode &&
+        _lastEmittedState!.shortBreakDuration == newState.shortBreakDuration &&
+        _lastEmittedState!.longBreakDuration == newState.longBreakDuration &&
+        _lastEmittedState!.completedPomodoros == newState.completedPomodoros &&
+        _lastEmittedState!.hasCompletedPomodoroCycle == newState.hasCompletedPomodoroCycle) {
+      return;
+    }
+    _lastEmittedState = newState;
+    _stateController.add(newState);
   }
 
   void _notifyTransition({required bool isStartingBreak}) {
@@ -435,32 +520,72 @@ class FocusSessionManager {
   }
 
   Future<void> skipToNextPhase() async {
-    if (_breakDuration == null || _status == PomodoroStatus.initial || _status == PomodoroStatus.finished) return;
+    if ((_breakDuration == null && !_isPomodoroMode) || _status == PomodoroStatus.initial || _status == PomodoroStatus.finished) return;
 
     _timerService.pause();
     _audioManager.stopKeepAlive();
     await stopAlarm();
 
-    if (_status == PomodoroStatus.paused) {
-      if (_prePauseStatus == PomodoroStatus.resting) {
-        _status = PomodoroStatus.running;
-        _remainingTime = _duration;
-      } else {
+    if (_isPomodoroMode) {
+      if (_status == PomodoroStatus.paused) {
+        if (_prePauseStatus == PomodoroStatus.resting) {
+          _status = PomodoroStatus.running;
+          _remainingTime = _duration;
+        } else {
+          _completedPomodoros++;
+          _status = PomodoroStatus.resting;
+          _remainingTime = _completedPomodoros == 4 ? _longBreakDuration : _shortBreakDuration;
+          _notifyTransition(isStartingBreak: true);
+        }
+        _prePauseStatus = null;
+      } else if (_status == PomodoroStatus.running) {
+        _completedPomodoros++;
+        _status = PomodoroStatus.resting;
+        _remainingTime = _completedPomodoros == 4 ? _longBreakDuration : _shortBreakDuration;
+        _notifyTransition(isStartingBreak: true);
+      } else if (_status == PomodoroStatus.resting) {
+        if (_completedPomodoros == 4) {
+          _completedPomodoros = 0;
+          _status = PomodoroStatus.finished;
+          _hasCompletedPomodoroCycle = true;
+          _remainingTime = _duration;
+          
+          Future.delayed(const Duration(milliseconds: 200), () {
+            _status = PomodoroStatus.paused;
+            _prePauseStatus = PomodoroStatus.running;
+            _timerService.start(startDuration: _remainingTime);
+            _timerService.pause();
+            _emitState();
+          });
+        } else {
+          _status = PomodoroStatus.running;
+          _remainingTime = _duration;
+        }
+      }
+    } else {
+      if (_status == PomodoroStatus.paused) {
+        if (_prePauseStatus == PomodoroStatus.resting) {
+          _status = PomodoroStatus.running;
+          _remainingTime = _duration;
+        } else {
+          _status = PomodoroStatus.resting;
+          _remainingTime = _breakDuration!;
+          _notifyTransition(isStartingBreak: true);
+        }
+        _prePauseStatus = null;
+      } else if (_status == PomodoroStatus.running) {
         _status = PomodoroStatus.resting;
         _remainingTime = _breakDuration!;
         _notifyTransition(isStartingBreak: true);
+      } else if (_status == PomodoroStatus.resting) {
+        _status = PomodoroStatus.running;
+        _remainingTime = _duration;
       }
-      _prePauseStatus = null;
-    } else if (_status == PomodoroStatus.running) {
-      _status = PomodoroStatus.resting;
-      _remainingTime = _breakDuration!;
-      _notifyTransition(isStartingBreak: true);
-    } else if (_status == PomodoroStatus.resting) {
-      _status = PomodoroStatus.running;
-      _remainingTime = _duration;
     }
 
-    _timerService.start(startDuration: _remainingTime);
+    if (_status != PomodoroStatus.finished) {
+      _timerService.start(startDuration: _remainingTime);
+    }
     _emitState();
   }
 
@@ -476,6 +601,8 @@ class FocusSessionManager {
     _hasBeenFaceDownAtLeastOnce = false;
     _isWaitingForFirstFlip = false;
     _lastConfirmedOrientation = null;
+    _completedPomodoros = 0;
+    _hasCompletedPomodoroCycle = false;
     await stopAlarm();
     _emitState();
   }
@@ -502,6 +629,31 @@ class FocusSessionManager {
     } else {
       await _settingsBox?.put('default_break_duration', duration.inMinutes);
     }
+    _emitState();
+  }
+
+  void setPomodoroMode(bool isPomodoro) async {
+    _isPomodoroMode = isPomodoro;
+    await _settingsBox?.put('is_pomodoro_mode', isPomodoro);
+    _emitState();
+  }
+
+  void setPomodoroConfig(Duration study, Duration shortBreak, Duration longBreak) async {
+    _duration = study;
+    _shortBreakDuration = shortBreak;
+    _longBreakDuration = longBreak;
+
+    await _settingsBox?.put('short_break_duration', shortBreak.inMinutes);
+    await _settingsBox?.put('long_break_duration', longBreak.inMinutes);
+
+    if (_status == PomodoroStatus.initial) {
+      _remainingTime = study;
+    }
+    _emitState();
+  }
+
+  void resetCompletedCycleFlag() {
+    _hasCompletedPomodoroCycle = false;
     _emitState();
   }
 

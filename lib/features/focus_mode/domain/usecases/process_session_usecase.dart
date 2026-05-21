@@ -31,6 +31,7 @@ class ProcessSessionParams {
   final bool hasSavedAtLeastOneInGroup;
   final Duration plannedDuration;
   final bool isHardcore;
+  final bool wasRestingState;
 
   ProcessSessionParams({
     required this.prevStatus,
@@ -40,6 +41,7 @@ class ProcessSessionParams {
     required this.hasSavedAtLeastOneInGroup,
     required this.plannedDuration,
     required this.isHardcore,
+    required this.wasRestingState,
   });
 }
 
@@ -56,41 +58,51 @@ class ProcessSessionUseCase implements IProcessSessionUseCase {
 
     bool blockFinished = false;
     bool wasCompleted = true;
-    bool wasResting = prevStatus == PomodoroStatus.resting;
+    bool wasResting = params.wasRestingState;
     Duration actualD = Duration.zero;
     Duration plannedD = params.plannedDuration;
 
     // 1. Detección de fin de bloque (Lógica de Negocio)
+    
+    // El fin de un bloque se detecta si:
+    // a) La fase de descanso cambia y el timer estaba activo o pausado pero con un tiempo inicial registrado.
+    final isNewResting = s.isResting || s.status == PomodoroStatus.resting;
+    final phaseToggled = params.startTime != null && params.wasRestingState != isNewResting;
+    
+    // b) Un temporizador normal termina naturalmente
+    final normalFinished = prevStatus == PomodoroStatus.running && s.status == PomodoroStatus.finished;
+    
+    // c) El usuario finaliza manualmente (Reset)
+    final manualReset = s.status == PomodoroStatus.initial && prevStatus != PomodoroStatus.initial && params.startTime != null;
 
-    // Termina foco naturalmente
-    if (prevStatus == PomodoroStatus.running &&
-        (s.status == PomodoroStatus.finished ||
-            s.status == PomodoroStatus.resting)) {
+    if (phaseToggled || normalFinished || manualReset) {
       blockFinished = true;
-      wasCompleted = true;
-      wasResting = false;
-      actualD = params.plannedDuration;
-    }
-    // Termina descanso naturalmente
-    else if (prevStatus == PomodoroStatus.resting &&
-        (s.status == PomodoroStatus.running ||
-            s.status == PomodoroStatus.finished)) {
-      blockFinished = true;
-      wasCompleted = true;
-      wasResting = true;
-      actualD = params.startTime != null
-          ? DateTime.now().difference(params.startTime!)
-          : Duration.zero;
-      plannedD = actualD;
-    }
-    // Usuario finaliza manualmente (Reset)
-    else if (s.status == PomodoroStatus.initial &&
-        prevStatus != PomodoroStatus.initial) {
+      wasResting = params.wasRestingState;
+      
       if (params.startTime != null) {
-        blockFinished = true;
-        wasCompleted = false;
         actualD = DateTime.now().difference(params.startTime!);
-        plannedD = wasResting ? actualD : params.plannedDuration;
+      } else {
+        actualD = Duration.zero;
+      }
+
+      if (wasResting) {
+        // Para descansos, no necesitamos medir "completado" con tanto rigor
+        wasCompleted = !manualReset;
+        plannedD = actualD;
+      } else {
+        // Para sesiones de estudio (foco)
+        plannedD = params.plannedDuration;
+        if (manualReset) {
+          wasCompleted = false;
+        } else {
+          // Si el tiempo real transcurrido es menor que la duración planeada por más de 5 segundos, se considera saltado.
+          final isSkipped = actualD < plannedD - const Duration(seconds: 5);
+          wasCompleted = !isSkipped;
+        }
+        
+        if (wasCompleted) {
+          actualD = plannedD;
+        }
       }
     }
 
@@ -117,6 +129,7 @@ class ProcessSessionUseCase implements IProcessSessionUseCase {
           totalPenaltyTime: s.totalPenaltyTime,
           isResting: wasResting,
           isCompleted: wasCompleted,
+          isPomodoroMode: s.isPomodoroMode,
         );
 
         await _saveSessionUseCase(sessionToSave);

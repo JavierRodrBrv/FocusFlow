@@ -42,6 +42,11 @@ SessionState _sessionState({
   backgroundEffect: BackgroundEffect.gradient,
   isWaitingForFirstFlip: isWaitingForFirstFlip,
   autoTransitionWhenForeground: true,
+  isPomodoroMode: false,
+  shortBreakDuration: const Duration(minutes: 5),
+  longBreakDuration: const Duration(minutes: 15),
+  completedPomodoros: 0,
+  hasCompletedPomodoroCycle: false,
 );
 
 ProcessSessionResult _emptyResult({
@@ -77,6 +82,7 @@ void main() {
         hasSavedAtLeastOneInGroup: false,
         plannedDuration: const Duration(minutes: 25),
         isHardcore: false,
+        wasRestingState: false,
       ),
     );
   });

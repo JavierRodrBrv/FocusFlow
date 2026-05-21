@@ -13,6 +13,7 @@ import 'package:focus_flow/app/background_service.dart';
 
 import '../models/focus_state.dart';
 import 'dialogs/session_completion_dialog.dart';
+import 'dialogs/pomodoro_cycle_complete_dialog.dart';
 import 'components/layout/focus_body.dart';
 import 'components/overlays/confetti_overlay.dart';
 import 'layout/focus_app_bar.dart';
@@ -195,7 +196,7 @@ class _FocusViewState extends State<FocusView> {
   void _checkCompletion(FocusState state) {
     if (_isResuming) return;
 
-    if (state.pomodoroStatus == PomodoroStatus.finished) {
+    if (state.pomodoroStatus == PomodoroStatus.finished && !state.isPomodoroMode) {
       // SOLO MOSTRAR SI EL ESTADO ANTERIOR NO ERA 'FINISHED'
       if (!_completionDialogShown &&
           (_lastKnownState?.pomodoroStatus != PomodoroStatus.finished)) {
@@ -222,6 +223,44 @@ class _FocusViewState extends State<FocusView> {
       if (state.pomodoroStatus != PomodoroStatus.finished) {
         _completionDialogShown = false;
       }
+    }
+  }
+
+  bool _pomodoroCycleCompleteDialogShown = false;
+
+  void _checkPomodoroCycleCompletion(FocusState state) {
+    if (_isResuming) return;
+
+    if (state.hasCompletedPomodoroCycle) {
+      if (!_pomodoroCycleCompleteDialogShown) {
+        _pomodoroCycleCompleteDialogShown = true;
+        FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
+        _confettiController.play();
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => PomodoroCycleCompleteDialog(
+                studyMinutes: state.pomodoroDuration.inMinutes,
+                shortMinutes: state.shortBreakDuration.inMinutes,
+                longMinutes: state.longBreakDuration.inMinutes,
+                onStartNewCycle: () {
+                  FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    FlutterBackgroundService().invoke('sendEvent', {'event': 'startTimer'});
+                  });
+                },
+                onFinish: () {
+                  FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
+                },
+              ),
+            );
+          });
+        }
+      }
+    } else {
+      _pomodoroCycleCompleteDialogShown = false;
     }
   }
 
@@ -271,6 +310,7 @@ class _FocusViewState extends State<FocusView> {
           try {
             state = FocusState.fromJson(snapshot.data!);
             _checkCompletion(state);
+            _checkPomodoroCycleCompletion(state);
 
             // Manejar la transición de modo zoom de forma segura
             _handleZoomModeTransition(state.isZoomMode);

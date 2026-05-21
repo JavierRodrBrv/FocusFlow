@@ -12,6 +12,7 @@ class FocusSessionModel extends HiveObject {
   final int totalPenaltyTimeSeconds;
   final bool isResting;
   final bool isCompleted;
+  final bool isPomodoroMode;
 
   FocusSessionModel({
     required this.id,
@@ -24,6 +25,7 @@ class FocusSessionModel extends HiveObject {
     required this.totalPenaltyTimeSeconds,
     required this.isResting,
     required this.isCompleted,
+    this.isPomodoroMode = false,
   });
 
   factory FocusSessionModel.fromEntity(FocusSession entity) {
@@ -38,6 +40,7 @@ class FocusSessionModel extends HiveObject {
       totalPenaltyTimeSeconds: entity.totalPenaltyTime.inSeconds,
       isResting: entity.isResting,
       isCompleted: entity.isCompleted,
+      isPomodoroMode: entity.isPomodoroMode,
     );
   }
 
@@ -53,6 +56,7 @@ class FocusSessionModel extends HiveObject {
       totalPenaltyTime: Duration(seconds: totalPenaltyTimeSeconds),
       isResting: isResting,
       isCompleted: isCompleted,
+      isPomodoroMode: isPomodoroMode,
     );
   }
 }
@@ -63,19 +67,32 @@ class FocusSessionModelAdapter extends TypeAdapter<FocusSessionModel> {
 
   @override
   FocusSessionModel read(BinaryReader reader) {
+    final id = reader.readString();
+    final startTime = DateTime.fromMillisecondsSinceEpoch(reader.readInt());
+    final plannedDurationSeconds = reader.readInt();
+    final actualDurationSeconds = reader.readInt();
+    final isHardcoreMode = reader.readBool();
+    final penaltyCount = reader.readInt();
+    final totalPenaltyTimeSeconds = reader.readInt();
+    final isResting = reader.readBool();
+    final isCompleted = reader.readBool();
+    final groupId = reader.readBool() ? reader.readString() : null;
+    
+    // Lectura defensiva para compatibilidad hacia atrás
+    final isPomodoroMode = reader.availableBytes > 0 ? reader.readBool() : false;
+
     return FocusSessionModel(
-      id: reader.readString(),
-      startTime: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
-      plannedDurationSeconds: reader.readInt(),
-      actualDurationSeconds: reader.readInt(),
-      isHardcoreMode: reader.readBool(),
-      penaltyCount: reader.readInt(),
-      totalPenaltyTimeSeconds: reader.readInt(),
-      isResting: reader.readBool(),
-      isCompleted: reader.readBool(),
-      groupId: reader.readBool()
-          ? reader.readString()
-          : null, // Handle nullable read
+      id: id,
+      startTime: startTime,
+      plannedDurationSeconds: plannedDurationSeconds,
+      actualDurationSeconds: actualDurationSeconds,
+      isHardcoreMode: isHardcoreMode,
+      penaltyCount: penaltyCount,
+      totalPenaltyTimeSeconds: totalPenaltyTimeSeconds,
+      isResting: isResting,
+      isCompleted: isCompleted,
+      groupId: groupId,
+      isPomodoroMode: isPomodoroMode,
     );
   }
 
@@ -94,5 +111,6 @@ class FocusSessionModelAdapter extends TypeAdapter<FocusSessionModel> {
     if (obj.groupId != null) {
       writer.writeString(obj.groupId!);
     }
+    writer.writeBool(obj.isPomodoroMode);
   }
 }

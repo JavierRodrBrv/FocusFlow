@@ -7,7 +7,7 @@ class MainMenuView extends StatelessWidget {
   final FocusState state;
   final VoidCallback onToggleAlarm;
   final VoidCallback onToggleAutoTransition;
-  final VoidCallback onGoToBreaks;
+  final VoidCallback onGoToPomodoros;
   final VoidCallback onGoToWallpaper;
   final VoidCallback onGoToLanguage;
   final VoidCallback onGoToFeedback;
@@ -18,7 +18,7 @@ class MainMenuView extends StatelessWidget {
     required this.state,
     required this.onToggleAlarm,
     required this.onToggleAutoTransition,
-    required this.onGoToBreaks,
+    required this.onGoToPomodoros,
     required this.onGoToWallpaper,
     required this.onGoToLanguage,
     required this.onGoToFeedback,
@@ -95,21 +95,21 @@ class MainMenuView extends StatelessWidget {
 
         ListTile(
           leading: const Icon(
-            Icons.coffee,
+            Icons.timelapse,
             color: Colors.orangeAccent,
           ),
-          title: Text(
-            l10n.breaks,
-            style: const TextStyle(color: Colors.white),
+          title: const Text(
+            'Pomodoros',
+            style: TextStyle(color: Colors.white),
           ),
           subtitle: Text(
-            state.defaultBreakDuration != null
-                ? l10n.breaksPresetSubtitle(state.defaultBreakDuration!.inMinutes)
-                : l10n.breaksSubtitle,
+            state.isPomodoroMode
+                ? 'Ciclo activo: ${state.pomodoroDuration.inMinutes} min / ${state.shortBreakDuration.inMinutes} min / ${state.longBreakDuration.inMinutes} min'
+                : 'Temporizador normal (sin descansos)',
             style: const TextStyle(color: Colors.white38, fontSize: 12),
           ),
           trailing: const Icon(Icons.chevron_right, color: Colors.white30),
-          onTap: onGoToBreaks,
+          onTap: onGoToPomodoros,
         ),
 
         ListTile(

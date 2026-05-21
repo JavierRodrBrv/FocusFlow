@@ -5,10 +5,12 @@ import 'package:focus_flow/l10n/app_localizations.dart';
 class GroupedSessionCard extends StatelessWidget {
   final DateTime startTime;
   final int focusCount;
+  final int? completedFocusCount;
   final int breakCount;
   final Duration totalFocusActual;
   final Duration totalBreakActual;
   final bool isHardcoreMode;
+  final bool isPomodoroMode;
   final VoidCallback onTap;
 
   const GroupedSessionCard({
@@ -20,6 +22,8 @@ class GroupedSessionCard extends StatelessWidget {
     required this.totalBreakActual,
     required this.isHardcoreMode,
     required this.onTap,
+    this.isPomodoroMode = false,
+    this.completedFocusCount,
   });
 
   @override
@@ -27,7 +31,7 @@ class GroupedSessionCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm', Localizations.localeOf(context).languageCode);
     final totalDurationFormat = _formatDuration(
-      totalFocusActual + totalBreakActual,
+      totalFocusActual + (isPomodoroMode ? Duration.zero : totalBreakActual),
     );
 
     return Card(
@@ -40,8 +44,10 @@ class GroupedSessionCard extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.1),
-            width: 1,
+            color: isPomodoroMode
+                ? Colors.orangeAccent.withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.1),
+            width: isPomodoroMode ? 1.2 : 1.0,
           ),
         ),
         child: InkWell(
@@ -62,28 +68,56 @@ class GroupedSessionCard extends StatelessWidget {
                         fontSize: 12,
                       ),
                     ),
-                    if (isHardcoreMode)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.red.withValues(alpha: 0.5),
+                    Row(
+                      children: [
+                        if (isPomodoroMode) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orangeAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.orangeAccent.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: const Text(
+                              'POMODORO',
+                              style: TextStyle(
+                                color: Colors.orangeAccent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          l10n.focusMode.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                          if (isHardcoreMode) const SizedBox(width: 6),
+                        ],
+                        if (isHardcoreMode)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.red.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Text(
+                              l10n.focusMode.toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -92,12 +126,14 @@ class GroupedSessionCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.blueAccent.withValues(alpha: 0.2),
+                        color: isPomodoroMode
+                            ? Colors.orangeAccent.withValues(alpha: 0.15)
+                            : Colors.blueAccent.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.loop_rounded,
-                        color: Colors.blueAccent,
+                      child: Icon(
+                        isPomodoroMode ? Icons.av_timer_rounded : Icons.loop_rounded,
+                        color: isPomodoroMode ? Colors.orangeAccent : Colors.blueAccent,
                         size: 24,
                       ),
                     ),
@@ -107,7 +143,7 @@ class GroupedSessionCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            l10n.sessionCycle,
+                            isPomodoroMode ? 'Ciclo Pomodoro' : l10n.sessionCycle,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -115,14 +151,19 @@ class GroupedSessionCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${l10n.focusCount(focusCount)} • ${l10n.breakCount(breakCount)}',
+                            isPomodoroMode
+                                ? '${completedFocusCount ?? focusCount}/4 Pomodoros completados'
+                                : '${l10n.focusCount(focusCount)} • ${l10n.breakCount(breakCount)}',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: isPomodoroMode ? Colors.orangeAccent.withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.8),
                               fontSize: 14,
+                              fontWeight: isPomodoroMode ? FontWeight.w600 : FontWeight.normal,
                             ),
                           ),
                           Text(
-                            l10n.totalTimeLabel(totalDurationFormat),
+                            isPomodoroMode
+                                ? 'Tiempo enfocado: $totalDurationFormat'
+                                : l10n.totalTimeLabel(totalDurationFormat),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 12,

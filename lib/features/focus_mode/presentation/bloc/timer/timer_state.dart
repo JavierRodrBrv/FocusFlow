@@ -16,6 +16,11 @@ class TimerState extends Equatable {
   final Duration totalPenaltyTime;
   final bool isWaitingForFirstFlip;
   final bool isPremium;
+  final bool isPomodoroMode;
+  final Duration shortBreakDuration;
+  final Duration longBreakDuration;
+  final int completedPomodoros;
+  final bool hasCompletedPomodoroCycle;
 
   const TimerState({
     required this.status,
@@ -31,6 +36,11 @@ class TimerState extends Equatable {
     required this.totalPenaltyTime,
     required this.isWaitingForFirstFlip,
     required this.isPremium,
+    required this.isPomodoroMode,
+    required this.shortBreakDuration,
+    required this.longBreakDuration,
+    required this.completedPomodoros,
+    required this.hasCompletedPomodoroCycle,
   });
 
   factory TimerState.initial() => const TimerState(
@@ -47,6 +57,11 @@ class TimerState extends Equatable {
         totalPenaltyTime: Duration.zero,
         isWaitingForFirstFlip: false,
         isPremium: false,
+        isPomodoroMode: false,
+        shortBreakDuration: Duration(minutes: 5),
+        longBreakDuration: Duration(minutes: 15),
+        completedPomodoros: 0,
+        hasCompletedPomodoroCycle: false,
       );
 
   TimerState copyWith({
@@ -63,6 +78,11 @@ class TimerState extends Equatable {
     Duration? totalPenaltyTime,
     bool? isWaitingForFirstFlip,
     bool? isPremium,
+    bool? isPomodoroMode,
+    Duration? shortBreakDuration,
+    Duration? longBreakDuration,
+    int? completedPomodoros,
+    bool? hasCompletedPomodoroCycle,
   }) {
     return TimerState(
       status: status ?? this.status,
@@ -78,6 +98,11 @@ class TimerState extends Equatable {
       totalPenaltyTime: totalPenaltyTime ?? this.totalPenaltyTime,
       isWaitingForFirstFlip: isWaitingForFirstFlip ?? this.isWaitingForFirstFlip,
       isPremium: isPremium ?? this.isPremium,
+      isPomodoroMode: isPomodoroMode ?? this.isPomodoroMode,
+      shortBreakDuration: shortBreakDuration ?? this.shortBreakDuration,
+      longBreakDuration: longBreakDuration ?? this.longBreakDuration,
+      completedPomodoros: completedPomodoros ?? this.completedPomodoros,
+      hasCompletedPomodoroCycle: hasCompletedPomodoroCycle ?? this.hasCompletedPomodoroCycle,
     );
   }
 
@@ -96,5 +121,10 @@ class TimerState extends Equatable {
         totalPenaltyTime,
         isWaitingForFirstFlip,
         isPremium,
+        isPomodoroMode,
+        shortBreakDuration,
+        longBreakDuration,
+        completedPomodoros,
+        hasCompletedPomodoroCycle,
       ];
 }

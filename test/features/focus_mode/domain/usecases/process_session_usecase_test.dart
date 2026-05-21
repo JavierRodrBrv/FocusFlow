@@ -41,6 +41,11 @@ SessionState _state({
   backgroundEffect: BackgroundEffect.gradient,
   isWaitingForFirstFlip: isWaitingForFirstFlip,
   autoTransitionWhenForeground: true,
+  isPomodoroMode: false,
+  shortBreakDuration: const Duration(minutes: 5),
+  longBreakDuration: const Duration(minutes: 15),
+  completedPomodoros: 0,
+  hasCompletedPomodoroCycle: false,
 );
 
 // --- Helper: construye ProcessSessionParams ---
@@ -53,6 +58,7 @@ ProcessSessionParams _params({
   bool hasSavedAtLeastOneInGroup = false,
   Duration plannedDuration = const Duration(minutes: 25),
   bool isHardcore = false,
+  bool? wasRestingState,
 }) => ProcessSessionParams(
   prevStatus: prevStatus,
   newState: newState,
@@ -61,6 +67,7 @@ ProcessSessionParams _params({
   hasSavedAtLeastOneInGroup: hasSavedAtLeastOneInGroup,
   plannedDuration: plannedDuration,
   isHardcore: isHardcore,
+  wasRestingState: wasRestingState ?? (prevStatus == PomodoroStatus.resting),
 );
 
 void main() {

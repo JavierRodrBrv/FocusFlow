@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/presentation/models/focus_state.dart';
-import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings/views/break_settings_view.dart';
+import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings/views/pomodoro_settings_view.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings/views/feedback_menu_view.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings/views/language_menu_view.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings/views/main_menu_view.dart';
@@ -12,7 +12,7 @@ enum SettingsView {
   wallpaper,
   language,
   feedback,
-  breakSettings,
+  pomodoroSettings,
 }
 
 class SettingsMenuBottomSheet extends StatefulWidget {
@@ -94,7 +94,7 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
           state: state,
           onToggleAlarm: () => service.invoke('sendEvent', {'event': 'toggleAlarmSound'}),
           onToggleAutoTransition: () => service.invoke('sendEvent', {'event': 'toggleAutoTransition'}),
-          onGoToBreaks: () => _navigateTo(SettingsView.breakSettings),
+          onGoToPomodoros: () => _navigateTo(SettingsView.pomodoroSettings),
           onGoToWallpaper: () => _navigateTo(SettingsView.wallpaper),
           onGoToLanguage: () => _navigateTo(SettingsView.language),
           onGoToFeedback: () => _navigateTo(SettingsView.feedback),
@@ -126,17 +126,27 @@ class _SettingsMenuBottomSheetState extends State<SettingsMenuBottomSheet> {
           onBack: _goBack,
           onSuccess: () => Navigator.pop(context),
         );
-      case SettingsView.breakSettings:
-        return BreakSettingsView(
-          key: const ValueKey('break_settings'),
+      case SettingsView.pomodoroSettings:
+        return PomodoroSettingsView(
+          key: const ValueKey('pomodoro_settings'),
           state: state,
           onBack: _goBack,
-          onSave: (minutes) {
+          onSave: ({
+            required isPomodoro,
+            required studyMinutes,
+            required shortMinutes,
+            required longMinutes,
+          }) {
             service.invoke('sendEvent', {
-              'event': 'setDefaultBreakDuration',
-              'duration': minutes != null ? minutes * 60 : null,
+              'event': 'setPomodoroMode',
+              'isPomodoro': isPomodoro,
             });
-            _goBack();
+            service.invoke('sendEvent', {
+              'event': 'setPomodoroConfig',
+              'studyMinutes': studyMinutes,
+              'shortBreakMinutes': shortMinutes,
+              'longBreakMinutes': longMinutes,
+            });
           },
         );
     }

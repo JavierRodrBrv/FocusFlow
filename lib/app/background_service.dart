@@ -75,7 +75,6 @@ void onStart(ServiceInstance service) async {
   }
 
   FocusState getCombinedState() {
-// ...
     final ts = timerBloc?.state ?? TimerState.initial();
     final ams = audioBloc?.state ?? AudioMixState.initial();
     final ss = settingsBloc?.state ?? SettingsState.initial();
@@ -115,6 +114,11 @@ void onStart(ServiceInstance service) async {
       selectedAmbiencePath: ams.selectedAmbiencePath,
       autoTransitionWhenForeground: ss.autoTransitionWhenForeground,
       languageCode: ss.languageCode,
+      isPomodoroMode: ts.isPomodoroMode,
+      shortBreakDuration: ts.shortBreakDuration,
+      longBreakDuration: ts.longBreakDuration,
+      completedPomodoros: ts.completedPomodoros,
+      hasCompletedPomodoroCycle: ts.hasCompletedPomodoroCycle,
     );
   }
 
@@ -437,6 +441,21 @@ void onStart(ServiceInstance service) async {
         SetBreakDuration(minutes != null ? Duration(minutes: minutes) : null),
       );
       forceNextUpdate = true;
+    } else if (name == 'setPomodoroMode') {
+      final isPomodoro = event['isPomodoro'] as bool;
+      getIt<FocusSessionManager>().setPomodoroMode(isPomodoro);
+    } else if (name == 'setPomodoroConfig') {
+      final studyMin = event['studyMinutes'] as int;
+      final shortMin = event['shortBreakMinutes'] as int;
+      final longMin = event['longBreakMinutes'] as int;
+      getIt<FocusSessionManager>().setPomodoroConfig(
+        Duration(minutes: studyMin),
+        Duration(minutes: shortMin),
+        Duration(minutes: longMin),
+      );
+      forceNextUpdate = true;
+    } else if (name == 'resetCompletedCycle') {
+      getIt<FocusSessionManager>().resetCompletedCycleFlag();
     } else if (name == 'skipToNextPhase') {
       timerBloc.add(SkipToNextPhase());
       forceNextUpdate = true;
