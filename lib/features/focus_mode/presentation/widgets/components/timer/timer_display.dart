@@ -141,10 +141,23 @@ class _TimerDisplayState extends State<TimerDisplay>
     final isResting = state.isResting;
     final canAdjust = state.pomodoroStatus == PomodoroStatus.initial;
 
+    final Duration totalDuration;
+    if (isResting) {
+      if (state.isPomodoroMode) {
+        totalDuration = state.completedPomodoros == 4
+            ? state.longBreakDuration
+            : state.shortBreakDuration;
+      } else {
+        totalDuration = state.defaultBreakDuration ?? state.remainingTime;
+      }
+    } else {
+      totalDuration = state.pomodoroDuration;
+    }
+
     // Calcular el progreso del anillo (de 1.0 a 0.0)
-    final double progress = state.pomodoroDuration.inSeconds > 0
-        ? state.remainingTime.inSeconds / state.pomodoroDuration.inSeconds
-        : 0.0;
+    final double progress = (totalDuration.inSeconds > 0
+        ? state.remainingTime.inSeconds / totalDuration.inSeconds
+        : 0.0).clamp(0.0, 1.0);
 
     final color = isResting
         ? Colors.redAccent
