@@ -10,6 +10,8 @@ import '../../../models/focus_state.dart';
 import '../../modals/settings_menu_bottom_sheet.dart';
 import '../timer/timer_display.dart';
 import '../timer/timer_controls.dart';
+import '../../dialogs/session_completion_dialog.dart';
+import '../shared/shader_button.dart';
 
 class FocusBody extends StatelessWidget {
   final FocusState state;
@@ -33,7 +35,7 @@ class FocusBody extends StatelessWidget {
     
     if (state.status == AppStatus.initial ||
         state.status == AppStatus.loading) {
-      return const PremiumLoader(size: 150.0);
+      return const PremiumLoader(size: 100.0);
     }
     if (state.status == AppStatus.error) {
       return Center(child: Text(l10n.initializationError));
@@ -136,11 +138,42 @@ class FocusBody extends StatelessWidget {
                     opacity: showUI ? 1.0 : 0.0,
                     child: IgnorePointer(
                       ignoring: !showUI,
-                      child: Showcase(
-                        key: controlsKey,
-                        title: l10n.controlsShowcaseTitle,
-                        description: l10n.controlsShowcaseDesc,
-                        child: TimerControls(state: state, service: service),
+                      child: Column(
+                        children: [
+                          Showcase(
+                            key: controlsKey,
+                            title: l10n.controlsShowcaseTitle,
+                            description: l10n.controlsShowcaseDesc,
+                            child: TimerControls(state: state, service: service),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 28.0),
+                            child: ShaderButton(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => SessionCompletionDialog(
+                                    penaltyCount: state.penaltyCount,
+                                    totalPenaltyTime: state.totalPenaltyTime,
+                                    isHardcoreMode: state.isHardcoreMode,
+                                  ),
+                                );
+                              },
+                              width: 220,
+                              height: 48,
+                              child: const Text(
+                                'Probar ¿Sonríes? 📸',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

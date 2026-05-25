@@ -17,7 +17,7 @@ import 'package:focus_flow/features/session_history/domain/usecases/save_session
 import 'package:focus_flow/features/session_history/domain/usecases/get_session_history_usecase.dart';
 import 'package:focus_flow/core/usecases/usecase.dart';
 import 'package:focus_flow/core/presentation/widgets/premium_loader.dart';
-
+import '../components/shared/shader_button.dart';
 
 class SessionCompletionDialog extends StatefulWidget {
   final int penaltyCount;
@@ -223,16 +223,17 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
       if (photoPath != null) {
         final getHistory = GetIt.instance<GetSessionHistoryUseCase>();
         final result = await getHistory(NoParams());
-        
+
         if (result is Success<List<FocusSession>, dynamic>) {
-          final sessions = (result as Success<List<FocusSession>, dynamic>).value;
+          final sessions =
+              (result as Success<List<FocusSession>, dynamic>).value;
           if (sessions.isNotEmpty) {
             final lastSession = sessions.first;
             final updatedSession = lastSession.copyWith(photoPath: photoPath);
-            
+
             final saveSession = GetIt.instance<SaveSessionUseCase>();
             await saveSession(updatedSession);
-            
+
             if (mounted) {
               setState(() {
                 _capturedPhotoPath = photoPath;
@@ -258,39 +259,32 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     if (_capturedPhotoPath == null) {
       return Container(
         margin: const EdgeInsets.only(top: 20),
-        child: _isSavingPhoto
-            ? const SizedBox(
-                height: 80,
-                child: PremiumLoader(size: 64.0),
-              )
-            : Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(
-                    colors: [Colors.pinkAccent, Colors.purpleAccent, Colors.blueAccent],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return ScaleTransition(
+              scale: animation,
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+          child: _isSavingPhoto
+              ? const SizedBox(
+                  key: ValueKey('saving_photo_loader'),
+                  height: 80,
+                  child: PremiumLoader(
+                    size: 80.0,
+                    animationPath: 'assets/json/camara_animacion.json',
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.pinkAccent.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
+                )
+              : ShaderButton(
+                  key: const ValueKey('take_photo_button'),
                   onPressed: _takePhoto,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
+                  width: 220,
+                  height: 48,
                   child: const Text(
-                    '¿Sonríes? 📸',
+                    '¿Sonríes?',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -299,7 +293,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                     ),
                   ),
                 ),
-              ),
+        ),
       );
     }
 

@@ -9,6 +9,7 @@ import 'package:focus_flow/features/session_history/domain/entities/focus_sessio
 import 'package:focus_flow/features/session_history/domain/usecases/save_session_usecase.dart';
 import 'package:focus_flow/features/session_history/domain/usecases/get_session_history_usecase.dart';
 import 'package:focus_flow/core/presentation/widgets/premium_loader.dart';
+import '../components/shared/shader_button.dart';
 
 class PomodoroCycleCompleteDialog extends StatefulWidget {
   final int studyMinutes;
@@ -82,39 +83,35 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
     if (_capturedPhotoPath == null) {
       return Container(
         margin: const EdgeInsets.only(top: 16),
-        child: _isSavingPhoto
-            ? const SizedBox(
-                height: 80,
-                child: PremiumLoader(size: 64.0),
-              )
-            : Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(
-                    colors: [Colors.pinkAccent, Colors.purpleAccent, Colors.blueAccent],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return ScaleTransition(
+              scale: animation,
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          child: _isSavingPhoto
+              ? const SizedBox(
+                  key: ValueKey('saving_photo_loader'),
+                  height: 80,
+                  child: PremiumLoader(
+                    size: 80.0,
+                    animationPath: 'assets/json/camara_animacion.json',
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.pinkAccent.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
+                )
+              : ShaderButton(
+                  key: const ValueKey('take_photo_button'),
                   onPressed: _takePhoto,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
+                  width: 220,
+                  height: 48,
                   child: const Text(
-                    '¿Sonríes? 📸',
+                    '¿Sonríes?',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 15,
@@ -123,7 +120,7 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
                     ),
                   ),
                 ),
-              ),
+        ),
       );
     }
 

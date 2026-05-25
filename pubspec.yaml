@@ -112,6 +112,7 @@ flutter:
 
   shaders:
     - shaders/gradient_flow.frag
+    - shaders/button_gradient_flow.frag
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package

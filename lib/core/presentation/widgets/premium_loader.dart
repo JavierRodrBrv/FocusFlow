@@ -3,10 +3,14 @@ import 'package:lottie/lottie.dart';
 
 class PremiumLoader extends StatelessWidget {
   final double size;
+  final String animationPath;
+  final Color? color;
 
   const PremiumLoader({
     super.key,
     this.size = 120.0,
+    this.animationPath = 'assets/json/carga_logo.json',
+    this.color,
   });
 
   @override
@@ -16,8 +20,18 @@ class PremiumLoader extends StatelessWidget {
         width: size,
         height: size,
         child: Lottie.asset(
-          'assets/json/carga_logo.json',
+          animationPath,
           fit: BoxFit.contain,
+          delegates: LottieDelegates(
+            values: color != null
+                ? [
+                    ValueDelegate.color(
+                      const ['**'],
+                      value: color,
+                    ),
+                  ]
+                : null,
+          ),
         ),
       ),
     );
