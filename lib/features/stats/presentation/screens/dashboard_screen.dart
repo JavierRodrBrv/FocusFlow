@@ -9,6 +9,7 @@ import '../bloc/stats_event.dart';
 import '../bloc/stats_state.dart';
 import '../widgets/animated_bar_chart.dart';
 import '../../../session_history/presentation/pages/session_history_page.dart';
+import 'package:focus_flow/core/presentation/widgets/premium_loader.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -68,7 +69,7 @@ class DashboardView extends StatelessWidget {
             child: BlocBuilder<StatsBloc, StatsState>(
               builder: (context, state) {
                 if (state is StatsLoading || state is StatsInitial) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
+                  return const Center(child: PremiumLoader(size: 140.0));
                 } else if (state is StatsError) {
                   return Center(
                     child: Text(

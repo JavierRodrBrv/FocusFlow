@@ -8,6 +8,7 @@ import 'package:focus_flow/features/focus_mode/domain/services/photo_service.dar
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:focus_flow/features/session_history/domain/usecases/save_session_usecase.dart';
 import 'package:focus_flow/features/session_history/domain/usecases/get_session_history_usecase.dart';
+import 'package:focus_flow/core/presentation/widgets/premium_loader.dart';
 
 class PomodoroCycleCompleteDialog extends StatefulWidget {
   final int studyMinutes;
@@ -83,10 +84,8 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
         margin: const EdgeInsets.only(top: 16),
         child: _isSavingPhoto
             ? const SizedBox(
-                height: 48,
-                child: Center(
-                  child: CircularProgressIndicator(color: Colors.pinkAccent),
-                ),
+                height: 80,
+                child: PremiumLoader(size: 64.0),
               )
             : Container(
                 decoration: BoxDecoration(

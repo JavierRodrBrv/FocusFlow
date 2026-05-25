@@ -8,6 +8,7 @@ import 'package:focus_flow/features/session_history/presentation/widgets/grouped
 import 'package:focus_flow/features/session_history/presentation/widgets/session_card.dart';
 import 'package:focus_flow/features/session_history/presentation/widgets/session_detail_modal.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
+import 'package:focus_flow/core/presentation/widgets/premium_loader.dart';
 
 import 'package:intl/intl.dart';
 
@@ -165,7 +166,7 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
               child: BlocBuilder<SessionHistoryBloc, SessionHistoryState>(
                 builder: (context, state) {
                   if (state.status == SessionHistoryStatus.loading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: PremiumLoader(size: 140.0));
                   }
 
                   if (state.status == SessionHistoryStatus.error) {

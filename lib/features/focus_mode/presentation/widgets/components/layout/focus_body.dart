@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'package:focus_flow/core/presentation/widgets/premium_loader.dart';
 
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/ad_banner_widget.dart';
@@ -32,7 +33,7 @@ class FocusBody extends StatelessWidget {
     
     if (state.status == AppStatus.initial ||
         state.status == AppStatus.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const PremiumLoader(size: 150.0);
     }
     if (state.status == AppStatus.error) {
       return Center(child: Text(l10n.initializationError));
