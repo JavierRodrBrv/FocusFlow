@@ -26,6 +26,7 @@ SessionState _state({
   bool isHardcore = false,
   int penaltyCount = 0,
   Duration totalPenaltyTime = Duration.zero,
+  bool isPomodoroMode = false,
 }) => SessionState(
   status: status,
   remainingTime: remainingTime,
@@ -41,7 +42,7 @@ SessionState _state({
   backgroundEffect: BackgroundEffect.gradient,
   isWaitingForFirstFlip: isWaitingForFirstFlip,
   autoTransitionWhenForeground: true,
-  isPomodoroMode: false,
+  isPomodoroMode: isPomodoroMode,
   shortBreakDuration: const Duration(minutes: 5),
   longBreakDuration: const Duration(minutes: 15),
   completedPomodoros: 0,
@@ -213,6 +214,29 @@ void main() {
               startTime: startTime,
               groupId: 'grupo-1',
               hasSavedAtLeastOneInGroup: true, // ← Regla de Oro
+            ),
+          );
+
+          verify(() => mockSaveSessionUseCase(any())).called(1);
+        },
+      );
+
+      test(
+        'SÍ debe guardar si la sesión dura menos de 10s si está en modo Pomodoro y hay cambio de fase (skip)',
+        () async {
+          final startTime = DateTime.now().subtract(const Duration(seconds: 5));
+
+          await useCase(
+            _params(
+              prevStatus: PomodoroStatus.running,
+              newState: _state(
+                status: PomodoroStatus.resting,
+                isResting: true,
+                isPomodoroMode: true,
+              ),
+              startTime: startTime,
+              groupId: 'grupo-1',
+              hasSavedAtLeastOneInGroup: false,
             ),
           );
 

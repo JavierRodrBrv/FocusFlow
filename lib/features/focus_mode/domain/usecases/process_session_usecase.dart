@@ -115,7 +115,8 @@ class ProcessSessionUseCase implements IProcessSessionUseCase {
           wasCompleted ||
           actualD.inSeconds > 10 ||
           wasResting ||
-          params.hasSavedAtLeastOneInGroup;
+          params.hasSavedAtLeastOneInGroup ||
+          (s.isPomodoroMode && phaseToggled);
 
       if (meetsMinimumTime) {
         sessionToSave = FocusSession(
