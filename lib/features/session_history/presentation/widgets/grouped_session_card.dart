@@ -12,6 +12,7 @@ class GroupedSessionCard extends StatelessWidget {
   final bool isHardcoreMode;
   final bool isPomodoroMode;
   final VoidCallback onTap;
+  final bool hasPhotos;
 
   const GroupedSessionCard({
     super.key,
@@ -24,6 +25,7 @@ class GroupedSessionCard extends StatelessWidget {
     required this.onTap,
     this.isPomodoroMode = false,
     this.completedFocusCount,
+    this.hasPhotos = false,
   });
 
   @override
@@ -172,6 +174,10 @@ class GroupedSessionCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (hasPhotos) ...[
+                      const Icon(Icons.camera_alt_rounded, color: Colors.pinkAccent, size: 16),
+                      const SizedBox(width: 8),
+                    ],
                     const Icon(Icons.chevron_right, color: Colors.white54),
                   ],
                 ),

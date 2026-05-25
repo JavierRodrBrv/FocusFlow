@@ -13,6 +13,7 @@ class FocusSessionModel extends HiveObject {
   final bool isResting;
   final bool isCompleted;
   final bool isPomodoroMode;
+  final String? photoPath;
 
   FocusSessionModel({
     required this.id,
@@ -26,6 +27,7 @@ class FocusSessionModel extends HiveObject {
     required this.isResting,
     required this.isCompleted,
     this.isPomodoroMode = false,
+    this.photoPath,
   });
 
   factory FocusSessionModel.fromEntity(FocusSession entity) {
@@ -41,6 +43,7 @@ class FocusSessionModel extends HiveObject {
       isResting: entity.isResting,
       isCompleted: entity.isCompleted,
       isPomodoroMode: entity.isPomodoroMode,
+      photoPath: entity.photoPath,
     );
   }
 
@@ -57,6 +60,7 @@ class FocusSessionModel extends HiveObject {
       isResting: isResting,
       isCompleted: isCompleted,
       isPomodoroMode: isPomodoroMode,
+      photoPath: photoPath,
     );
   }
 }
@@ -80,6 +84,9 @@ class FocusSessionModelAdapter extends TypeAdapter<FocusSessionModel> {
     
     // Lectura defensiva para compatibilidad hacia atrás
     final isPomodoroMode = reader.availableBytes > 0 ? reader.readBool() : false;
+    final photoPath = reader.availableBytes > 0 
+        ? (reader.readBool() ? reader.readString() : null)
+        : null;
 
     return FocusSessionModel(
       id: id,
@@ -93,6 +100,7 @@ class FocusSessionModelAdapter extends TypeAdapter<FocusSessionModel> {
       isCompleted: isCompleted,
       groupId: groupId,
       isPomodoroMode: isPomodoroMode,
+      photoPath: photoPath,
     );
   }
 
@@ -112,5 +120,9 @@ class FocusSessionModelAdapter extends TypeAdapter<FocusSessionModel> {
       writer.writeString(obj.groupId!);
     }
     writer.writeBool(obj.isPomodoroMode);
+    writer.writeBool(obj.photoPath != null);
+    if (obj.photoPath != null) {
+      writer.writeString(obj.photoPath!);
+    }
   }
 }

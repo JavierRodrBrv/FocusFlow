@@ -103,6 +103,10 @@ class SessionCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (session.photoPath != null) ...[
+                      const Icon(Icons.camera_alt_rounded, color: Colors.pinkAccent, size: 16),
+                      const SizedBox(width: 8),
+                    ],
                     const Icon(Icons.chevron_right, color: Colors.white54),
                   ],
                 ),

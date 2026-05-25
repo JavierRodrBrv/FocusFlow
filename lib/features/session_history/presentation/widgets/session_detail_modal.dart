@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show File;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
@@ -80,6 +82,53 @@ class SessionDetailModal extends StatelessWidget {
               ),
             ],
           ),
+          if (session.photoPath != null) ...[
+            const SizedBox(height: 24),
+            Center(
+              child: Transform.rotate(
+                angle: -0.02,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 160,
+                        height: 160,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Image.file(
+                          File(session.photoPath!),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '¡Qué cara! 😜',
+                        style: GoogleFonts.caveat(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 32),
           _buildDetailRow(
             Icons.access_time,

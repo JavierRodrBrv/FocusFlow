@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:focus_flow/features/stats/domain/repositories/i_session_stats_repository.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings_menu_bottom_sheet.dart';
 import 'package:focus_flow/features/stats/presentation/screens/dashboard_screen.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
@@ -63,20 +65,7 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.bar_chart_rounded, color: Colors.white70),
-          onPressed: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (_, __, ___) => const DashboardScreen(),
-                transitionsBuilder: (_, animation, __, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-              ),
-            );
-          },
-        ),
+        const StreakStatsButton(),
         Showcase(
           key: historyKey,
           title: l10n.sessionsHistory,
@@ -121,6 +110,133 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
         ),
+      ],
+    );
+  }
+}
+
+class StreakStatsButton extends StatefulWidget {
+  const StreakStatsButton({super.key});
+
+  @override
+  State<StreakStatsButton> createState() => _StreakStatsButtonState();
+}
+
+class _StreakStatsButtonState extends State<StreakStatsButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _glowAnimation;
+  late Animation<double> _bounceAnimation;
+  bool _hasStreak = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+
+    _glowAnimation = Tween<double>(begin: 0.1, end: 0.55).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+    );
+
+    _bounceAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.0), weight: 80),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.25).chain(CurveTween(curve: Curves.easeOutBack)), weight: 10),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.25, end: 1.0).chain(CurveTween(curve: Curves.easeInBack)), weight: 10),
+    ]).animate(_controller);
+
+    _checkStreak();
+  }
+
+  Future<void> _checkStreak() async {
+    try {
+      final repo = GetIt.I<ISessionStatsRepository>();
+      final sessions = await repo.getAllValidSessions();
+      final now = DateTime.now();
+      
+      final hasCompletedToday = sessions.any((r) =>
+          r.status == 'completed' &&
+          r.startTime.day == now.day &&
+          r.startTime.month == now.month &&
+          r.startTime.year == now.year);
+      
+      if (mounted) {
+        setState(() {
+          _hasStreak = hasCompletedToday;
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        if (_hasStreak)
+          AnimatedBuilder(
+            animation: _glowAnimation,
+            builder: (context, child) {
+              return Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.orangeAccent.withValues(alpha: _glowAnimation.value),
+                      blurRadius: 18,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        IconButton(
+          icon: Icon(
+            Icons.bar_chart_rounded,
+            color: _hasStreak ? Colors.orangeAccent : Colors.white70,
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) => const DashboardScreen(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+              ),
+            ).then((_) => _checkStreak());
+          },
+        ),
+        if (_hasStreak)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: ScaleTransition(
+              scale: _bounceAnimation,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0F172A),
+                  shape: BoxShape.circle,
+                ),
+                child: const Text(
+                  '🔥',
+                  style: TextStyle(fontSize: 10),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

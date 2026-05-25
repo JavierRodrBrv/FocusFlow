@@ -345,6 +345,7 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
           totalBreakActual: totalBreakActual,
           isHardcoreMode: anyHardcore,
           isPomodoroMode: group.any((s) => s.isPomodoroMode),
+          hasPhotos: group.any((s) => s.photoPath != null),
           onTap: () => _showGroupDetails(context, group),
         ),
       ),

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'dart:io' show Platform;
+import 'dart:io' show File, Platform;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -8,6 +8,15 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:focus_flow/core/utils/duration_extensions.dart';
 import 'session_completion/stat_row.dart';
 import 'session_completion/views.dart';
+import 'package:get_it/get_it.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:focus_flow/core/domain/result.dart';
+import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
+import 'package:focus_flow/features/focus_mode/domain/services/photo_service.dart';
+import 'package:focus_flow/features/session_history/domain/usecases/save_session_usecase.dart';
+import 'package:focus_flow/features/session_history/domain/usecases/get_session_history_usecase.dart';
+import 'package:focus_flow/core/usecases/usecase.dart';
+
 
 class SessionCompletionDialog extends StatefulWidget {
   final int penaltyCount;
@@ -40,6 +49,8 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   bool _isWaitingForAd = false;
   late final String _randomJoyImage;
   String _randomDogPhrase = '';
+  String? _capturedPhotoPath;
+  bool _isSavingPhoto = false;
 
   final List<String> _joyImages = [
     'assets/images/joy_2.jpeg',
@@ -202,6 +213,178 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     return l10n.perfMosquito;
   }
 
+  Future<void> _takePhoto() async {
+    setState(() {
+      _isSavingPhoto = true;
+    });
+    try {
+      final photoPath = await GetIt.instance<PhotoService>().captureStudyFace();
+      if (photoPath != null) {
+        final getHistory = GetIt.instance<GetSessionHistoryUseCase>();
+        final result = await getHistory(NoParams());
+        
+        if (result is Success<List<FocusSession>, dynamic>) {
+          final sessions = (result as Success<List<FocusSession>, dynamic>).value;
+          if (sessions.isNotEmpty) {
+            final lastSession = sessions.first;
+            final updatedSession = lastSession.copyWith(photoPath: photoPath);
+            
+            final saveSession = GetIt.instance<SaveSessionUseCase>();
+            await saveSession(updatedSession);
+            
+            if (mounted) {
+              setState(() {
+                _capturedPhotoPath = photoPath;
+              });
+            }
+          }
+        } else {
+          debugPrint('Failed to get session history to save photo');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error capturing photo: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingPhoto = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildPhotoSection() {
+    if (_capturedPhotoPath == null) {
+      return Container(
+        margin: const EdgeInsets.only(top: 20),
+        child: _isSavingPhoto
+            ? const SizedBox(
+                height: 48,
+                child: Center(
+                  child: CircularProgressIndicator(color: Colors.pinkAccent),
+                ),
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: const LinearGradient(
+                    colors: [Colors.pinkAccent, Colors.purpleAccent, Colors.blueAccent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.pinkAccent.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: _takePhoto,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    '¿Sonríes? 📸',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+      );
+    }
+
+    // Polaroid View
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.8, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.elasticOut,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: Transform.rotate(
+            angle: -0.04, // slight rotation
+            child: Container(
+              margin: const EdgeInsets.only(top: 24),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      Container(
+                        width: 180,
+                        height: 180,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Image.file(
+                          File(_capturedPhotoPath!),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: _takePhoto,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.refresh_rounded,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '¡Foco completado! 🔥',
+                    style: GoogleFonts.caveat(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -221,6 +404,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                 textAlign: TextAlign.center,
               ),
               _buildStats(context),
+              _buildPhotoSection(),
               const SizedBox(height: 24),
               const Divider(color: Colors.white10),
               const SizedBox(height: 16),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show File;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
@@ -43,6 +45,10 @@ class GroupDetailModal extends StatelessWidget {
     }
 
     final isPomodoro = group.any((s) => s.isPomodoroMode);
+    final hasPhoto = group.any((s) => s.photoPath != null);
+    final sessionWithPhoto = hasPhoto
+        ? group.firstWhere((s) => s.photoPath != null)
+        : null;
 
     return Container(
       decoration: const BoxDecoration(
@@ -115,6 +121,121 @@ class GroupDetailModal extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  if (hasPhoto && sessionWithPhoto != null) ...[
+                    Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => Dialog(
+                              backgroundColor: Colors.transparent,
+                              child: TweenAnimationBuilder<double>(
+                                tween: Tween<double>(begin: 0.8, end: 1.0),
+                                duration: const Duration(milliseconds: 500),
+                                curve: Curves.elasticOut,
+                                builder: (context, scale, child) {
+                                  return Transform.scale(
+                                    scale: scale,
+                                    child: Transform.rotate(
+                                      angle: -0.02,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(4),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.5),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 10),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                border: Border.all(color: Colors.grey.shade300),
+                                              ),
+                                              child: Image.file(
+                                                File(sessionWithPhoto.photoPath!),
+                                                fit: BoxFit.contain,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              '¡Qué cara! 😜',
+                                              style: GoogleFonts.caveat(
+                                                fontSize: 26,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              DateFormat('d MMMM, HH:mm', locale).format(sessionWithPhoto.startTime),
+                                              style: GoogleFonts.caveat(
+                                                fontSize: 16,
+                                                color: Colors.black54,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                        child: Transform.rotate(
+                          angle: -0.015,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 24, top: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 160,
+                                  height: 160,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey.shade300),
+                                  ),
+                                  child: Image.file(
+                                    File(sessionWithPhoto.photoPath!),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  '¡Estudiado! 🤓',
+                                  style: GoogleFonts.caveat(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   _buildSummaryCard(
                     l10n,
                     focusCount,

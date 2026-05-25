@@ -108,11 +108,19 @@ class AnimatedBarChart extends StatelessWidget {
             barGroups: List.generate(7, (i) {
               final dayIndex = i + 1;
               final yValue = weeklyData[dayIndex] ?? 0.0;
+              
+              // Retraso escalonado (staggered delay) para cada barra individual
+              final double start = i * 0.04;
+              final double end = start + 0.6;
+              final double factor = ((value - start) / (end - start)).clamp(0.0, 1.0);
+              // Aplicar curva bouncy (easeOutBack) individualizada
+              final double curvedFactor = Curves.easeOutBack.transform(factor);
+
               return BarChartGroupData(
                 x: dayIndex,
                 barRods: [
                   BarChartRodData(
-                    toY: yValue * value, // Animate here!
+                    toY: yValue * curvedFactor,
                     width: 22, // Grosor premium de barra
                     gradient: const LinearGradient(
                       begin: Alignment.bottomCenter,

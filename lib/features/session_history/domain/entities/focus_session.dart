@@ -12,6 +12,7 @@ class FocusSession extends Equatable {
   final bool isResting;
   final bool isCompleted;
   final bool isPomodoroMode;
+  final String? photoPath;
 
   const FocusSession({
     required this.id,
@@ -25,7 +26,38 @@ class FocusSession extends Equatable {
     required this.isResting,
     required this.isCompleted,
     this.isPomodoroMode = false,
+    this.photoPath,
   });
+
+  FocusSession copyWith({
+    String? id,
+    String? groupId,
+    DateTime? startTime,
+    Duration? plannedDuration,
+    Duration? actualDuration,
+    bool? isHardcoreMode,
+    int? penaltyCount,
+    Duration? totalPenaltyTime,
+    bool? isResting,
+    bool? isCompleted,
+    bool? isPomodoroMode,
+    String? photoPath,
+  }) {
+    return FocusSession(
+      id: id ?? this.id,
+      groupId: groupId ?? this.groupId,
+      startTime: startTime ?? this.startTime,
+      plannedDuration: plannedDuration ?? this.plannedDuration,
+      actualDuration: actualDuration ?? this.actualDuration,
+      isHardcoreMode: isHardcoreMode ?? this.isHardcoreMode,
+      penaltyCount: penaltyCount ?? this.penaltyCount,
+      totalPenaltyTime: totalPenaltyTime ?? this.totalPenaltyTime,
+      isResting: isResting ?? this.isResting,
+      isCompleted: isCompleted ?? this.isCompleted,
+      isPomodoroMode: isPomodoroMode ?? this.isPomodoroMode,
+      photoPath: photoPath ?? this.photoPath,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -40,5 +72,6 @@ class FocusSession extends Equatable {
     isResting,
     isCompleted,
     isPomodoroMode,
+    photoPath,
   ];
 }

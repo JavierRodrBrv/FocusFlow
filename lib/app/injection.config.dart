@@ -37,6 +37,7 @@ import '../features/focus_mode/domain/services/focus_coordinator_service.dart'
     as _i322;
 import '../features/focus_mode/domain/services/focus_session_manager.dart'
     as _i63;
+import '../features/focus_mode/domain/services/photo_service.dart' as _i765;
 import '../features/focus_mode/domain/usecases/get_last_played_mix_usecase.dart'
     as _i1064;
 import '../features/focus_mode/domain/usecases/get_saved_mixes_usecase.dart'
@@ -107,6 +108,7 @@ _i174.GetIt $initGetIt(
   );
   gh.lazySingleton<_i322.FocusCoordinatorService>(
       () => _i322.FocusCoordinatorService());
+  gh.lazySingleton<_i765.PhotoService>(() => _i765.PhotoService());
   gh.lazySingleton<_i843.PremiumRepository>(
       () => _i380.PremiumRepositoryImpl());
   gh.lazySingleton<_i72.ISoundMixRepository>(
