@@ -35,7 +35,7 @@ class FocusBody extends StatelessWidget {
     
     if (state.status == AppStatus.initial ||
         state.status == AppStatus.loading) {
-      return const PremiumLoader(size: 100.0);
+      return const PremiumLoader(size: 250.0);
     }
     if (state.status == AppStatus.error) {
       return Center(child: Text(l10n.initializationError));
@@ -146,33 +146,33 @@ class FocusBody extends StatelessWidget {
                             description: l10n.controlsShowcaseDesc,
                             child: TimerControls(state: state, service: service),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 28.0),
-                            child: ShaderButton(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  barrierDismissible: false,
-                                  builder: (context) => SessionCompletionDialog(
-                                    penaltyCount: state.penaltyCount,
-                                    totalPenaltyTime: state.totalPenaltyTime,
-                                    isHardcoreMode: state.isHardcoreMode,
-                                  ),
-                                );
-                              },
-                              width: 220,
-                              height: 48,
-                              child: const Text(
-                                'Probar ¿Sonríes? 📸',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                          ),
+                          // Padding(
+                          //   padding: const EdgeInsets.only(top: 28.0),
+                          //   child: ShaderButton(
+                          //     onPressed: () {
+                          //       showDialog(
+                          //         context: context,
+                          //         barrierDismissible: false,
+                          //         builder: (context) => SessionCompletionDialog(
+                          //           penaltyCount: state.penaltyCount,
+                          //           totalPenaltyTime: state.totalPenaltyTime,
+                          //           isHardcoreMode: state.isHardcoreMode,
+                          //         ),
+                          //       );
+                          //     },
+                          //     width: 220,
+                          //     height: 48,
+                          //     child: const Text(
+                          //       'Probar ¿Sonríes? 📸',
+                          //       style: TextStyle(
+                          //         color: Colors.white,
+                          //         fontSize: 15,
+                          //         fontWeight: FontWeight.bold,
+                          //         letterSpacing: 0.5,
+                          //       ),
+                          //     ),
+                          //   ),
+                          // ),
                         ],
                       ),
                     ),
