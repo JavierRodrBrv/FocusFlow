@@ -30,6 +30,12 @@
 		<true/>
 		<key>NSUserTrackingUsageDescription</key>
 		<string>Esta información se utilizará para mostrarte anuncios personalizados y relevantes, lo que ayuda a mantener la aplicación gratuita.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Necesitamos acceso a la cámara para que puedas tomar fotos al finalizar tus sesiones de estudio y sonreír.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Necesitamos acceso al micrófono (requerido por el plugin de la cámara).</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Necesitamos acceso a tu galería por si decides subir una foto existente de tu sesión.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>UIBackgroundModes</key>

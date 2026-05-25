@@ -55,9 +55,9 @@ void main() {
     vec3 darkBase = vec3(0.02, 0.04, 0.08); // Near black slate
     finalColor = mix(darkBase, finalColor, 0.35); // 35% color intensity for elegance
     
-    // Vignette to pull focus into the center ring
-    float dist = length(p);
-    float vignette = smoothstep(1.6, 0.4, dist / ratio);
+    // Premium rectangular vignette that matches the screen borders perfectly
+    float vignette = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+    vignette = clamp(pow(16.0 * vignette, 0.25), 0.0, 1.0); // Smooth falloff to all edges
     finalColor *= (0.6 + 0.4 * vignette);
     
     fragColor = vec4(finalColor, 1.0); 

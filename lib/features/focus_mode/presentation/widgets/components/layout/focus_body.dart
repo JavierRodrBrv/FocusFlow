@@ -10,8 +10,6 @@ import '../../../models/focus_state.dart';
 import '../../modals/settings_menu_bottom_sheet.dart';
 import '../timer/timer_display.dart';
 import '../timer/timer_controls.dart';
-import '../../dialogs/session_completion_dialog.dart';
-import '../shared/shader_button.dart';
 
 class FocusBody extends StatelessWidget {
   final FocusState state;
@@ -51,16 +49,31 @@ class FocusBody extends StatelessWidget {
     return Column(
       children: [
         Expanded(
-          child: Center(
-            child: SingleChildScrollView(
-              physics: isZoomMode ? const NeverScrollableScrollPhysics() : null,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 16.0,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+          child: ShaderMask(
+            shaderCallback: (Rect bounds) {
+              return const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black,
+                  Colors.black,
+                  Colors.transparent,
+                ],
+                stops: [0.0, 0.05, 0.95, 1.0], // Fades top 5% and bottom 5%
+              ).createShader(bounds);
+            },
+            blendMode: BlendMode.dstIn,
+            child: Center(
+              child: SingleChildScrollView(
+                physics: isZoomMode ? const NeverScrollableScrollPhysics() : null,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 24.0, // Aumentar un poco el vertical padding para alineación
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                   // Nuevo: Burbuja de Descansos
                   AnimatedSize(
                     duration: const Duration(milliseconds: 300),
@@ -182,6 +195,7 @@ class FocusBody extends StatelessWidget {
             ),
           ),
         ),
+      ),
         AnimatedOpacity(
           duration: const Duration(milliseconds: 400),
           opacity: showAd ? 1.0 : 0.0,

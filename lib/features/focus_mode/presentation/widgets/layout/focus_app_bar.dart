@@ -154,17 +154,40 @@ class _StreakStatsButtonState extends State<StreakStatsButton>
     try {
       final repo = GetIt.I<ISessionStatsRepository>();
       final sessions = await repo.getAllValidSessions();
-      final now = DateTime.now();
       
-      final hasCompletedToday = sessions.any((r) =>
-          r.status == 'completed' &&
-          r.startTime.day == now.day &&
-          r.startTime.month == now.month &&
-          r.startTime.year == now.year);
+      final completedDates = sessions
+          .where((r) => r.status == 'completed')
+          .map((r) => DateTime(r.startTime.year, r.startTime.month, r.startTime.day))
+          .toSet()
+          .toList();
+
+      int streak = 0;
+      if (completedDates.isNotEmpty) {
+        completedDates.sort((a, b) => b.compareTo(a));
+        
+        final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+        final yesterday = today.subtract(const Duration(days: 1));
+        
+        final latest = completedDates.first;
+        if (latest == today || latest == yesterday) {
+          streak = 1;
+          for (int i = 0; i < completedDates.length - 1; i++) {
+            final current = completedDates[i];
+            final next = completedDates[i + 1];
+            final diff = current.difference(next).inDays;
+            
+            if (diff == 1) {
+              streak++;
+            } else if (diff > 1) {
+              break;
+            }
+          }
+        }
+      }
       
       if (mounted) {
         setState(() {
-          _hasStreak = hasCompletedToday;
+          _hasStreak = F.appFlavor == Flavor.dev ? true : (streak >= 3);
         });
       }
     } catch (_) {}
