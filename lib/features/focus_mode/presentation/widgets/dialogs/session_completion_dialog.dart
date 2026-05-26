@@ -52,6 +52,47 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   String _randomDogPhrase = '';
   String? _capturedPhotoPath;
   bool _isSavingPhoto = false;
+  final TextEditingController _nameController = TextEditingController();
+  bool _hasNameError = false;
+
+  bool _validateName() {
+    final enteredName = _nameController.text.trim();
+    if (enteredName.isEmpty) {
+      setState(() {
+        _hasNameError = true;
+      });
+      return false;
+    }
+    setState(() {
+      _hasNameError = false;
+    });
+    return true;
+  }
+
+  Future<void> _saveSessionName(String name) async {
+    if (name.trim().isEmpty) return;
+    try {
+      final getHistory = GetIt.instance<GetSessionHistoryUseCase>();
+      final result = await getHistory(NoParams());
+      if (result is Success<List<FocusSession>, dynamic>) {
+        final sessions = (result as Success<List<FocusSession>, dynamic>).value;
+        if (sessions.isNotEmpty) {
+          final currentGroupId = sessions.first.groupId;
+          final saveSession = GetIt.instance<SaveSessionUseCase>();
+          
+          final sessionsToUpdate = sessions.where((s) => 
+            s.groupId == currentGroupId && (s.sessionName == null || s.sessionName!.trim().isEmpty)
+          ).toList();
+          
+          for (var session in sessionsToUpdate) {
+            await saveSession(session.copyWith(sessionName: name.trim()));
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error saving session name: $e');
+    }
+  }
 
   final List<String> _joyImages = [
     'assets/images/joy_2.jpeg',
@@ -159,6 +200,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   }
 
   void _showAd() {
+    if (!_validateName()) return;
     if (widget.isPremium || kIsWeb) {
       _dismissDialog();
       return;
@@ -193,7 +235,12 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
     }
   }
 
-  void _dismissDialog() {
+  void _dismissDialog() async {
+    if (!_validateName()) return;
+    final enteredName = _nameController.text.trim();
+    if (enteredName.isNotEmpty) {
+      await _saveSessionName(enteredName);
+    }
     FlutterBackgroundService().invoke('sendEvent', {'event': 'stopAlarm'});
     FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
     if (mounted) Navigator.of(context).pop();
@@ -228,7 +275,11 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
           final sessions =
               (result as Success<List<FocusSession>, dynamic>).value;
           if (sessions.isNotEmpty) {
-            final lastSession = sessions.first;
+            final currentGroupId = sessions.first.groupId;
+            final lastSession = sessions.firstWhere(
+              (s) => s.groupId == currentGroupId && (s.sessionName == null || s.sessionName!.trim().isEmpty),
+              orElse: () => sessions.first,
+            );
             final updatedSession = lastSession.copyWith(photoPath: photoPath);
 
             final saveSession = GetIt.instance<SaveSessionUseCase>();
@@ -397,6 +448,40 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                 textAlign: TextAlign.center,
               ),
               _buildStats(context),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _nameController,
+                style: const TextStyle(color: Colors.white, fontSize: 15),
+                onChanged: (val) {
+                  if (_hasNameError && val.trim().isNotEmpty) {
+                    setState(() {
+                      _hasNameError = false;
+                    });
+                  }
+                },
+                decoration: InputDecoration(
+                  hintText: '¿Qué nombre tiene esta sesión?',
+                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 14),
+                  errorText: _hasNameError ? 'El nombre de la sesión es obligatorio' : null,
+                  errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.04),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: _hasNameError ? Colors.redAccent : Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: _hasNameError ? Colors.redAccent : Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: _hasNameError ? Colors.redAccent : Colors.blueAccent, width: 1.5),
+                  ),
+                  prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.blueAccent),
+                ),
+              ),
               _buildPhotoSection(),
               const SizedBox(height: 24),
               const Divider(color: Colors.white10),
@@ -567,10 +652,14 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                   : Text(l10n.notMuch),
             ),
             ElevatedButton(
-              onPressed: () => setState(() {
-                _showMoneyFlow = true;
-                _isStatsExpanded = false;
-              }),
+              onPressed: () {
+                if (_validateName()) {
+                  setState(() {
+                    _showMoneyFlow = true;
+                    _isStatsExpanded = false;
+                  });
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,
                 foregroundColor: Colors.white,
@@ -585,6 +674,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _interstitialAd?.dispose();
     super.dispose();
   }

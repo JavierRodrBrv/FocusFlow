@@ -86,7 +86,9 @@ class SessionCard extends StatelessWidget {
                           Text(
                             session.isResting
                                 ? l10n.breakLabel
-                                : l10n.focusSession,
+                                : (session.sessionName != null && session.sessionName!.isNotEmpty
+                                    ? session.sessionName!
+                                    : l10n.focusSession),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,

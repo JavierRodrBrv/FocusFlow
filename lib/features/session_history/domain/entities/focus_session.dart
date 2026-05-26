@@ -12,6 +12,7 @@ class FocusSession extends Equatable {
   final bool isResting;
   final bool isCompleted;
   final bool isPomodoroMode;
+  final String? sessionName;
   final String? photoPath;
 
   const FocusSession({
@@ -26,6 +27,7 @@ class FocusSession extends Equatable {
     required this.isResting,
     required this.isCompleted,
     this.isPomodoroMode = false,
+    this.sessionName,
     this.photoPath,
   });
 
@@ -41,6 +43,7 @@ class FocusSession extends Equatable {
     bool? isResting,
     bool? isCompleted,
     bool? isPomodoroMode,
+    String? sessionName,
     String? photoPath,
   }) {
     return FocusSession(
@@ -55,6 +58,7 @@ class FocusSession extends Equatable {
       isResting: isResting ?? this.isResting,
       isCompleted: isCompleted ?? this.isCompleted,
       isPomodoroMode: isPomodoroMode ?? this.isPomodoroMode,
+      sessionName: sessionName ?? this.sessionName,
       photoPath: photoPath ?? this.photoPath,
     );
   }
@@ -72,6 +76,7 @@ class FocusSession extends Equatable {
     isResting,
     isCompleted,
     isPomodoroMode,
+    sessionName,
     photoPath,
   ];
 }

@@ -245,10 +245,13 @@ class _FocusViewState extends State<FocusView> {
                 studyMinutes: state.pomodoroDuration.inMinutes,
                 shortMinutes: state.shortBreakDuration.inMinutes,
                 longMinutes: state.longBreakDuration.inMinutes,
-                onStartNewCycle: () {
+                onStartNewCycle: (groupId) {
                   FlutterBackgroundService().invoke('sendEvent', {'event': 'resetTimer'});
                   Future.delayed(const Duration(milliseconds: 100), () {
-                    FlutterBackgroundService().invoke('sendEvent', {'event': 'startTimer'});
+                    FlutterBackgroundService().invoke('sendEvent', {
+                      'event': 'startTimer',
+                      'groupId': groupId,
+                    });
                   });
                 },
                 onFinish: () {

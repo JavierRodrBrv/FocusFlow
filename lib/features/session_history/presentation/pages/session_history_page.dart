@@ -41,27 +41,29 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
       });
     }
 
+    // 2. Agrupar por groupId (ciclo continuo)
     final Map<String, List<FocusSession>> tempGroups = {};
     for (var session in filteredSessions) {
-      if (session.groupId != null) {
-        if (!tempGroups.containsKey(session.groupId)) {
-          tempGroups[session.groupId!] = [];
+      if (session.groupId != null && session.groupId!.isNotEmpty) {
+        final key = session.groupId!;
+        if (!tempGroups.containsKey(key)) {
+          tempGroups[key] = [];
         }
-        tempGroups[session.groupId!]!.add(session);
+        tempGroups[key]!.add(session);
       }
     }
 
-    // 2. Agrupar logicamente (Pomodoro Cycles)
     final groupedItems = <dynamic>[];
-    final processedGroups = <String>{};
+    final processedGroupKeys = <String>{};
 
     for (var session in filteredSessions) {
-      if (session.groupId != null) {
-        if (!processedGroups.contains(session.groupId)) {
-          final group = tempGroups[session.groupId!]!;
-          group.sort((a, b) => b.startTime.compareTo(a.startTime)); // Más recien primero
+      final key = session.groupId;
+      if (key != null && key.isNotEmpty) {
+        if (!processedGroupKeys.contains(key)) {
+          final group = tempGroups[key]!;
+          group.sort((a, b) => b.startTime.compareTo(a.startTime)); // Más reciente primero en la lista
           groupedItems.add(group);
-          processedGroups.add(session.groupId!);
+          processedGroupKeys.add(key);
         }
       } else {
         groupedItems.add(session);
@@ -317,6 +319,15 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
 
     final groupId = group.first.groupId ?? group.first.id;
 
+    // Obtener el primer nombre no vacío del grupo si existe
+    final firstSessionWithName = group.firstWhere(
+      (s) => s.sessionName != null && s.sessionName!.isNotEmpty,
+      orElse: () => group.first,
+    );
+    final String? groupSessionName = (firstSessionWithName.sessionName != null && firstSessionWithName.sessionName!.isNotEmpty)
+        ? firstSessionWithName.sessionName
+        : null;
+
     return Dismissible(
       key: Key('group_$groupId'),
       direction: DismissDirection.endToStart,
@@ -347,6 +358,7 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
           isHardcoreMode: anyHardcore,
           isPomodoroMode: group.any((s) => s.isPomodoroMode),
           hasPhotos: group.any((s) => s.photoPath != null),
+          sessionName: groupSessionName,
           onTap: () => _showGroupDetails(context, group),
         ),
       ),

@@ -361,7 +361,8 @@ void onStart(ServiceInstance service) async {
     final name = event['event'];
 
     if (name == 'startTimer') {
-      timerBloc.add(StartTimer());
+      final customGroupId = event['groupId'] as String?;
+      timerBloc.add(StartTimer(groupId: customGroupId));
       forceNextUpdate = true;
     } else if (name == 'pauseTimer') {
       timerBloc.add(PauseTimer());

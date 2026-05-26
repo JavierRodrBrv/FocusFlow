@@ -12,7 +12,13 @@ class InitializeTimer extends TimerEvent {
   const InitializeTimer({required this.isPremium});
 }
 
-class StartTimer extends TimerEvent {}
+class StartTimer extends TimerEvent {
+  final String? groupId;
+  const StartTimer({this.groupId});
+
+  @override
+  List<Object?> get props => [groupId];
+}
 
 class PauseTimer extends TimerEvent {}
 

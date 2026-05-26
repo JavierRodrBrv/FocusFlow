@@ -45,9 +45,14 @@ class GroupDetailModal extends StatelessWidget {
     }
 
     final isPomodoro = group.any((s) => s.isPomodoroMode);
-    final hasPhoto = group.any((s) => s.photoPath != null);
-    final sessionWithPhoto = hasPhoto
-        ? group.firstWhere((s) => s.photoPath != null)
+
+    // Obtener el primer nombre no vacío del grupo si existe
+    final firstSessionWithName = group.firstWhere(
+      (s) => s.sessionName != null && s.sessionName!.isNotEmpty,
+      orElse: () => group.first,
+    );
+    final String? groupSessionName = (firstSessionWithName.sessionName != null && firstSessionWithName.sessionName!.isNotEmpty)
+        ? firstSessionWithName.sessionName
         : null;
 
     return Container(
@@ -96,7 +101,7 @@ class GroupDetailModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isPomodoro ? 'Detalles de Ciclo Pomodoro' : l10n.sessionsGroupTitle(group.length),
+                      groupSessionName ?? (isPomodoro ? 'Detalles de Ciclo Pomodoro' : l10n.sessionsGroupTitle(group.length)),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -121,121 +126,6 @@ class GroupDetailModal extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  if (hasPhoto && sessionWithPhoto != null) ...[
-                    Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => Dialog(
-                              backgroundColor: Colors.transparent,
-                              child: TweenAnimationBuilder<double>(
-                                tween: Tween<double>(begin: 0.8, end: 1.0),
-                                duration: const Duration(milliseconds: 500),
-                                curve: Curves.elasticOut,
-                                builder: (context, scale, child) {
-                                  return Transform.scale(
-                                    scale: scale,
-                                    child: Transform.rotate(
-                                      angle: -0.02,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(4),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.5),
-                                              blurRadius: 20,
-                                              offset: const Offset(0, 10),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                border: Border.all(color: Colors.grey.shade300),
-                                              ),
-                                              child: Image.file(
-                                                File(sessionWithPhoto.photoPath!),
-                                                fit: BoxFit.contain,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Text(
-                                              '¡Qué cara! 😜',
-                                              style: GoogleFonts.caveat(
-                                                fontSize: 26,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black87,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              DateFormat('d MMMM, HH:mm', locale).format(sessionWithPhoto.startTime),
-                                              style: GoogleFonts.caveat(
-                                                fontSize: 16,
-                                                color: Colors.black54,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                        child: Transform.rotate(
-                          angle: -0.015,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 24, top: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 10,
-                                  offset: Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 160,
-                                  height: 160,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey.shade300),
-                                  ),
-                                  child: Image.file(
-                                    File(sessionWithPhoto.photoPath!),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  '¡Estudiado! 🤓',
-                                  style: GoogleFonts.caveat(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                   _buildSummaryCard(
                     l10n,
                     focusCount,
@@ -258,8 +148,78 @@ class GroupDetailModal extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  ...chronologicalGroup.map((session) => _buildTimelineItem(session, l10n, isPomodoro)),
+                  const SizedBox(height: 8),
+                  ...() {
+                    int focusIndex = 0;
+                    final widgets = <Widget>[];
+
+                    // 1. Group chronologically by sessionName
+                    final subGroups = <SessionSubGroup>[];
+                    String? currentName;
+                    List<FocusSession> currentSessions = [];
+
+                    for (var session in chronologicalGroup) {
+                      if (!session.isResting) {
+                        final name = session.sessionName?.trim() ?? "";
+                        if (currentName == null || name != currentName) {
+                          if (currentSessions.isNotEmpty) {
+                            subGroups.add(SessionSubGroup(
+                              sessionName: currentName ?? "",
+                              sessions: List.from(currentSessions),
+                            ));
+                          }
+                          currentName = name;
+                          currentSessions = [session];
+                          continue;
+                        }
+                      }
+                      currentSessions.add(session);
+                    }
+                    if (currentSessions.isNotEmpty) {
+                      subGroups.add(SessionSubGroup(
+                        sessionName: currentName ?? "",
+                        sessions: currentSessions,
+                      ));
+                    }
+
+                    // 2. Render each subgroup
+                    for (var subGroup in subGroups) {
+                      // Subgroup Header
+                      widgets.add(
+                        _buildSubGroupHeader(
+                          context,
+                          subGroup.sessionName,
+                          l10n,
+                          isPomodoro,
+                        ),
+                      );
+
+                      // Photo below header if present in this subgroup
+                      final hasPhotoInSubGroup = subGroup.sessions.any((s) => s.photoPath != null);
+                      if (hasPhotoInSubGroup) {
+                        final sessionWithPhoto = subGroup.sessions.firstWhere((s) => s.photoPath != null);
+                        widgets.add(_buildSubGroupPhoto(context, sessionWithPhoto, locale));
+                      }
+
+                      // Timeline Items
+                      for (var session in subGroup.sessions) {
+                        if (!session.isResting) {
+                          focusIndex++;
+                        }
+                        widgets.add(
+                          _buildTimelineItem(
+                            context,
+                            session,
+                            l10n,
+                            isPomodoro,
+                            focusIndex,
+                          ),
+                        );
+                      }
+                    }
+
+                    return widgets;
+                  }(),
                 ],
               ),
             ),
@@ -337,40 +297,47 @@ class GroupDetailModal extends StatelessWidget {
     );
   }
 
-  Widget _buildTimelineItem(FocusSession session, AppLocalizations l10n, bool isPomodoro) {
+  Widget _buildTimelineItem(BuildContext context, FocusSession session, AppLocalizations l10n, bool isPomodoro, int focusIndex) {
     final locale = l10n.localeName;
     final timeFormat = DateFormat('HH:mm', locale);
     final isFocus = !session.isResting;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            timeFormat.format(session.startTime),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 12,
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Text(
+              timeFormat.format(session.startTime),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
             ),
           ),
           const SizedBox(width: 16),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: (isPomodoro
-                      ? (isFocus ? Colors.orangeAccent : Colors.tealAccent)
-                      : (isFocus ? Colors.blueAccent : Colors.greenAccent))
-                  .withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              isPomodoro
-                  ? (isFocus ? Icons.local_fire_department_rounded : Icons.coffee_rounded)
-                  : (isFocus ? Icons.psychology : Icons.coffee),
-              color: isPomodoro
-                  ? (isFocus ? Colors.orangeAccent : Colors.tealAccent)
-                  : (isFocus ? Colors.blueAccent : Colors.greenAccent),
-              size: 16,
+          Padding(
+            padding: const EdgeInsets.only(top: 2.0),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (isPomodoro
+                        ? (isFocus ? Colors.orangeAccent : Colors.tealAccent)
+                        : (isFocus ? Colors.blueAccent : Colors.greenAccent))
+                    .withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                isPomodoro
+                    ? (isFocus ? Icons.local_fire_department_rounded : Icons.coffee_rounded)
+                    : (isFocus ? Icons.psychology : Icons.coffee),
+                color: isPomodoro
+                    ? (isFocus ? Colors.orangeAccent : Colors.tealAccent)
+                    : (isFocus ? Colors.blueAccent : Colors.greenAccent),
+                size: 16,
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -379,12 +346,12 @@ class GroupDetailModal extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isPomodoro
-                      ? (isFocus 
-                          ? 'Sesión de Estudio (${_formatPlanned(session.plannedDuration)})' 
-                          : 'Descanso Pomodoro (${_formatPlanned(session.plannedDuration)})')
-                      : (isFocus 
-                          ? '${l10n.focusSession} (${_formatPlanned(session.plannedDuration)})' 
+                  isFocus
+                      ? (isPomodoro
+                          ? 'Sesión de Estudio $focusIndex (${_formatPlanned(session.plannedDuration)})'
+                          : 'Sesión de Enfoque $focusIndex (${_formatPlanned(session.plannedDuration)})')
+                      : (isPomodoro
+                          ? 'Descanso Pomodoro (${_formatPlanned(session.plannedDuration)})'
                           : '${l10n.breakLabel} (${_formatPlanned(session.plannedDuration)})'),
                   style: const TextStyle(
                     color: Colors.white,
@@ -398,22 +365,142 @@ class GroupDetailModal extends StatelessWidget {
                     fontSize: 12,
                   ),
                 ),
+                if (session.photoPath != null) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => _showPhotoDialog(context, session, locale),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Transform.rotate(
+                        angle: -0.015,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(2),
+                                child: Image.file(
+                                  File(session.photoPath!),
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '¡Foto! 📸',
+                                style: GoogleFonts.caveat(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           if (!session.isCompleted)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                l10n.canceledStatus,
-                style: const TextStyle(color: Colors.orangeAccent, fontSize: 10),
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  l10n.canceledStatus,
+                  style: const TextStyle(color: Colors.orangeAccent, fontSize: 10),
+                ),
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  void _showPhotoDialog(BuildContext context, FocusSession session, String locale) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0.8, end: 1.0),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.elasticOut,
+          builder: (context, scale, child) {
+            return Transform.scale(
+              scale: scale,
+              child: Transform.rotate(
+                angle: -0.02,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Image.file(
+                          File(session.photoPath!),
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '¡Qué cara! 😜',
+                        style: GoogleFonts.caveat(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('d MMMM, HH:mm', locale).format(session.startTime),
+                        style: GoogleFonts.caveat(
+                          fontSize: 16,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -469,4 +556,96 @@ class GroupDetailModal extends StatelessWidget {
     final sec = (duration.inSeconds % 60).toString().padLeft(2, '0');
     return '${duration.inMinutes}:$sec min';
   }
+
+  Widget _buildSubGroupHeader(BuildContext context, String name, AppLocalizations l10n, bool isPomodoro) {
+    final displayName = name.isNotEmpty
+        ? name
+        : (isPomodoro ? 'Ciclo sin Nombre' : 'Sesión de Enfoque');
+    
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 24,
+            decoration: BoxDecoration(
+              color: isPomodoro ? Colors.orangeAccent : Colors.blueAccent,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              displayName,
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubGroupPhoto(BuildContext context, FocusSession session, String locale) {
+    return Center(
+      child: GestureDetector(
+        onTap: () => _showPhotoDialog(context, session, locale),
+        child: Transform.rotate(
+          angle: -0.01,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 20, top: 4),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Image.file(
+                    File(session.photoPath!),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '¡Estudiado! 🤓',
+                  style: GoogleFonts.caveat(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SessionSubGroup {
+  final String sessionName;
+  final List<FocusSession> sessions;
+
+  SessionSubGroup({required this.sessionName, required this.sessions});
 }

@@ -11,6 +11,7 @@ class GroupedSessionCard extends StatelessWidget {
   final Duration totalBreakActual;
   final bool isHardcoreMode;
   final bool isPomodoroMode;
+  final String? sessionName;
   final VoidCallback onTap;
   final bool hasPhotos;
 
@@ -23,6 +24,7 @@ class GroupedSessionCard extends StatelessWidget {
     required this.totalBreakActual,
     required this.isHardcoreMode,
     required this.onTap,
+    this.sessionName,
     this.isPomodoroMode = false,
     this.completedFocusCount,
     this.hasPhotos = false,
@@ -145,7 +147,9 @@ class GroupedSessionCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isPomodoroMode ? 'Ciclo Pomodoro' : l10n.sessionCycle,
+                            sessionName != null && sessionName!.isNotEmpty
+                                ? sessionName!
+                                : (isPomodoroMode ? 'Ciclo Pomodoro' : l10n.sessionCycle),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -154,7 +158,9 @@ class GroupedSessionCard extends StatelessWidget {
                           ),
                           Text(
                             isPomodoroMode
-                                ? '${completedFocusCount ?? focusCount}/4 Pomodoros completados'
+                                ? (completedFocusCount == 1 
+                                    ? '1 Pomodoro completado' 
+                                    : '$completedFocusCount Pomodoros completados')
                                 : '${l10n.focusCount(focusCount)} • ${l10n.breakCount(breakCount)}',
                             style: TextStyle(
                               color: isPomodoroMode ? Colors.orangeAccent.withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.8),

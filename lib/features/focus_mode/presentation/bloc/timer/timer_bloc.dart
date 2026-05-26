@@ -65,6 +65,9 @@ class TimerBloc extends Bloc<TimerEvent, TimerState> {
   }
 
   void _onStartTimer(StartTimer event, Emitter<TimerState> emit) {
+    if (event.groupId != null) {
+      _currentSessionGroupId = event.groupId;
+    }
     _sessionManager.startTimer();
   }
 

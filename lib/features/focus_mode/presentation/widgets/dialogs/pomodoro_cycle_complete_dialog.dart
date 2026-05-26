@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'dart:io' show File;
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:focus_flow/core/domain/result.dart';
@@ -15,7 +17,7 @@ class PomodoroCycleCompleteDialog extends StatefulWidget {
   final int studyMinutes;
   final int shortMinutes;
   final int longMinutes;
-  final VoidCallback onStartNewCycle;
+  final Function(String? groupId) onStartNewCycle;
   final VoidCallback onFinish;
 
   const PomodoroCycleCompleteDialog({
@@ -35,6 +37,53 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
   String? _capturedPhotoPath;
   bool _isSavingPhoto = false;
 
+  late int _studyMinutes;
+  late int _shortMinutes;
+  late int _longMinutes;
+
+  late FixedExtentScrollController _studyController;
+  late FixedExtentScrollController _shortController;
+  late FixedExtentScrollController _longController;
+
+  final TextEditingController _nameController = TextEditingController();
+  bool _isTimeSettingsExpanded = false;
+  bool _hasNameError = false;
+
+  bool _validateName() {
+    final enteredName = _nameController.text.trim();
+    if (enteredName.isEmpty) {
+      setState(() {
+        _hasNameError = true;
+      });
+      return false;
+    }
+    setState(() {
+      _hasNameError = false;
+    });
+    return true;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _studyMinutes = widget.studyMinutes;
+    _shortMinutes = widget.shortMinutes;
+    _longMinutes = widget.longMinutes;
+
+    _studyController = FixedExtentScrollController(initialItem: _studyMinutes - 1);
+    _shortController = FixedExtentScrollController(initialItem: _shortMinutes - 1);
+    _longController = FixedExtentScrollController(initialItem: _longMinutes - 1);
+  }
+
+  @override
+  void dispose() {
+    _studyController.dispose();
+    _shortController.dispose();
+    _longController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _takePhoto() async {
     setState(() {
       _isSavingPhoto = true;
@@ -48,10 +97,11 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
         if (result is Success<List<FocusSession>, dynamic>) {
           final sessions = (result as Success<List<FocusSession>, dynamic>).value;
           if (sessions.isNotEmpty) {
-            // Buscamos la sesión de estudio más reciente (no la sesión de descanso) para asociarle la foto
+            // Buscamos la sesión de estudio más reciente del grupo actual que no tenga nombre
+            final currentGroupId = sessions.first.groupId;
             final lastStudySession = sessions.firstWhere(
-              (s) => !s.isResting,
-              orElse: () => sessions.first,
+              (s) => !s.isResting && s.groupId == currentGroupId && (s.sessionName == null || s.sessionName!.trim().isEmpty),
+              orElse: () => sessions.firstWhere((s) => !s.isResting, orElse: () => sessions.first),
             );
             final updatedSession = lastStudySession.copyWith(photoPath: photoPath);
             
@@ -205,6 +255,139 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
     );
   }
 
+  Future<void> _saveSessionName(String name) async {
+    if (name.trim().isEmpty) return;
+    try {
+      final getHistory = GetIt.instance<GetSessionHistoryUseCase>();
+      final result = await getHistory(NoParams());
+      if (result is Success<List<FocusSession>, dynamic>) {
+        final sessions = (result as Success<List<FocusSession>, dynamic>).value;
+        if (sessions.isNotEmpty) {
+          final currentGroupId = sessions.first.groupId;
+          final saveSession = GetIt.instance<SaveSessionUseCase>();
+          
+          // Encontrar todas las sesiones de este grupo que no tienen nombre
+          final sessionsToUpdate = sessions.where((s) => 
+            s.groupId == currentGroupId && (s.sessionName == null || s.sessionName!.trim().isEmpty)
+          ).toList();
+          
+          for (var session in sessionsToUpdate) {
+            await saveSession(session.copyWith(sessionName: name.trim()));
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error saving session name: $e');
+    }
+  }
+
+  void _handleFinish() async {
+    if (!_validateName()) return;
+
+    final enteredName = _nameController.text.trim();
+    if (enteredName.isNotEmpty) {
+      await _saveSessionName(enteredName);
+    }
+    if (mounted) {
+      Navigator.of(context).pop();
+      widget.onFinish();
+    }
+  }
+
+  void _handleStartNewCycle() async {
+    if (!_validateName()) return;
+
+    final enteredName = _nameController.text.trim();
+    
+    // 1. Guardar el nombre de la sesión si se ingresó
+    if (enteredName.isNotEmpty) {
+      await _saveSessionName(enteredName);
+    }
+
+    // 2. Determinar si los tiempos cambiaron
+    final timesChanged = _studyMinutes != widget.studyMinutes ||
+        _shortMinutes != widget.shortMinutes ||
+        _longMinutes != widget.longMinutes;
+
+    String? groupIdToPass;
+
+    if (timesChanged) {
+      // Si cambiaron, actualizamos la configuración
+      FlutterBackgroundService().invoke('sendEvent', {
+        'event': 'setPomodoroConfig',
+        'studyMinutes': _studyMinutes,
+        'shortBreakMinutes': _shortMinutes,
+        'longBreakMinutes': _longMinutes,
+      });
+      // Al cambiar tiempos, groupIdToPass = null (se generará uno nuevo)
+    } else {
+      // Si se mantuvieron, obtenemos el groupId de la última sesión
+      try {
+        final getHistory = GetIt.instance<GetSessionHistoryUseCase>();
+        final result = await getHistory(NoParams());
+        if (result is Success<List<FocusSession>, dynamic>) {
+          final sessions = (result as Success<List<FocusSession>, dynamic>).value;
+          if (sessions.isNotEmpty) {
+            groupIdToPass = sessions.first.groupId;
+          }
+        }
+      } catch (e) {
+        debugPrint('Error fetching last groupId: $e');
+      }
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop();
+      widget.onStartNewCycle(groupIdToPass);
+    }
+  }
+
+  Widget _buildPickerColumn({
+    required String title,
+    required FixedExtentScrollController controller,
+    required int maxCount,
+    required ValueChanged<int> onChanged,
+  }) {
+    return Column(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 100,
+          child: CupertinoPicker(
+            scrollController: controller,
+            itemExtent: 32,
+            onSelectedItemChanged: (int index) {
+              onChanged(index + 1);
+            },
+            children: List.generate(
+              maxCount,
+              (index) => Center(
+                child: Text(
+                  '${index + 1} min',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -252,54 +435,61 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
-      
-            // Detalle del ciclo
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  width: 1,
+            const SizedBox(height: 20),
+
+            // 1. TextField para nombre opcional (Diseño Premium)
+            TextField(
+              controller: _nameController,
+              onChanged: (_) {
+                if (_hasNameError) {
+                  setState(() {
+                    _hasNameError = false;
+                  });
+                }
+              },
+              style: const TextStyle(color: Colors.white, fontSize: 15),
+              decoration: InputDecoration(
+                hintText: '¿Qué nombre tiene esta sesión?',
+                hintStyle: TextStyle(
+                  color: _hasNameError ? Colors.redAccent.withValues(alpha: 0.5) : Colors.white30, 
+                  fontSize: 14,
+                ),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.04),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _hasNameError ? Colors.redAccent : Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _hasNameError ? Colors.redAccent : Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _hasNameError ? Colors.redAccent : Colors.orangeAccent, 
+                    width: 1.5,
+                  ),
+                ),
+                prefixIcon: Icon(
+                  Icons.edit_note_rounded, 
+                  color: _hasNameError ? Colors.redAccent : Colors.orangeAccent,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Configuración utilizada:',
-                    style: TextStyle(
-                      color: Colors.orangeAccent.withValues(alpha: 0.9),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '• Estudio: ${widget.studyMinutes} min',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                  Text(
-                    '• Descanso Corto: ${widget.shortMinutes} min',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                  Text(
-                    '• Descanso Largo: ${widget.longMinutes} min',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
-              ),
             ),
+            const SizedBox(height: 12),
             
-            // Sección Momento Foto
+            // 2. Sección Momento Foto
             _buildPhotoSection(),
             
             const SizedBox(height: 24),
       
-            // Pregunta final
+            // 3. Pregunta final
             const Text(
               '¿Quieres comenzar un nuevo ciclo Pomodoro?',
               style: TextStyle(
@@ -309,6 +499,123 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 16),
+
+            // 4. Panel Colapsable Premium para Modificar Tiempos
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isTimeSettingsExpanded = !_isTimeSettingsExpanded;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.02),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          color: Colors.orangeAccent.withValues(alpha: 0.9),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            '¿Ajustar tiempos del próximo ciclo?',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        AnimatedRotation(
+                          turns: _isTimeSettingsExpanded ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ],
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: _isTimeSettingsExpanded
+                          ? Column(
+                              children: [
+                                const SizedBox(height: 12),
+                                const Divider(color: Colors.white10),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildPickerColumn(
+                                        title: 'Estudio',
+                                        controller: _studyController,
+                                        maxCount: 120,
+                                        onChanged: (val) {
+                                          setState(() {
+                                            _studyMinutes = val;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 80,
+                                      color: Colors.white12,
+                                    ),
+                                    Expanded(
+                                      child: _buildPickerColumn(
+                                        title: 'D. Corto',
+                                        controller: _shortController,
+                                        maxCount: 30,
+                                        onChanged: (val) {
+                                          setState(() {
+                                            _shortMinutes = val;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 80,
+                                      color: Colors.white12,
+                                    ),
+                                    Expanded(
+                                      child: _buildPickerColumn(
+                                        title: 'D. Largo',
+                                        controller: _longController,
+                                        maxCount: 60,
+                                        onChanged: (val) {
+                                          setState(() {
+                                            _longMinutes = val;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -317,10 +624,7 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
       actions: [
         // Botón Listo por hoy
         TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            widget.onFinish();
-          },
+          onPressed: _handleFinish,
           child: const Text(
             'Listo por hoy',
             style: TextStyle(
@@ -333,10 +637,7 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
         
         // Botón Comenzar Nuevo Ciclo
         ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            widget.onStartNewCycle();
-          },
+          onPressed: _handleStartNewCycle,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.orangeAccent,
             foregroundColor: Colors.black,
