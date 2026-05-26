@@ -46,10 +46,10 @@ class GroupDetailModal extends StatelessWidget {
 
     final isPomodoro = group.any((s) => s.isPomodoroMode);
 
-    // Obtener el primer nombre no vacío del grupo si existe
-    final firstSessionWithName = group.firstWhere(
+    // Obtener el primer nombre no vacío del grupo si existe (cronológicamente el primero)
+    final firstSessionWithName = chronologicalGroup.firstWhere(
       (s) => s.sessionName != null && s.sessionName!.isNotEmpty,
-      orElse: () => group.first,
+      orElse: () => chronologicalGroup.first,
     );
     final String? groupSessionName = (firstSessionWithName.sessionName != null && firstSessionWithName.sessionName!.isNotEmpty)
         ? firstSessionWithName.sessionName
@@ -364,58 +364,7 @@ class GroupDetailModal extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 12,
                   ),
-                ),
-                if (session.photoPath != null) ...[
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => _showPhotoDialog(context, session, locale),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Transform.rotate(
-                        angle: -0.015,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(4),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 4,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(2),
-                                child: Image.file(
-                                  File(session.photoPath!),
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '¡Foto! 📸',
-                                style: GoogleFonts.caveat(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+            )],
             ),
           ),
           if (!session.isCompleted)

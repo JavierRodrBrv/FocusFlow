@@ -319,10 +319,10 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
 
     final groupId = group.first.groupId ?? group.first.id;
 
-    // Obtener el primer nombre no vacío del grupo si existe
-    final firstSessionWithName = group.firstWhere(
+    // Obtener el primer nombre no vacío del grupo si existe (cronológicamente el más antiguo)
+    final firstSessionWithName = group.lastWhere(
       (s) => s.sessionName != null && s.sessionName!.isNotEmpty,
-      orElse: () => group.first,
+      orElse: () => group.last,
     );
     final String? groupSessionName = (firstSessionWithName.sessionName != null && firstSessionWithName.sessionName!.isNotEmpty)
         ? firstSessionWithName.sessionName
