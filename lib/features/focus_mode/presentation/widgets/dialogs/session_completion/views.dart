@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MoneyFlowView extends StatelessWidget {
   final String imageAsset;
@@ -85,11 +86,13 @@ class MoneyFlowView extends StatelessWidget {
 class DonationPromptView extends StatelessWidget {
   final String dogPhrase;
   final VoidCallback onFinish;
+  final String donationUrl;
 
   const DonationPromptView({
     super.key,
     required this.dogPhrase,
     required this.onFinish,
+    this.donationUrl = 'https://buymeacoffee.com/andaluzcode',
   });
 
   @override
@@ -137,7 +140,19 @@ class DonationPromptView extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         ElevatedButton(
-          onPressed: onFinish,
+          onPressed: () async {
+            final uri = Uri.parse(donationUrl);
+            try {
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } else {
+                debugPrint('Could not launch $donationUrl');
+              }
+            } catch (e) {
+              debugPrint('Error launching url: $e');
+            }
+            onFinish();
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.pink,
             foregroundColor: Colors.white,

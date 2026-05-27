@@ -111,9 +111,9 @@ class GroupedSessionCard extends StatelessWidget {
                                 color: Colors.red.withValues(alpha: 0.5),
                               ),
                             ),
-                            child: Text(
-                              l10n.focusMode.toUpperCase(),
-                              style: const TextStyle(
+                            child: const Text(
+                              'FOCUS',
+                              style: TextStyle(
                                 color: Colors.redAccent,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,

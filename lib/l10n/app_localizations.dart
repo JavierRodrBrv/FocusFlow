@@ -671,13 +671,13 @@ abstract class AppLocalizations {
   /// No description provided for @donationFuture.
   ///
   /// In en, this message translates to:
-  /// **'In the future, you will be able to donate and leave your review here. Thanks for valuing our work!'**
+  /// **'If you value our work and want to support the development of FocusFlow, you can buy us a coffee!'**
   String get donationFuture;
 
   /// No description provided for @comingSoon.
   ///
   /// In en, this message translates to:
-  /// **'Coming soon...'**
+  /// **'Buy a coffee ☕'**
   String get comingSoon;
 
   /// No description provided for @breaksDesc.

@@ -600,6 +600,8 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   }
 
   Widget _buildInitialActions() {
+    final l10n = AppLocalizations.of(context)!;
+
     if (!widget.isHardcoreMode || widget.totalPenaltyTime.inSeconds == 0) {
       return ElevatedButton(
         onPressed: _dismissDialog,
@@ -612,13 +614,41 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
           ),
         ),
         child: Text(
-          AppLocalizations.of(context)!.finishSession,
+          l10n.finishSession,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       );
     }
 
-    final l10n = AppLocalizations.of(context)!;
+    final double moneyLost = widget.totalPenaltyTime.calculateMoneyLost();
+
+    if (moneyLost < 1.0) {
+      return ElevatedButton(
+        onPressed: _isWaitingForAd ? null : _showAd,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blueAccent,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: _isWaitingForAd
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                l10n.finishSession,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+      );
+    }
+
     return Column(
       children: [
         Text(

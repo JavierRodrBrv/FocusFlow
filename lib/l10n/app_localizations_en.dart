@@ -324,10 +324,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get donationFuture =>
-      'In the future, you will be able to donate and leave your review here. Thanks for valuing our work!';
+      'If you value our work and want to support the development of FocusFlow, you can buy us a coffee!';
 
   @override
-  String get comingSoon => 'Coming soon...';
+  String get comingSoon => 'Buy a coffee ☕';
 
   @override
   String get breaksDesc =>

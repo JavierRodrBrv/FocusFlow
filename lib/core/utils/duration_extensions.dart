@@ -4,7 +4,7 @@ extension DurationExtensions on Duration {
     return '${inMinutes}m ${inSeconds % 60}s';
   }
 
-  double calculateMoneyLost({double ratePerSecond = 0.20}) {
+  double calculateMoneyLost({double ratePerSecond = 0.05}) {
     return inSeconds * ratePerSecond;
   }
 }
