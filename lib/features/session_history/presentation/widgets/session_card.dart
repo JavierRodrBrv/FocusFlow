@@ -5,9 +5,10 @@ import 'package:focus_flow/l10n/app_localizations.dart';
 
 class SessionCard extends StatelessWidget {
   final FocusSession session;
+  final String? pomodoroConfig;
   final VoidCallback onTap;
 
-  const SessionCard({super.key, required this.session, required this.onTap});
+  const SessionCard({super.key, required this.session, this.pomodoroConfig, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -44,28 +45,56 @@ class SessionCard extends StatelessWidget {
                         fontSize: 12,
                       ),
                     ),
-                    if (session.isHardcoreMode)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.red.withValues(alpha: 0.5),
+                    Row(
+                      children: [
+                        if (session.isPomodoroMode) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orangeAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.orangeAccent.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Text(
+                              pomodoroConfig != null ? 'POMODORO • $pomodoroConfig' : 'POMODORO',
+                              style: const TextStyle(
+                                color: Colors.orangeAccent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          'FOCUS',
-                          style: TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                          if (session.isHardcoreMode) const SizedBox(width: 6),
+                        ],
+                        if (session.isHardcoreMode)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.red.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: const Text(
+                              'FOCUS',
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),

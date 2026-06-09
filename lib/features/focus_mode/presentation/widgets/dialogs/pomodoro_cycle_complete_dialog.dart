@@ -12,6 +12,7 @@ import 'package:focus_flow/features/session_history/domain/usecases/save_session
 import 'package:focus_flow/features/session_history/domain/usecases/get_session_history_usecase.dart';
 import 'package:focus_flow/core/presentation/widgets/premium_loader.dart';
 import '../components/shared/shader_button.dart';
+import 'alternating_button_text.dart';
 
 class PomodoroCycleCompleteDialog extends StatefulWidget {
   final int studyMinutes;
@@ -155,20 +156,18 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
                     animationPath: 'assets/json/camara_animacion.json',
                   ),
                 )
-              : ShaderButton(
-                  key: const ValueKey('take_photo_button'),
-                  onPressed: _takePhoto,
-                  width: 220,
-                  height: 48,
-                  child: const Text(
-                    '¿Sonríes?',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+              : Column(
+                  key: const ValueKey('take_photo_column'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ShaderButton(
+                      key: const ValueKey('take_photo_button'),
+                      onPressed: _takePhoto,
+                      width: 220,
+                      height: 48,
+                      child: const AlternatingButtonText(),
                     ),
-                  ),
+                  ],
                 ),
         ),
       );

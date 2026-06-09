@@ -9,6 +9,7 @@ import 'package:focus_flow/features/session_history/presentation/widgets/session
 import 'package:focus_flow/features/session_history/presentation/widgets/session_detail_modal.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/core/presentation/widgets/premium_loader.dart';
+import 'package:focus_flow/features/focus_mode/domain/services/focus_session_manager.dart';
 
 import 'package:intl/intl.dart';
 
@@ -267,6 +268,8 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
   }
 
   Widget _buildSingleSession(BuildContext context, FocusSession session) {
+    final pomodoroConfig = _calculatePomodoroConfig(session);
+
     return Dismissible(
       key: Key(session.id),
       direction: DismissDirection.endToStart,
@@ -287,6 +290,7 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
         padding: const EdgeInsets.symmetric(vertical: 6.0),
         child: SessionCard(
           session: session,
+          pomodoroConfig: pomodoroConfig,
           onTap: () => _showSessionDetails(context, session),
         ),
       ),
@@ -328,6 +332,8 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
         ? firstSessionWithName.sessionName
         : null;
 
+    final pomodoroConfig = _calculatePomodoroConfig(group);
+
     return Dismissible(
       key: Key('group_$groupId'),
       direction: DismissDirection.endToStart,
@@ -357,6 +363,7 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
           totalBreakActual: totalBreakActual,
           isHardcoreMode: anyHardcore,
           isPomodoroMode: group.any((s) => s.isPomodoroMode),
+          pomodoroConfig: pomodoroConfig,
           hasPhotos: group.any((s) => s.photoPath != null),
           sessionName: groupSessionName,
           onTap: () => _showGroupDetails(context, group),
@@ -381,5 +388,47 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => GroupDetailModal(group: group),
     );
+  }
+
+  String? _calculatePomodoroConfig(dynamic item) {
+    if (item is FocusSession) {
+      if (!item.isPomodoroMode) return null;
+      int focusTime = item.isResting ? 0 : item.plannedDuration.inMinutes;
+      final focusSessionManager = getIt<FocusSessionManager>();
+      int shortBreak = item.isResting ? item.plannedDuration.inMinutes : focusSessionManager.currentState.shortBreakDuration.inMinutes;
+      int longBreak = item.isResting ? item.plannedDuration.inMinutes : focusSessionManager.currentState.longBreakDuration.inMinutes;
+      return "$focusTime/$shortBreak/$longBreak";
+    } else if (item is List<FocusSession>) {
+      if (!item.any((s) => s.isPomodoroMode)) return null;
+
+      int focusTime = 0;
+      int shortBreak = 0;
+      int longBreak = 0;
+
+      for (var s in item) {
+        if (!s.isResting && focusTime == 0) {
+          focusTime = s.plannedDuration.inMinutes;
+        } else if (s.isResting) {
+          int breakMins = s.plannedDuration.inMinutes;
+          if (shortBreak == 0) {
+            shortBreak = breakMins;
+            longBreak = breakMins;
+          } else {
+            if (breakMins < shortBreak) shortBreak = breakMins;
+            if (breakMins > longBreak) longBreak = breakMins;
+          }
+        }
+      }
+
+      // Fallback a la configuración actual si no hubo descansos registrados en el grupo
+      if (shortBreak == 0 || longBreak == 0) {
+        final focusSessionManager = getIt<FocusSessionManager>();
+        if (shortBreak == 0) shortBreak = focusSessionManager.currentState.shortBreakDuration.inMinutes;
+        if (longBreak == 0) longBreak = focusSessionManager.currentState.longBreakDuration.inMinutes;
+      }
+
+      return "$focusTime/$shortBreak/$longBreak";
+    }
+    return null;
   }
 }
