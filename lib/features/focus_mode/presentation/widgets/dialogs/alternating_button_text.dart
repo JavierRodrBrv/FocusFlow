@@ -20,19 +20,13 @@ class _AlternatingButtonTextState extends State<AlternatingButtonText> {
   }
 
   void _scheduleNextToggle() {
-    int nextDurationSeconds = 4;
+    int nextDurationSeconds;
     
-    if (!_showHint) {
-      // Currently showing "¿Sonríes?"
-      if (_isFirstCycle) {
-        nextDurationSeconds = 4;
-        _isFirstCycle = false;
-      } else {
-        nextDurationSeconds = 10;
-      }
-    } else {
-      // Currently showing the hint text
+    if (_isFirstCycle) {
       nextDurationSeconds = 4;
+      _isFirstCycle = false;
+    } else {
+      nextDurationSeconds = 10;
     }
 
     _timer = Timer(Duration(seconds: nextDurationSeconds), () {
@@ -68,12 +62,12 @@ class _AlternatingButtonTextState extends State<AlternatingButtonText> {
       },
       child: _showHint
           ? const Text(
-              'Recuerda lo jodido\nque has acabado',
+              'Recuerda lo jodido\nque has acabado esta sesión',
               key: ValueKey('hint'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: 11,
                 fontStyle: FontStyle.italic,
                 fontWeight: FontWeight.w600,
                 height: 1.1,

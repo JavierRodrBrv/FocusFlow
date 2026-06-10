@@ -112,8 +112,9 @@ class ProcessSessionUseCase implements IProcessSessionUseCase {
     // 2. Validación de Reglas de Guardado (Regla de Oro: >10s o completado)
     if (blockFinished && params.startTime != null) {
       final meetsMinimumTime =
-          wasCompleted &&
-          (actualD.inSeconds > 10 ||
+          !manualReset &&
+          (wasCompleted ||
+              actualD.inSeconds > 10 ||
               wasResting ||
               params.hasSavedAtLeastOneInGroup ||
               (s.isPomodoroMode && phaseToggled));
