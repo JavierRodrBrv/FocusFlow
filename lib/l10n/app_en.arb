@@ -16,6 +16,8 @@
   "language": "Language",
   "spanish": "Spanish",
   "english": "English",
+  "spanishFlag": "🇪🇸",
+  "englishFlag": "🇺🇸",
   "initializationError": "Fatal initialization error",
   "minBreak": "{minutes} min break",
   "@minBreak": {

@@ -176,6 +176,18 @@ abstract class AppLocalizations {
   /// **'English'**
   String get english;
 
+  /// No description provided for @spanishFlag.
+  ///
+  /// In en, this message translates to:
+  /// **'🇪🇸'**
+  String get spanishFlag;
+
+  /// No description provided for @englishFlag.
+  ///
+  /// In en, this message translates to:
+  /// **'🇺🇸'**
+  String get englishFlag;
+
   /// No description provided for @initializationError.
   ///
   /// In en, this message translates to:

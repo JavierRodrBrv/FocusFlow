@@ -48,6 +48,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get english => 'Inglés';
 
   @override
+  String get spanishFlag => '🇪🇸';
+
+  @override
+  String get englishFlag => '🇺🇸';
+
+  @override
   String get initializationError => 'Error fatal de inicialización';
 
   @override

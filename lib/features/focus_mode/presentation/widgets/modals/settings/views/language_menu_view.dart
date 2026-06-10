@@ -25,10 +25,7 @@ class LanguageMenuView extends StatelessWidget {
         Row(
           children: [
             IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white70,
-              ),
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white70),
               onPressed: onBack,
             ),
             Expanded(
@@ -60,11 +57,13 @@ class LanguageMenuView extends StatelessWidget {
         const SizedBox(height: 30),
         LanguageTile(
           title: l10n.spanish,
+          flag: l10n.spanishFlag,
           isSelected: state.languageCode == 'es' || state.languageCode == null,
           onTap: () => onSelectLanguage('es'),
         ),
         LanguageTile(
           title: l10n.english,
+          flag: l10n.englishFlag,
           isSelected: state.languageCode == 'en',
           onTap: () => onSelectLanguage('en'),
         ),
