@@ -4,7 +4,6 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/shared/bouncing_button.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/dialogs/reset_confirmation_dialog.dart';
-import 'package:focus_flow/features/focus_mode/presentation/widgets/dialogs/session_completion_dialog.dart';
 
 import '../../../models/focus_state.dart';
 
@@ -80,61 +79,7 @@ class _TimerControlsState extends State<TimerControls>
     super.dispose();
   }
 
-  void _showBreakSelectionDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey.shade900,
-        title: Text(
-          AppLocalizations.of(context)!.addBreakTitle,
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          AppLocalizations.of(context)!.addBreakMessage,
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              widget.service.invoke('sendEvent', {
-                'event': 'setBreakDuration',
-                'durationMinutes': null,
-              });
-              widget.service.invoke('sendEvent', {'event': 'startTimer'});
-              Navigator.pop(context);
-            },
-            child: Text(
-              AppLocalizations.of(context)!.noThanks,
-              style: const TextStyle(color: Colors.white54),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              widget.service.invoke('sendEvent', {
-                'event': 'setBreakDuration',
-                'durationMinutes': 5,
-              });
-              widget.service.invoke('sendEvent', {'event': 'startTimer'});
-              Navigator.pop(context);
-            },
-            child: Text(AppLocalizations.of(context)!.minOnly(5), style: const TextStyle(color: Colors.blue)),
-          ),
-          TextButton(
-            onPressed: () {
-              widget.service.invoke('sendEvent', {
-                'event': 'setBreakDuration',
-                'durationMinutes': 10,
-              });
-              widget.service.invoke('sendEvent', {'event': 'startTimer'});
-              Navigator.pop(context);
-            },
-            child: Text(AppLocalizations.of(context)!.minOnly(10), style: const TextStyle(color: Colors.blue)),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   void _confirmReset(BuildContext context, VoidCallback onConfirm) {
     if (widget.state.hasBreak ||
@@ -146,17 +91,6 @@ class _TimerControlsState extends State<TimerControls>
         builder: (context) => ResetConfirmationDialog(
           hasBreak: widget.state.hasBreak,
           onConfirm: () {
-            if (widget.state.penaltyCount > 0) {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => SessionCompletionDialog(
-                  penaltyCount: widget.state.penaltyCount,
-                  totalPenaltyTime: widget.state.totalPenaltyTime,
-                  isHardcoreMode: widget.state.isHardcoreMode,
-                ),
-              );
-            }
             onConfirm();
           },
         ),
