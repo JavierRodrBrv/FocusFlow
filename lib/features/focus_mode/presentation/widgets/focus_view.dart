@@ -9,7 +9,7 @@ import 'package:showcaseview/showcaseview.dart';
 
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/domain/services/focus_coordinator_service.dart';
-import 'package:focus_flow/app/background_service.dart';
+import 'package:focus_flow/app/background_isolate_runner.dart';
 
 import '../models/focus_state.dart';
 import 'dialogs/session_completion_dialog.dart';

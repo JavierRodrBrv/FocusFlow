@@ -4,10 +4,10 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/core/domain/result.dart';
-import 'package:focus_flow/core/usecases/usecase.dart';
-import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
+import 'package:focus_flow/core/error/failures.dart';
+import 'package:focus_flow/features/session_history/domain/entities/history_list_item.dart';
 import 'package:focus_flow/features/session_history/domain/usecases/delete_session_usecase.dart';
-import 'package:focus_flow/features/session_history/domain/usecases/get_session_history_usecase.dart';
+import 'package:focus_flow/features/session_history/domain/usecases/get_grouped_history_usecase.dart';
 import 'package:injectable/injectable.dart';
 
 // --- Events ---
@@ -18,6 +18,13 @@ abstract class SessionHistoryEvent extends Equatable {
 }
 
 class LoadSessionHistory extends SessionHistoryEvent {}
+
+class SetFilterDate extends SessionHistoryEvent {
+  final DateTime? date;
+  const SetFilterDate(this.date);
+  @override
+  List<Object?> get props => [date];
+}
 
 class DeleteSession extends SessionHistoryEvent {
   final String sessionId;
@@ -31,49 +38,53 @@ enum SessionHistoryStatus { initial, loading, loaded, error }
 
 class SessionHistoryState extends Equatable {
   final SessionHistoryStatus status;
-  final List<FocusSession> sessions;
+  final List<HistoryListItem> items;
   final String? errorMessage;
+  final DateTime? filterDate;
 
   const SessionHistoryState({
     this.status = SessionHistoryStatus.initial,
-    this.sessions = const [],
+    this.items = const [],
     this.errorMessage,
+    this.filterDate,
   });
 
   SessionHistoryState copyWith({
     SessionHistoryStatus? status,
-    List<FocusSession>? sessions,
+    List<HistoryListItem>? items,
     String? errorMessage,
+    DateTime? filterDate,
+    bool clearFilter = false,
   }) {
     return SessionHistoryState(
       status: status ?? this.status,
-      sessions: sessions ?? this.sessions,
+      items: items ?? this.items,
       errorMessage: errorMessage ?? this.errorMessage,
+      filterDate: clearFilter ? null : (filterDate ?? this.filterDate),
     );
   }
 
   @override
-  List<Object?> get props => [status, sessions, errorMessage];
+  List<Object?> get props => [status, items, errorMessage, filterDate];
 }
 
 // --- Bloc ---
 @injectable
-class SessionHistoryBloc
-    extends Bloc<SessionHistoryEvent, SessionHistoryState> {
-  final GetSessionHistoryUseCase _getHistoryUseCase;
+class SessionHistoryBloc extends Bloc<SessionHistoryEvent, SessionHistoryState> {
+  final GetGroupedHistoryUseCase _getGroupedHistoryUseCase;
   final DeleteSessionUseCase _deleteSessionUseCase;
   StreamSubscription? _backgroundSubscription;
 
-  SessionHistoryBloc(this._getHistoryUseCase, this._deleteSessionUseCase)
+  SessionHistoryBloc(this._getGroupedHistoryUseCase, this._deleteSessionUseCase)
     : super(const SessionHistoryState()) {
     on<LoadSessionHistory>(_onLoadHistory);
+    on<SetFilterDate>(_onSetFilterDate);
     on<DeleteSession>(_onDeleteSession);
 
-    // Escuchar eventos del servicio de fondo para refrescar historial
     _backgroundSubscription = FlutterBackgroundService()
         .on('refresh_history')
         .listen((_) {
-          add(LoadSessionHistory());
+          if (!isClosed) add(LoadSessionHistory());
         });
   }
 
@@ -88,32 +99,41 @@ class SessionHistoryBloc
     Emitter<SessionHistoryState> emit,
   ) async {
     emit(state.copyWith(status: SessionHistoryStatus.loading));
-    final result = await _getHistoryUseCase(NoParams());
+    final result = await _getGroupedHistoryUseCase(state.filterDate);
 
-    if (result is Success<List<FocusSession>, dynamic>) {
+    if (result is Success<List<HistoryListItem>, Failure>) {
       emit(
         state.copyWith(
           status: SessionHistoryStatus.loaded,
-          sessions: (result as Success<List<FocusSession>, dynamic>).value,
+          items: result.value,
         ),
       );
     } else {
       emit(
         state.copyWith(
           status: SessionHistoryStatus.error,
-          errorMessage: 'Error al cargar el historial',
+          errorMessage: 'Error loading session history',
         ),
       );
     }
+  }
+
+  Future<void> _onSetFilterDate(
+    SetFilterDate event,
+    Emitter<SessionHistoryState> emit,
+  ) async {
+    emit(state.copyWith(
+      filterDate: event.date,
+      clearFilter: event.date == null,
+    ));
+    add(LoadSessionHistory());
   }
 
   Future<void> _onDeleteSession(
     DeleteSession event,
     Emitter<SessionHistoryState> emit,
   ) async {
-    final result = await _deleteSessionUseCase(event.sessionId);
-    if (result is Success<void, dynamic>) {
-      add(LoadSessionHistory());
-    }
+    await _deleteSessionUseCase(event.sessionId);
+    add(LoadSessionHistory());
   }
 }

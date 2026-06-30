@@ -2,268 +2,137 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
+import 'package:focus_flow/features/session_history/domain/entities/history_list_item.dart';
 import 'package:focus_flow/features/session_history/presentation/bloc/session_history_bloc.dart';
 import 'package:focus_flow/features/session_history/presentation/widgets/group_detail_modal.dart';
 import 'package:focus_flow/features/session_history/presentation/widgets/grouped_session_card.dart';
 import 'package:focus_flow/features/session_history/presentation/widgets/session_card.dart';
 import 'package:focus_flow/features/session_history/presentation/widgets/session_detail_modal.dart';
+import 'package:focus_flow/features/session_history/presentation/widgets/history_filter_bar.dart';
+import 'package:focus_flow/features/session_history/presentation/widgets/history_date_header.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/core/presentation/widgets/premium_loader.dart';
 import 'package:focus_flow/features/focus_mode/domain/services/focus_session_manager.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
 
-import 'package:intl/intl.dart';
-
-class SessionHistoryPage extends StatefulWidget {
+class SessionHistoryPage extends StatelessWidget {
   final DateTime? filterDate;
 
   const SessionHistoryPage({super.key, this.filterDate});
 
   @override
-  State<SessionHistoryPage> createState() => _SessionHistoryPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) {
+        final bloc = getIt<SessionHistoryBloc>();
+        if (filterDate != null) {
+          bloc.add(SetFilterDate(filterDate));
+        } else {
+          bloc.add(LoadSessionHistory());
+        }
+        return bloc;
+      },
+      child: const _SessionHistoryView(),
+    );
+  }
 }
 
-class _SessionHistoryPageState extends State<SessionHistoryPage> {
-  DateTime? _currentFilterDate;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentFilterDate = widget.filterDate;
-  }
-
-  List<dynamic> _groupSessions(List<FocusSession> sessions) {
-    // 1. Filtrar si hay _currentFilterDate
-    Iterable<FocusSession> filteredSessions = sessions;
-    if (_currentFilterDate != null) {
-      filteredSessions = sessions.where((s) {
-        return s.startTime.year == _currentFilterDate!.year &&
-            s.startTime.month == _currentFilterDate!.month &&
-            s.startTime.day == _currentFilterDate!.day;
-      });
-    }
-
-    // 2. Agrupar por groupId (ciclo continuo)
-    final Map<String, List<FocusSession>> tempGroups = {};
-    for (var session in filteredSessions) {
-      if (session.groupId != null && session.groupId!.isNotEmpty) {
-        final key = session.groupId!;
-        if (!tempGroups.containsKey(key)) {
-          tempGroups[key] = [];
-        }
-        tempGroups[key]!.add(session);
-      }
-    }
-
-    final groupedItems = <dynamic>[];
-    final processedGroupKeys = <String>{};
-
-    for (var session in filteredSessions) {
-      final key = session.groupId;
-      if (key != null && key.isNotEmpty) {
-        if (!processedGroupKeys.contains(key)) {
-          final group = tempGroups[key]!;
-          group.sort((a, b) => b.startTime.compareTo(a.startTime)); // Más reciente primero en la lista
-          groupedItems.add(group);
-          processedGroupKeys.add(key);
-        }
-      } else {
-        groupedItems.add(session);
-      }
-    }
-
-    // 3. Añadir Cabeceras de Fecha
-    final itemsWithHeaders = <dynamic>[];
-    String? lastDateStr;
-
-    for (var item in groupedItems) {
-      DateTime itemDate;
-      if (item is FocusSession) {
-        itemDate = item.startTime;
-      } else if (item is List<FocusSession>) {
-        itemDate = item.first.startTime; 
-      } else {
-        continue;
-      }
-
-      final dateStr = "${itemDate.year}-${itemDate.month.toString().padLeft(2, '0')}-${itemDate.day.toString().padLeft(2, '0')}";
-      
-      if (dateStr != lastDateStr) {
-        itemsWithHeaders.add(DateTime(itemDate.year, itemDate.month, itemDate.day)); // Usaremos DateTime puro como Header
-        lastDateStr = dateStr;
-      }
-      itemsWithHeaders.add(item);
-    }
-
-    return itemsWithHeaders;
-  }
+class _SessionHistoryView extends StatelessWidget {
+  const _SessionHistoryView();
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) =>
-          getIt<SessionHistoryBloc>()..add(LoadSessionHistory()),
-      child: Scaffold(
-        backgroundColor: const Color(0xFF0F172A),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text(
-            AppLocalizations.of(context)!.historyTitle,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
-            onPressed: () => Navigator.pop(context),
-          ),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          AppLocalizations.of(context)!.historyTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        body: Column(
-          children: [
-            // Filtro Superior (Chip Premium)
-            if (_currentFilterDate != null)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.calendar_today_rounded, color: Colors.blueAccent, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLocalizations.of(context)!.showingResultsFor(DateFormat('dd MMM').format(_currentFilterDate!)),
-                          style: const TextStyle(
-                            color: Colors.blueAccent,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _currentFilterDate = null;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.blueAccent.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.close_rounded, color: Colors.blueAccent, size: 16),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // Lista Principal
-            Expanded(
-              child: BlocBuilder<SessionHistoryBloc, SessionHistoryState>(
-                builder: (context, state) {
-                  if (state.status == SessionHistoryStatus.loading) {
-                    return const Center(child: PremiumLoader(size: 140.0));
-                  }
-
-                  if (state.status == SessionHistoryStatus.error) {
-                    return Center(
-                      child: Text(
-                        state.errorMessage ?? AppLocalizations.of(context)!.unknownError,
-                        style: const TextStyle(color: Colors.redAccent),
-                      ),
-                    );
-                  }
-
-                  final listItems = _groupSessions(state.sessions);
-
-                  if (listItems.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.history_rounded,
-                            size: 64,
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _currentFilterDate != null 
-                              ? AppLocalizations.of(context)!.noSessionsForDate 
-                              : AppLocalizations.of(context)!.noSessionsRegistered,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 32, top: 8, left: 16, right: 16),
-                    itemCount: listItems.length,
-                    itemBuilder: (context, index) {
-                      final item = listItems[index];
-
-                      if (item is DateTime) {
-                        return _buildDateHeader(item);
-                      } else if (item is List<FocusSession>) {
-                        if (item.length == 1) {
-                          return _buildSingleSession(context, item.first);
-                        }
-                        return _buildGroupedSession(context, item);
-                      } else if (item is FocusSession) {
-                        return _buildSingleSession(context, item);
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.pop(context),
         ),
+      ),
+      body: BlocBuilder<SessionHistoryBloc, SessionHistoryState>(
+        builder: (context, state) {
+          return Column(
+            children: [
+              if (state.filterDate != null)
+                HistoryFilterBar(filterDate: state.filterDate!),
+
+              Expanded(
+                child: _buildListContent(context, state),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildDateHeader(DateTime date) {
-    final now = DateTime.now();
-    final l10n = AppLocalizations.of(context)!;
-    String titleText;
-    
-    if (date.year == now.year && date.month == now.month && date.day == now.day) {
-      titleText = l10n.today;
-    } else if (date.year == now.year && date.month == now.month && date.day == now.day - 1) {
-      titleText = l10n.yesterday;
-    } else {
-      titleText = DateFormat.yMMMMEEEEd(Localizations.localeOf(context).languageCode).format(date);
-      // Ensure first letter is capitalized
-      if (titleText.isNotEmpty) {
-        titleText = titleText[0].toUpperCase() + titleText.substring(1);
-      }
+  Widget _buildListContent(BuildContext context, SessionHistoryState state) {
+    if (state.status == SessionHistoryStatus.loading) {
+      return const Center(child: PremiumLoader(size: 140.0));
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 24, bottom: 12, left: 8),
-      child: Text(
-        titleText,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.white.withValues(alpha: 0.9),
-          letterSpacing: 0.5,
+    if (state.status == SessionHistoryStatus.error) {
+      return Center(
+        child: Text(
+          state.errorMessage ?? AppLocalizations.of(context)!.unknownError,
+          style: const TextStyle(color: AppColors.error),
         ),
-      ),
+      );
+    }
+
+    if (state.items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.history_rounded,
+              size: 64,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              state.filterDate != null 
+                ? AppLocalizations.of(context)!.noSessionsForDate 
+                : AppLocalizations.of(context)!.noSessionsRegistered,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: 32, top: 8, left: 16, right: 16),
+          sliver: SliverList.builder(
+            itemCount: state.items.length,
+            itemBuilder: (context, index) {
+              final item = state.items[index];
+
+              if (item is HistoryDateHeader) {
+                return HistoryDateHeaderWidget(date: item.date);
+              } else if (item is HistorySingleSession) {
+                return _buildSingleSession(context, item.session);
+              } else if (item is HistoryGroupedSession) {
+                return _buildGroupedSession(context, item.sessions);
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -278,10 +147,10 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
         padding: const EdgeInsets.only(right: 20),
         margin: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.redAccent.withValues(alpha: 0.2),
+          color: AppColors.error.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(Icons.delete, color: Colors.redAccent),
+        child: const Icon(Icons.delete, color: AppColors.error),
       ),
       onDismissed: (direction) {
         context.read<SessionHistoryBloc>().add(DeleteSession(session.id));
@@ -291,14 +160,20 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
         child: SessionCard(
           session: session,
           pomodoroConfig: pomodoroConfig,
-          onTap: () => _showSessionDetails(context, session),
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => SessionDetailModal(session: session),
+            );
+          },
         ),
       ),
     );
   }
 
   Widget _buildGroupedSession(BuildContext context, List<FocusSession> group) {
-    // Determine overall stats
     final startTime = group.last.startTime;
     int focusCount = 0;
     int completedFocusCount = 0;
@@ -314,16 +189,12 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
       } else {
         focusCount++;
         totalFocusActual += s.actualDuration;
-        if (s.isCompleted) {
-          completedFocusCount++;
-        }
+        if (s.isCompleted) completedFocusCount++;
       }
       if (s.isHardcoreMode) anyHardcore = true;
     }
 
     final groupId = group.first.groupId ?? group.first.id;
-
-    // Obtener el primer nombre no vacío del grupo si existe (cronológicamente el más antiguo)
     final firstSessionWithName = group.lastWhere(
       (s) => s.sessionName != null && s.sessionName!.isNotEmpty,
       orElse: () => group.last,
@@ -342,10 +213,10 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
         padding: const EdgeInsets.only(right: 20),
         margin: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.redAccent.withValues(alpha: 0.2),
+          color: AppColors.error.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(Icons.delete, color: Colors.redAccent),
+        child: const Icon(Icons.delete, color: AppColors.error),
       ),
       onDismissed: (direction) {
         for (var s in group) {
@@ -366,27 +237,16 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
           pomodoroConfig: pomodoroConfig,
           hasPhotos: group.any((s) => s.photoPath != null),
           sessionName: groupSessionName,
-          onTap: () => _showGroupDetails(context, group),
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => GroupDetailModal(group: group),
+            );
+          },
         ),
       ),
-    );
-  }
-
-  void _showSessionDetails(BuildContext context, FocusSession session) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SessionDetailModal(session: session),
-    );
-  }
-
-  void _showGroupDetails(BuildContext context, List<FocusSession> group) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GroupDetailModal(group: group),
     );
   }
 
@@ -420,7 +280,6 @@ class _SessionHistoryPageState extends State<SessionHistoryPage> {
         }
       }
 
-      // Fallback a la configuración actual si no hubo descansos registrados en el grupo
       if (shortBreak == 0 || longBreak == 0) {
         final focusSessionManager = getIt<FocusSessionManager>();
         if (shortBreak == 0) shortBreak = focusSessionManager.currentState.shortBreakDuration.inMinutes;

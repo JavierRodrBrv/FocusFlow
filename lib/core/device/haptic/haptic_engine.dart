@@ -6,12 +6,12 @@ import 'package:injectable/injectable.dart';
 import 'package:vibration/vibration.dart';
 
 @lazySingleton
-class HapticFeedbackService {
+class HapticEngine {
   Timer? _vibrationTimer;
   static const platform = MethodChannel('com.example.focus_flow/native');
 
-  HapticFeedbackService() {
-    debugPrint('[HapticFeedbackService] Created');
+  HapticEngine() {
+    debugPrint('[HapticEngine] Created');
   }
 
   /// Internal method to trigger a single vibration, handling iOS background isolate limitations.
@@ -27,7 +27,7 @@ class HapticFeedbackService {
           return;
         } catch (e) {
           // If native channel fails (common in background isolates), fallback to plugin
-          // print('[HapticFeedbackService] Native channel failed, using plugin fallback.');
+          // print('[HapticEngine] Native channel failed, using plugin fallback.');
         }
       }
 
@@ -40,7 +40,7 @@ class HapticFeedbackService {
         }
       }
     } catch (e) {
-      debugPrint('[HapticFeedbackService] Vibration execution error: $e');
+      debugPrint('[HapticEngine] Vibration execution error: $e');
     }
   }
 
@@ -54,7 +54,7 @@ class HapticFeedbackService {
     // Stop any previous timer
     await stopFailVibration();
 
-    debugPrint('[HapticFeedbackService] Starting alarm vibration loop...');
+    debugPrint('[HapticEngine] Starting alarm vibration loop...');
 
     // Execute immediately
     _performSingleVibration();

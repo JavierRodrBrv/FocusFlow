@@ -2,11 +2,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-class LocalNotificationService {
-  static final LocalNotificationService _instance =
-      LocalNotificationService._internal();
-  factory LocalNotificationService() => _instance;
-  LocalNotificationService._internal();
+class NotificationEngine {
+  static final NotificationEngine _instance =
+      NotificationEngine._internal();
+  factory NotificationEngine() => _instance;
+  NotificationEngine._internal();
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();

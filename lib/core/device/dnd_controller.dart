@@ -4,7 +4,7 @@ import 'package:injectable/injectable.dart';
 import 'dart:io';
 
 @lazySingleton
-class DndService {
+class DndController {
   static const _channel = MethodChannel('com.example.focus_flow/dnd');
 
   /// Returns the current interruption filter on Android.
@@ -21,7 +21,7 @@ class DndService {
       );
       return filter;
     } catch (e) {
-      debugPrint('[DndService] Error getting DND status: $e');
+      debugPrint('[DndController] Error getting DND status: $e');
       return 1;
     }
   }

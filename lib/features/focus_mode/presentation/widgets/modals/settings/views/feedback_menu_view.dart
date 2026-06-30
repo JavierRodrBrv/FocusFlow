@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/feedback/presentation/bloc/feedback_bloc.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
 
 class FeedbackMenuView extends StatefulWidget {
   final VoidCallback onBack;
@@ -43,8 +44,8 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final activeColor = _selectedIndex == 0
-        ? const Color(0xFFEF5350)
-        : const Color(0xFF2979FF);
+        ? AppColors.error
+        : AppColors.info;
 
     return BlocProvider(
       create: (context) => getIt<FeedbackBloc>(),
@@ -57,7 +58,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(l10n.errorSending(state.errorMessage ?? '')),
-                backgroundColor: Colors.redAccent,
+                backgroundColor: AppColors.error,
               ),
             );
           }
@@ -76,7 +77,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
                     IconButton(
                       icon: const Icon(
                         Icons.arrow_back_ios_new,
-                        color: Colors.white70,
+                        color: AppColors.textSecondary,
                       ),
                       onPressed: widget.onBack,
                     ),
@@ -87,7 +88,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
                           child: Text(
                             l10n.feedback,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -128,14 +129,14 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
                   controller: _feedbackController,
                   focusNode: _feedbackFocusNode,
                   maxLines: 4,
-                  style: const TextStyle(color: Colors.black87),
+                  style: const TextStyle(color: AppColors.textPrimary),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.grey[100],
+                    fillColor: AppColors.surface,
                     hintText: _selectedIndex == 0
                         ? l10n.bugHint
                         : l10n.ideaHint,
-                    hintStyle: TextStyle(color: Colors.grey[500]),
+                    hintStyle: const TextStyle(color: AppColors.textSecondary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -202,7 +203,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white54,
+            color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -219,19 +220,19 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
       return const SizedBox(
         height: 24,
         width: 24,
-        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        child: CircularProgressIndicator(color: AppColors.textPrimary, strokeWidth: 2),
       );
     }
     if (state.status == FeedbackStatus.success) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.check, color: Colors.white),
+          const Icon(Icons.check, color: AppColors.textPrimary),
           const SizedBox(width: 8),
           Text(
             l10n.thanks,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
@@ -242,7 +243,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
     return Text(
       l10n.sendFeedback,
       style: const TextStyle(
-        color: Colors.white,
+        color: AppColors.textPrimary,
         fontWeight: FontWeight.bold,
         fontSize: 16,
       ),

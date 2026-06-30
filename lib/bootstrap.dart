@@ -7,12 +7,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:focus_flow/core/services/local_notification_service.dart';
+import 'package:focus_flow/core/device/notification_engine.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'features/focus_mode/data/models/sound_mix_model.dart';
 import 'features/premium/data/models/premium_status.dart';
 import 'package:focus_flow/features/session_history/data/models/focus_session_model.dart';
-import 'package:focus_flow/app/background_service.dart';
+import 'package:focus_flow/app/background_isolate_runner.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 
 /// Inicializa los sistemas críticos antes de lanzar la UI.
@@ -68,7 +68,7 @@ Future<void> bootstrap() async {
   }
 
   // 5. Inicializar Notificaciones Locales Informativas
-  final localNotifications = LocalNotificationService();
+  final localNotifications = NotificationEngine();
   await localNotifications.init();
 
   // Cargar localización para el recordatorio diario

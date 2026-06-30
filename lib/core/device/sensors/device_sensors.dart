@@ -5,7 +5,7 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 
 @lazySingleton
-class SensorService {
+class DeviceSensors {
   StreamSubscription<AccelerometerEvent>? _subscription;
   final _orientationController = StreamController<PhoneOrientation>.broadcast();
   PhoneOrientation _lastOrientation = PhoneOrientation.unknown;
@@ -14,17 +14,17 @@ class SensorService {
   Stream<PhoneOrientation> get phoneOrientationStream =>
       _orientationController.stream;
 
-  SensorService() {
-    debugPrint('[SensorService] Created.');
+  DeviceSensors() {
+    debugPrint('[DeviceSensors] Created.');
     _init();
   }
 
   void _init() {
-    debugPrint('[SensorService] Initializing...');
+    debugPrint('[DeviceSensors] Initializing...');
     // In debug mode, accelerometer might not be available on emulators.
     if (kDebugMode) {
       debugPrint(
-        '[SensorService] Running in Debug mode. Sensor data may be unavailable.',
+        '[DeviceSensors] Running in Debug mode. Sensor data may be unavailable.',
       );
     }
 
@@ -50,25 +50,25 @@ class SensorService {
             // This acts as a simple 'distinct' filter.
             if (currentOrientation != _lastOrientation) {
               debugPrint(
-                '[SensorService] Orientation changed: $currentOrientation (Z: ${event.z.toStringAsFixed(2)})',
+                '[DeviceSensors] Orientation changed: $currentOrientation (Z: ${event.z.toStringAsFixed(2)})',
               );
               _lastOrientation = currentOrientation;
               _orientationController.add(currentOrientation);
             }
           },
           onError: (error) {
-            debugPrint('[SensorService] Error: $error');
+            debugPrint('[DeviceSensors] Error: $error');
           },
           cancelOnError: true,
         );
-    debugPrint('[SensorService] Subscribed to accelerometer events.');
+    debugPrint('[DeviceSensors] Subscribed to accelerometer events.');
   }
 
   @disposeMethod
   void dispose() {
-    debugPrint('[SensorService] Disposing...');
+    debugPrint('[DeviceSensors] Disposing...');
     _subscription?.cancel();
     _orientationController.close();
-    debugPrint('[SensorService] Disposed.');
+    debugPrint('[DeviceSensors] Disposed.');
   }
 }

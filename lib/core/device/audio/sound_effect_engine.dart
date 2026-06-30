@@ -3,15 +3,15 @@ import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
 
 @lazySingleton
-class SoundEffectService {
+class SoundEffectEngine {
   late AudioPlayer _failPlayer;
   late AudioPlayer _alarmPlayer;
   late AudioPlayer _breakStartPlayer;
   late AudioPlayer _breakEndPlayer;
   bool _isInitialized = false;
 
-  SoundEffectService() {
-    debugPrint('[SoundEffectService] Created');
+  SoundEffectEngine() {
+    debugPrint('[SoundEffectEngine] Created');
     _failPlayer = AudioPlayer();
     _alarmPlayer = AudioPlayer();
     _breakStartPlayer = AudioPlayer();
@@ -21,7 +21,7 @@ class SoundEffectService {
   /// Pre-loads the sound effects for low-latency playback.
   Future<void> init() async {
     if (_isInitialized) return;
-    debugPrint('[SoundEffectService] Initializing...');
+    debugPrint('[SoundEffectEngine] Initializing...');
 
     try {
       await _failPlayer.setAsset('assets/audio/fail.mp3');
@@ -44,9 +44,9 @@ class SoundEffectService {
       }
 
       _isInitialized = true;
-      debugPrint('[SoundEffectService] Sounds loaded.');
+      debugPrint('[SoundEffectEngine] Sounds loaded.');
     } catch (e) {
-      debugPrint('[SoundEffectService] Error loading sound: $e');
+      debugPrint('[SoundEffectEngine] Error loading sound: $e');
     }
   }
 
@@ -69,7 +69,7 @@ class SoundEffectService {
         await _breakEndPlayer.stop();
       }
     } catch (e) {
-      debugPrint('[SoundEffectService] Error stopping break end sound: $e');
+      debugPrint('[SoundEffectEngine] Error stopping break end sound: $e');
     }
   }
 
@@ -98,7 +98,7 @@ class SoundEffectService {
             if (player.playing) {
               await player.stop();
               debugPrint(
-                '[SoundEffectService] Audio stopped by timer ($stopAfter s)',
+                '[SoundEffectEngine] Audio stopped by timer ($stopAfter s)',
               );
             }
           } catch (e) {
@@ -107,14 +107,14 @@ class SoundEffectService {
         });
       }
     } catch (e) {
-      debugPrint('[SoundEffectService] Play error: $e');
+      debugPrint('[SoundEffectEngine] Play error: $e');
     }
   }
 
   /// Starts playing the fail sound in a loop.
   Future<void> startFailLoop() async {
     if (!_failPlayer.playing) {
-      debugPrint('[SoundEffectService] Starting fail sound loop...');
+      debugPrint('[SoundEffectEngine] Starting fail sound loop...');
       _failPlayer.play();
     }
   }
@@ -122,7 +122,7 @@ class SoundEffectService {
   /// Stops the looping fail sound.
   Future<void> stopFailLoop() async {
     if (_failPlayer.playing) {
-      debugPrint('[SoundEffectService] Stopping fail sound loop...');
+      debugPrint('[SoundEffectEngine] Stopping fail sound loop...');
       await _failPlayer.pause();
       await _failPlayer.seek(Duration.zero);
     }
@@ -137,7 +137,7 @@ class SoundEffectService {
       await _alarmPlayer.setVolume(1.0);
       if (!_alarmPlayer.playing) await _alarmPlayer.play();
     } catch (e) {
-      debugPrint('[SoundEffectService] Error playing alarm: $e');
+      debugPrint('[SoundEffectEngine] Error playing alarm: $e');
     }
   }
 
@@ -150,7 +150,7 @@ class SoundEffectService {
         await _alarmPlayer.seek(Duration.zero);
       }
     } catch (e) {
-      debugPrint('[SoundEffectService] Error stopping alarm: $e');
+      debugPrint('[SoundEffectEngine] Error stopping alarm: $e');
     }
   }
 
@@ -163,7 +163,7 @@ class SoundEffectService {
 
   @disposeMethod
   void dispose() {
-    debugPrint('[SoundEffectService] Disposing...');
+    debugPrint('[SoundEffectEngine] Disposing...');
     _failPlayer.dispose();
     _alarmPlayer.dispose();
     _breakStartPlayer.dispose();

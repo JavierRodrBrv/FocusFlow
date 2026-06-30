@@ -19,7 +19,7 @@ import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.d
 import '../features/focus_mode/data/models/sound_mix_model.dart';
 import '../features/focus_mode/domain/services/focus_session_manager.dart';
 import '../features/session_history/data/models/focus_session_model.dart';
-import '../core/services/local_notification_service.dart';
+import '../core/device/notification_engine.dart';
 
 const String notificationChannelId = 'focus_flow_channel';
 const int notificationId = 888;
@@ -301,7 +301,7 @@ void onStart(ServiceInstance service) async {
   // 2. Dependencies
   try {
     await configureDependencies();
-    await LocalNotificationService().init();
+    await NotificationEngine().init();
   } catch (e) {
     debugPrint('[BackgroundService] Injection/Notification error: $e');
   }
@@ -561,7 +561,7 @@ void onStart(ServiceInstance service) async {
       try {
         bool wentToBreak = lastStatus == PomodoroStatus.running && status == PomodoroStatus.resting;
         if (statusChanged && (isFinished || wentToBreak)) {
-          await LocalNotificationService().showTimerCompleteNotification(
+          await NotificationEngine().showTimerCompleteNotification(
             title: l.notificationTimerCompleteTitle,
             body: l.notificationTimerCompleteBody,
             channelName: l.notificationChannelAlertsName,
@@ -574,14 +574,14 @@ void onStart(ServiceInstance service) async {
         bool penaltyChanged = lastPenaltyState != state.isInPenaltyBox;
         if (penaltyChanged) {
           if (state.isInPenaltyBox) {
-            await LocalNotificationService().showPenaltyWarningNotification(
+            await NotificationEngine().showPenaltyWarningNotification(
               title: l.notificationPenaltyTitle,
               body: l.notificationPenaltyBody,
               channelName: l.notificationChannelAlertsName,
               channelDescription: l.notificationChannelAlertsDescription,
             );
           } else {
-            await LocalNotificationService().cancelPenaltyWarningNotification();
+            await NotificationEngine().cancelPenaltyWarningNotification();
           }
           lastPenaltyState = state.isInPenaltyBox;
         }

@@ -1,13 +1,13 @@
 import 'dart:async';
-import 'package:flutter/widgets.dart';
-import 'package:focus_flow/core/services/dnd_service.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
+import 'package:focus_flow/core/device/dnd_controller.dart';
+import 'package:focus_flow/features/focus_mode/domain/repositories/i_focus_settings_repository.dart';
+import 'package:focus_flow/features/focus_mode/domain/services/penalty_tracker_service.dart';
 import 'package:injectable/injectable.dart';
 import 'package:focus_flow/features/focus_mode/domain/repositories/i_audio_manager.dart';
-import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
-import 'package:focus_flow/core/services/haptic/haptic_feedback_service.dart';
-import 'package:focus_flow/core/services/sensors/sensor_service.dart';
+import 'package:focus_flow/core/device/haptic/haptic_engine.dart';
+import 'package:focus_flow/core/device/sensors/device_sensors.dart';
 import 'package:focus_flow/features/focus_mode/data/datasources/timer_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/background_effect.dart';
 
@@ -86,19 +86,17 @@ class SessionState {
 @lazySingleton
 class FocusSessionManager {
   final IAudioManager _audioManager;
-  final HapticFeedbackService _hapticService;
-  final SensorService _sensorService;
+  final HapticEngine _hapticService;
+  final DeviceSensors _sensorService;
   final TimerService _timerService;
-  final DndService _dndService;
+  final DndController _dndService;
+  final IFocusSettingsRepository _settingsRepo;
+  final PenaltyTrackerService _penaltyTracker;
 
-  Box? _settingsBox;
-
-  // Estado interno
   PomodoroStatus _status = PomodoroStatus.initial;
   Duration _remainingTime = const Duration(minutes: 25);
   Duration _duration = const Duration(minutes: 25);
   Duration? _breakDuration;
-  bool _isInPenalty = false;
   PhoneOrientation _orientation = PhoneOrientation.unknown;
   bool _isHardcore = false;
   bool _isAlarmSoundEnabled = true;
@@ -108,57 +106,46 @@ class FocusSessionManager {
   bool _autoTransitionWhenForeground = true;
   BackgroundEffect _backgroundEffect = BackgroundEffect.gradient;
 
-  // Ciclo Pomodoro
   bool _isPomodoroMode = false;
   Duration _shortBreakDuration = const Duration(minutes: 5);
   Duration _longBreakDuration = const Duration(minutes: 15);
   int _completedPomodoros = 0;
   bool _hasCompletedPomodoroCycle = false;
 
-  // Métricas de distracción
-  int _penaltyCount = 0;
-  Duration _totalPenaltyTime = Duration.zero;
-  DateTime? _penaltyStartTime;
-
-  // Filtros de estabilidad y control
-  Timer? _stabilityTimer;
-  Timer? _penaltyTicker;
-  PhoneOrientation? _lastConfirmedOrientation;
-  DateTime _lastPenaltyIncrementTime = DateTime.fromMillisecondsSinceEpoch(0);
   bool _isAppInForeground = true;
-  bool _hasBeenFaceDownAtLeastOnce = false;
   PomodoroStatus? _prePauseStatus;
-
   SessionState? _lastEmittedState;
 
   final _stateController = StreamController<SessionState>.broadcast();
   Stream<SessionState> get stateStream => _stateController.stream;
 
-  SessionState get currentState => SessionState(
-    status: _status,
-    remainingTime: _remainingTime,
-    pomodoroDuration: _duration,
-    isInPenalty: _isInPenalty,
-    orientation: _orientation,
-    isHardcore: _isHardcore,
-    isAlarmSoundEnabled: _isAlarmSoundEnabled,
-    isResting: _status == PomodoroStatus.resting ||
-        (_status == PomodoroStatus.paused &&
-            _prePauseStatus == PomodoroStatus.resting),
-    hasBreak: _breakDuration != null || _isPomodoroMode,
-    penaltyCount: _penaltyCount,
-    totalPenaltyTime: _totalPenaltyTime,
-    backgroundEffect: _backgroundEffect,
-    isWaitingForFirstFlip: _isWaitingForFirstFlip,
-    languageCode: _languageCode,
-    defaultBreakDuration: _defaultBreakDuration,
-    autoTransitionWhenForeground: _autoTransitionWhenForeground,
-    isPomodoroMode: _isPomodoroMode,
-    shortBreakDuration: _shortBreakDuration,
-    longBreakDuration: _longBreakDuration,
-    completedPomodoros: _completedPomodoros,
-    hasCompletedPomodoroCycle: _hasCompletedPomodoroCycle,
-  );
+  SessionState get currentState {
+    final penaltyState = _penaltyTracker.currentState;
+    return SessionState(
+      status: _status,
+      remainingTime: _remainingTime,
+      pomodoroDuration: _duration,
+      isInPenalty: penaltyState.isInPenalty,
+      orientation: _orientation,
+      isHardcore: _isHardcore,
+      isAlarmSoundEnabled: _isAlarmSoundEnabled,
+      isResting: _status == PomodoroStatus.resting ||
+          (_status == PomodoroStatus.paused && _prePauseStatus == PomodoroStatus.resting),
+      hasBreak: _breakDuration != null || _isPomodoroMode,
+      penaltyCount: penaltyState.penaltyCount,
+      totalPenaltyTime: penaltyState.totalPenaltyTime,
+      backgroundEffect: _backgroundEffect,
+      isWaitingForFirstFlip: _isWaitingForFirstFlip,
+      languageCode: _languageCode,
+      defaultBreakDuration: _defaultBreakDuration,
+      autoTransitionWhenForeground: _autoTransitionWhenForeground,
+      isPomodoroMode: _isPomodoroMode,
+      shortBreakDuration: _shortBreakDuration,
+      longBreakDuration: _longBreakDuration,
+      completedPomodoros: _completedPomodoros,
+      hasCompletedPomodoroCycle: _hasCompletedPomodoroCycle,
+    );
+  }
 
   FocusSessionManager(
     this._audioManager,
@@ -166,37 +153,28 @@ class FocusSessionManager {
     this._sensorService,
     this._timerService,
     this._dndService,
+    this._settingsRepo,
+    this._penaltyTracker,
   );
 
-  Future<void> init() async {
-    try {
-      await _audioManager.init().timeout(const Duration(seconds: 3));
-    } catch (e) {
-      debugPrint('[FocusSessionManager] AudioManager init error/timeout: $e');
-    }
-    
-    try {
-      _settingsBox = Hive.isBoxOpen('settings')
-          ? Hive.box('settings')
-          : await Hive.openBox('settings').timeout(const Duration(seconds: 3));
+  Future<void> init({bool isForegroundService = false}) async {
+    await _settingsRepo.init();
 
-      _isAlarmSoundEnabled = _settingsBox!.get('alarm_sound_enabled', defaultValue: true);
-      _languageCode = _settingsBox!.get('language_code');
-      _autoTransitionWhenForeground = _settingsBox!.get('auto_transition_when_foreground', defaultValue: true);
-      _backgroundEffect = BackgroundEffect.values[_settingsBox!.get('background_effect', defaultValue: BackgroundEffect.gradient.index)];
+    if (isForegroundService) {
+      _isPomodoroMode = _settingsRepo.isPomodoroMode;
+      _shortBreakDuration = _settingsRepo.shortBreakDuration;
+      _longBreakDuration = _settingsRepo.longBreakDuration;
+      _autoTransitionWhenForeground = _settingsRepo.autoTransitionWhenForeground;
+      _defaultBreakDuration = _settingsRepo.defaultBreakDuration;
       
-      final breakMin = _settingsBox!.get('default_break_duration') as int?;
-      _defaultBreakDuration = breakMin != null ? Duration(minutes: breakMin) : null;
-
-      _isPomodoroMode = _settingsBox!.get('is_pomodoro_mode', defaultValue: false);
-      final shortMin = _settingsBox!.get('short_break_duration', defaultValue: 5) as int;
-      _shortBreakDuration = Duration(minutes: shortMin);
-      final longMin = _settingsBox!.get('long_break_duration', defaultValue: 15) as int;
-      _longBreakDuration = Duration(minutes: longMin);
-    } catch (e) {
-      debugPrint('[FocusSessionManager] Hive open settings error/timeout: $e');
-      _isAlarmSoundEnabled = true;
-      _languageCode = 'es';
+      final bgIndex = _settingsRepo.backgroundEffectIndex;
+      if (bgIndex >= 0 && bgIndex < BackgroundEffect.values.length) {
+        _backgroundEffect = BackgroundEffect.values[bgIndex];
+      }
+      
+      _isAlarmSoundEnabled = _settingsRepo.isAlarmSoundEnabled;
+      _languageCode = _settingsRepo.languageCode;
+    } else {
       _autoTransitionWhenForeground = true;
       _backgroundEffect = BackgroundEffect.gradient;
       _defaultBreakDuration = null;
@@ -212,16 +190,45 @@ class FocusSessionManager {
   void _initSubscriptions() {
     _sensorService.phoneOrientationStream.listen((orientation) {
       _orientation = orientation;
-      _onOrientationChanged(orientation);
+      
+      final isRunning = _status == PomodoroStatus.running && !_isWaitingForFirstFlip;
+      final isPausedByPenalty = _status == PomodoroStatus.paused && _penaltyTracker.currentState.isInPenalty;
+      
+      _penaltyTracker.processOrientationChange(
+        newOrientation: orientation,
+        isHardcore: _isHardcore,
+        isRunning: isRunning,
+        isPausedByPenalty: isPausedByPenalty,
+        isWaitingForFirstFlip: _isWaitingForFirstFlip,
+        onFlipDownWhileWaiting: () {
+          _isWaitingForFirstFlip = false;
+          _timerService.start(startDuration: _remainingTime);
+          _emitState();
+        },
+        onPenaltyStart: () {
+          _timerService.pause();
+          _status = PomodoroStatus.paused;
+          _audioManager.stopKeepAlive();
+          _emitState();
+        },
+        onPenaltyEnd: () {
+          _timerService.resume();
+          _status = PomodoroStatus.running;
+          _audioManager.startKeepAlive();
+          _emitState();
+        }
+      );
+      _emitState();
+    });
+
+    _penaltyTracker.stateStream.listen((_) {
       _emitState();
     });
 
     _timerService.tickStream.listen((remaining) {
       _remainingTime = remaining;
 
-      if (_status == PomodoroStatus.resting &&
-          _remainingTime.inSeconds == 5 &&
-          _isAlarmSoundEnabled) {
+      if (_status == PomodoroStatus.resting && _remainingTime.inSeconds == 5 && _isAlarmSoundEnabled) {
         _audioManager.playBreakEndSound();
       }
 
@@ -256,10 +263,9 @@ class FocusSessionManager {
           _completedPomodoros = 0;
           _status = PomodoroStatus.finished;
           _hasCompletedPomodoroCycle = true;
-          _stopPenaltyEffects();
+          _penaltyTracker.stopEffects();
           _triggerAlarm();
           
-          // Siempre pausar y resetear al finalizar el ciclo de descanso largo del Pomodoro
           Future.delayed(const Duration(milliseconds: 200), () {
             _status = PomodoroStatus.paused;
             _prePauseStatus = PomodoroStatus.running;
@@ -289,9 +295,8 @@ class FocusSessionManager {
         }
       }
     } else {
-      // Temporizador normal
       _status = PomodoroStatus.finished;
-      _stopPenaltyEffects();
+      _penaltyTracker.stopEffects();
       _triggerAlarm();
       
       if (!shouldAutoPlay) {
@@ -305,91 +310,6 @@ class FocusSessionManager {
         });
       }
     }
-  }
-
-  void _onOrientationChanged(PhoneOrientation newOrientation) {
-    _stabilityTimer?.cancel();
-    if (newOrientation == _lastConfirmedOrientation) return;
-
-    if (_status == PomodoroStatus.running || _isInPenalty || _isWaitingForFirstFlip) {
-      _stabilityTimer = Timer(const Duration(milliseconds: 600), () {
-        _lastConfirmedOrientation = newOrientation;
-        _checkHardcoreRules();
-        _emitState();
-      });
-    } else {
-      _lastConfirmedOrientation = newOrientation;
-    }
-  }
-
-  void _checkHardcoreRules() {
-    final isConfirmedFaceDown = _lastConfirmedOrientation == PhoneOrientation.faceDown;
-
-    if (_isWaitingForFirstFlip && isConfirmedFaceDown) {
-      _isWaitingForFirstFlip = false;
-      _hasBeenFaceDownAtLeastOnce = true;
-      _timerService.start(startDuration: _remainingTime);
-      _penaltyCount = 0;
-      _totalPenaltyTime = Duration.zero;
-      _emitState();
-      return;
-    }
-
-    if (!_isHardcore) return;
-
-    final isRunning = _status == PomodoroStatus.running && !_isWaitingForFirstFlip;
-    final isPausedByPenalty = _status == PomodoroStatus.paused && _isInPenalty;
-    final isConfirmedFaceUp = _lastConfirmedOrientation == PhoneOrientation.faceUp;
-
-    if (isRunning && isConfirmedFaceUp && !_isInPenalty && _hasBeenFaceDownAtLeastOnce) {
-      final now = DateTime.now();
-      if (now.difference(_lastPenaltyIncrementTime) > const Duration(seconds: 2)) {
-        _penaltyCount++;
-        _lastPenaltyIncrementTime = now;
-      }
-      _timerService.pause();
-      _status = PomodoroStatus.paused;
-      _isInPenalty = true;
-      _audioManager.stopKeepAlive();
-      _startPenaltyEffects();
-      _startPenaltyTicker();
-    } else if (isPausedByPenalty && isConfirmedFaceDown) {
-      _stopPenaltyEffects();
-      _stopPenaltyTicker();
-      _timerService.resume();
-      _status = PomodoroStatus.running;
-      _isInPenalty = false;
-      _audioManager.startKeepAlive();
-    }
-  }
-
-  void _startPenaltyTicker() {
-    _penaltyTicker?.cancel();
-    _penaltyStartTime = DateTime.now();
-    _penaltyTicker = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_isInPenalty) {
-        _totalPenaltyTime += const Duration(seconds: 1);
-        _emitState();
-      } else {
-        _stopPenaltyTicker();
-      }
-    });
-  }
-
-  void _stopPenaltyTicker() {
-    _penaltyTicker?.cancel();
-    _penaltyTicker = null;
-  }
-
-  void _startPenaltyEffects() {
-    _audioManager.startFailLoop();
-    _hapticService.startFailVibration();
-  }
-
-  void _stopPenaltyEffects() {
-    _isInPenalty = false;
-    _audioManager.stopFailLoop();
-    _hapticService.stopFailVibration();
   }
 
   void _emitState() {
@@ -445,8 +365,6 @@ class FocusSessionManager {
     _hapticService.startAlarmVibration();
   }
 
-  // --- Public Actions ---
-
   void setAppInForeground(bool inForeground) {
     _isAppInForeground = inForeground;
   }
@@ -465,27 +383,29 @@ class FocusSessionManager {
 
   void setBackgroundEffect(BackgroundEffect effect) async {
     _backgroundEffect = effect;
-    await _settingsBox?.put('background_effect', effect.index);
+    await _settingsRepo.setBackgroundEffectIndex(effect.index);
     _emitState();
   }
 
   void toggleAlarmSound() async {
     _isAlarmSoundEnabled = !_isAlarmSoundEnabled;
-    await _settingsBox?.put('alarm_sound_enabled', _isAlarmSoundEnabled);
+    await _settingsRepo.setAlarmSoundEnabled(_isAlarmSoundEnabled);
     _emitState();
   }
 
   void toggleHardcore() {
     _isHardcore = !_isHardcore;
     if (!_isHardcore) {
-      if (_isInPenalty) _stopPenaltyEffects();
+      if (_penaltyTracker.currentState.isInPenalty) {
+        _penaltyTracker.stopEffects();
+      }
       _isWaitingForFirstFlip = false;
     }
     _emitState();
   }
 
   void startTimer() {
-    if (_status == PomodoroStatus.paused && !_isInPenalty) {
+    if (_status == PomodoroStatus.paused && !_penaltyTracker.currentState.isInPenalty) {
       _timerService.resume();
       _status = _prePauseStatus ?? PomodoroStatus.running;
       _prePauseStatus = null;
@@ -497,13 +417,9 @@ class FocusSessionManager {
         _timerService.start(startDuration: _remainingTime);
         _status = PomodoroStatus.running;
       }
-      _hasBeenFaceDownAtLeastOnce = false;
-      _penaltyCount = 0;
-      _totalPenaltyTime = Duration.zero;
-      _lastConfirmedOrientation = null;
+      _penaltyTracker.reset();
     }
     _audioManager.startKeepAlive();
-    if (_isHardcore && _status == PomodoroStatus.running) _checkHardcoreRules();
     _emitState();
   }
 
@@ -591,18 +507,16 @@ class FocusSessionManager {
 
   Future<void> resetTimer() async {
     _timerService.pause();
-    _stopPenaltyEffects();
-    _stopPenaltyTicker();
+    _penaltyTracker.stopEffects();
     _status = PomodoroStatus.initial;
     _remainingTime = _duration;
     _breakDuration = null;
     _prePauseStatus = null;
     _audioManager.stopKeepAlive();
-    _hasBeenFaceDownAtLeastOnce = false;
     _isWaitingForFirstFlip = false;
-    _lastConfirmedOrientation = null;
     _completedPomodoros = 0;
     _hasCompletedPomodoroCycle = false;
+    _penaltyTracker.reset();
     await stopAlarm();
     _emitState();
   }
@@ -614,27 +528,19 @@ class FocusSessionManager {
 
   void setLanguageCode(String? code) async {
     _languageCode = code;
-    if (code == null) {
-      await _settingsBox?.delete('language_code');
-    } else {
-      await _settingsBox?.put('language_code', code);
-    }
+    await _settingsRepo.setLanguageCode(code);
     _emitState();
   }
 
   void setDefaultBreakDuration(Duration? duration) async {
     _defaultBreakDuration = duration;
-    if (duration == null) {
-      await _settingsBox?.delete('default_break_duration');
-    } else {
-      await _settingsBox?.put('default_break_duration', duration.inMinutes);
-    }
+    await _settingsRepo.setDefaultBreakDuration(duration);
     _emitState();
   }
 
   void setPomodoroMode(bool isPomodoro) async {
     _isPomodoroMode = isPomodoro;
-    await _settingsBox?.put('is_pomodoro_mode', isPomodoro);
+    await _settingsRepo.setPomodoroMode(isPomodoro);
     _emitState();
   }
 
@@ -643,8 +549,7 @@ class FocusSessionManager {
     _shortBreakDuration = shortBreak;
     _longBreakDuration = longBreak;
 
-    await _settingsBox?.put('short_break_duration', shortBreak.inMinutes);
-    await _settingsBox?.put('long_break_duration', longBreak.inMinutes);
+    await _settingsRepo.setPomodoroConfig(shortBreak, longBreak);
 
     if (_status == PomodoroStatus.initial) {
       _remainingTime = study;
@@ -659,7 +564,7 @@ class FocusSessionManager {
 
   void toggleAutoTransition() async {
     _autoTransitionWhenForeground = !_autoTransitionWhenForeground;
-    await _settingsBox?.put('auto_transition_when_foreground', _autoTransitionWhenForeground);
+    await _settingsRepo.setAutoTransitionWhenForeground(_autoTransitionWhenForeground);
     _emitState();
   }
 
