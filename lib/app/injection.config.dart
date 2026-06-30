@@ -76,6 +76,8 @@ import '../features/stats/data/repositories/hive_session_stats_repository_impl.d
     as _i405;
 import '../features/stats/domain/repositories/i_session_stats_repository.dart'
     as _i18;
+import '../features/stats/domain/usecases/get_weekly_stats_usecase.dart'
+    as _i384;
 import '../features/stats/presentation/bloc/stats_bloc.dart' as _i1057;
 
 // initializes the registration of main-scope dependencies inside of GetIt
@@ -133,8 +135,8 @@ _i174.GetIt $initGetIt(
       _i405.SessionStatsRepositoryImpl(gh<_i506.ISessionHistoryRepository>()));
   gh.factory<_i831.SendFeedbackUseCase>(
       () => _i831.SendFeedbackUseCase(gh<_i1011.IFeedbackRepository>()));
-  gh.factory<_i1057.StatsBloc>(
-      () => _i1057.StatsBloc(gh<_i18.ISessionStatsRepository>()));
+  gh.factory<_i384.GetWeeklyStatsUseCase>(
+      () => _i384.GetWeeklyStatsUseCase(gh<_i18.ISessionStatsRepository>()));
   gh.lazySingleton<_i63.FocusSessionManager>(() => _i63.FocusSessionManager(
         gh<_i507.IAudioManager>(),
         gh<_i182.HapticFeedbackService>(),
@@ -156,6 +158,8 @@ _i174.GetIt $initGetIt(
         gh<_i37.GetSessionHistoryUseCase>(),
         gh<_i684.DeleteSessionUseCase>(),
       ));
+  gh.factory<_i1057.StatsBloc>(
+      () => _i1057.StatsBloc(gh<_i384.GetWeeklyStatsUseCase>()));
   gh.factory<_i477.SettingsBloc>(
       () => _i477.SettingsBloc(gh<_i63.FocusSessionManager>()));
   gh.factory<_i724.AudioMixBloc>(() => _i724.AudioMixBloc(
