@@ -56,7 +56,7 @@ class TimerState extends Equatable {
         penaltyCount: 0,
         totalPenaltyTime: Duration.zero,
         isWaitingForFirstFlip: false,
-        isPremium: false,
+        isPremium: true,
         isPomodoroMode: false,
         shortBreakDuration: Duration(minutes: 5),
         longBreakDuration: Duration(minutes: 15),

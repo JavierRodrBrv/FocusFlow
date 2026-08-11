@@ -43,8 +43,7 @@ class FocusBody extends StatelessWidget {
     final showUI = !isZoomMode || (isZoomMode && overlayVisible);
     // El anuncio se muestra si showUI es true (modo normal o toque)
     // O si estamos en modo zoom (según el nuevo requisito: "muestra el anuncio siempre")
-    final showAd =
-        (!state.isPremium && state.canRequestAds) && (isZoomMode || showUI);
+    final showAd = state.canRequestAds && (isZoomMode || showUI);
 
     return Column(
       children: [

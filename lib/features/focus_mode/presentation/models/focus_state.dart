@@ -59,7 +59,7 @@ class FocusState extends Equatable {
     this.hasBreak = false,
     this.penaltyCount = 0,
     this.totalPenaltyTime = Duration.zero,
-    this.isPremium = false,
+    this.isPremium = true,
     this.canRequestAds = false,
     this.rainVolume = 0.0,
     this.fireVolume = 0.0,

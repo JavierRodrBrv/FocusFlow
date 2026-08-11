@@ -26,7 +26,7 @@ class SettingsState extends Equatable {
         backgroundEffect: BackgroundEffect.gradient,
         isAlarmSoundEnabled: true,
         canRequestAds: false,
-        isPremium: false,
+        isPremium: true,
         defaultBreakDuration: null,
         autoTransitionWhenForeground: true,
         languageCode: null,

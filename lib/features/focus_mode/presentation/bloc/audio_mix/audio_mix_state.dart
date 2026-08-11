@@ -34,11 +34,12 @@ class AudioMixState extends Equatable {
     required this.savedMixes,
     this.lastActivatedMixId,
     this.persistedLastMixId,
-    this.isPremium = false,
+    this.isPremium = true,
   });
 
   factory AudioMixState.initial() => const AudioMixState(
         status: AudioStatus.initial,
+        isPremium: true,
         rainVolume: 0.0,
         fireVolume: 0.0,
         brownNoiseVolume: 0.0,

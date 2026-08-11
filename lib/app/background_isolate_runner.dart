@@ -319,11 +319,11 @@ void onStart(ServiceInstance service) async {
       await focusManager.init();
     }
 
-    bool isPremium = false;
+    bool isPremium = true;
     try {
       debugPrint('[BackgroundService] Opening settings box...');
-      final settingsBox = await Hive.openBox('settings').timeout(const Duration(seconds: 3));
-      isPremium = settingsBox.get('is_premium', defaultValue: false);
+      await Hive.openBox('settings').timeout(const Duration(seconds: 3));
+      isPremium = true;
       debugPrint('[BackgroundService] Settings loaded. Premium: $isPremium');
     } catch (e) {
        debugPrint('[BackgroundService] Settings box ERROR (Xiaomi workaround might be needed): $e');

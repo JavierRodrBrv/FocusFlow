@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:focus_flow/core/utils/ad_helper.dart';
 
 class AdBannerWidget extends StatefulWidget {
   const AdBannerWidget({super.key});
@@ -7,14 +8,12 @@ class AdBannerWidget extends StatefulWidget {
   @override
   State<AdBannerWidget> createState() => _AdBannerWidgetState();
 }
-
 class _AdBannerWidgetState extends State<AdBannerWidget> {
   BannerAd? _bannerAd;
   AnchoredAdaptiveBannerAdSize? _adSize;
   bool _isAdLoaded = false;
 
-  // TODO: Replace with your real Ad Unit ID for production.
-  final adUnitId = 'ca-app-pub-3940256099942544/6300978111';
+  final adUnitId = AdHelper.bannerAdUnitId;
 
   @override
   void didChangeDependencies() {

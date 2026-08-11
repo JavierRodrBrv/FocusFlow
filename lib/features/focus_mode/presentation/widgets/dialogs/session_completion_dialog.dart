@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'dart:io' show File, Platform;
+import 'dart:io' show File;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:focus_flow/core/utils/ad_helper.dart';
 import 'package:focus_flow/core/utils/duration_extensions.dart';
 import 'session_completion/stat_row.dart';
 import 'session_completion/views.dart';
@@ -121,7 +122,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
   @override
   void initState() {
     super.initState();
-    if (!widget.isPremium && !kIsWeb) {
+    if (!kIsWeb) {
       _loadInterstitialAd();
     }
     _randomJoyImage = _joyImages[math.Random().nextInt(_joyImages.length)];
@@ -150,9 +151,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
 
     setState(() => _isAdLoading = true);
 
-    final String adUnitId = Platform.isAndroid
-        ? 'ca-app-pub-3940256099942544/1033173712'
-        : 'ca-app-pub-3940256099942544/4411468910';
+    final String adUnitId = AdHelper.interstitialAdUnitId;
 
     InterstitialAd.load(
       adUnitId: adUnitId,
@@ -202,7 +201,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
 
   void _showAd() {
     if (!_validateName()) return;
-    if (widget.isPremium || kIsWeb) {
+    if (kIsWeb) {
       _dismissDialog();
       return;
     }
@@ -619,85 +618,29 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
       );
     }
 
-    final double moneyLost = widget.totalPenaltyTime.calculateMoneyLost();
-
-    if (moneyLost < 1.0) {
-      return ElevatedButton(
-        onPressed: _isWaitingForAd ? null : _showAd,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueAccent,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 48),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+    return ElevatedButton(
+      onPressed: _isWaitingForAd ? null : _showAd,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 48),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: _isWaitingForAd
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(
-                l10n.finishSession,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      child: _isWaitingForAd
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
               ),
-      );
-    }
-
-    return Column(
-      children: [
-        Text(
-          l10n.valueYourTime,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            OutlinedButton(
-              onPressed: _isWaitingForAd ? null : _showAd,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white54,
-                side: const BorderSide(color: Colors.white24),
-              ),
-              child: _isWaitingForAd
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white54,
-                      ),
-                    )
-                  : Text(l10n.notMuch),
+            )
+          : Text(
+              l10n.finishSession,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            ElevatedButton(
-              onPressed: () {
-                if (_validateName()) {
-                  setState(() {
-                    _showMoneyFlow = true;
-                    _isStatsExpanded = false;
-                  });
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(l10n.yesValue),
-            ),
-          ],
-        ),
-      ],
     );
   }
 

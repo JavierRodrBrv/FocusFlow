@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:focus_flow/features/stats/domain/repositories/i_session_stats_repository.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings_menu_bottom_sheet.dart';
 import 'package:focus_flow/features/stats/presentation/screens/dashboard_screen.dart';
-import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
 import 'package:focus_flow/features/session_history/presentation/pages/session_history_page.dart';
 import 'package:focus_flow/flavors.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
@@ -82,6 +80,7 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
         ),
+        /*
         Showcase(
           key: premiumKey,
           title: l10n.premiumExperience,
@@ -110,6 +109,7 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
         ),
+        */
       ],
     );
   }

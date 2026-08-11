@@ -21,6 +21,9 @@ class PremiumRepositoryImpl implements PremiumRepository {
 
   @override
   Future<bool> isPremium() async {
+    // TEMPORARY: Return true to keep all premium features unlocked.
+    return true;
+    /*
     try {
       final box = await _box;
       final status = box.get(
@@ -33,6 +36,7 @@ class PremiumRepositoryImpl implements PremiumRepository {
       debugPrint('[PremiumRepository] Error getting premium status: $e');
       return false;
     }
+    */
   }
 
   @override
