@@ -19,12 +19,17 @@ class PremiumBloc extends Bloc<PremiumEvent, PremiumState> {
   ) async {
     emit(state.copyWith(status: PremiumStatus.loading));
     
-    final success = await _purchasePremiumUseCase();
+    final result = await _purchasePremiumUseCase();
     
-    if (success) {
-      emit(state.copyWith(status: PremiumStatus.success));
-    } else {
-      emit(state.copyWith(status: PremiumStatus.failure));
-    }
+    result.fold(
+      (failure) => emit(state.copyWith(status: PremiumStatus.failure)),
+      (success) {
+        if (success) {
+          emit(state.copyWith(status: PremiumStatus.success));
+        } else {
+          emit(state.copyWith(status: PremiumStatus.failure));
+        }
+      },
+    );
   }
 }

@@ -19,18 +19,53 @@ class HistoryDateHeader extends HistoryListItem {
 
 class HistorySingleSession extends HistoryListItem {
   final FocusSession session;
+  final String? pomodoroConfig;
   
-  const HistorySingleSession(this.session);
+  const HistorySingleSession({
+    required this.session,
+    this.pomodoroConfig,
+  });
   
   @override
-  List<Object?> get props => [session];
+  List<Object?> get props => [session, pomodoroConfig];
 }
 
 class HistoryGroupedSession extends HistoryListItem {
   final List<FocusSession> sessions;
+  final int focusCount;
+  final int completedFocusCount;
+  final int breakCount;
+  final Duration totalFocusActual;
+  final Duration totalBreakActual;
+  final bool anyHardcore;
+  final String? pomodoroConfig;
+  final String? groupSessionName;
+  final bool hasPhotos;
   
-  const HistoryGroupedSession(this.sessions);
+  const HistoryGroupedSession({
+    required this.sessions,
+    required this.focusCount,
+    required this.completedFocusCount,
+    required this.breakCount,
+    required this.totalFocusActual,
+    required this.totalBreakActual,
+    required this.anyHardcore,
+    this.pomodoroConfig,
+    this.groupSessionName,
+    required this.hasPhotos,
+  });
   
   @override
-  List<Object?> get props => [sessions];
+  List<Object?> get props => [
+        sessions,
+        focusCount,
+        completedFocusCount,
+        breakCount,
+        totalFocusActual,
+        totalBreakActual,
+        anyHardcore,
+        pomodoroConfig,
+        groupSessionName,
+        hasPhotos,
+      ];
 }

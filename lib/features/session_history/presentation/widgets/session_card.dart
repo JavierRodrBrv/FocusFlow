@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
@@ -23,9 +25,9 @@ class SessionCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: AppColors.textPrimary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+          border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.1), width: 1),
         ),
         child: InkWell(
           onTap: onTap,
@@ -40,8 +42,8 @@ class SessionCard extends StatelessWidget {
                   children: [
                     Text(
                       dateFormat.format(session.startTime),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textPrimary.withValues(alpha: 0.6),
                         fontSize: 12,
                       ),
                     ),
@@ -62,7 +64,7 @@ class SessionCard extends StatelessWidget {
                             ),
                             child: Text(
                               pomodoroConfig != null ? 'POMODORO • $pomodoroConfig' : 'POMODORO',
-                              style: const TextStyle(
+                              style: AppTextStyles.body.copyWith(
                                 color: Colors.orangeAccent,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -84,9 +86,9 @@ class SessionCard extends StatelessWidget {
                                 color: Colors.red.withValues(alpha: 0.5),
                               ),
                             ),
-                            child: const Text(
+                            child:  Text(
                               'FOCUS',
-                              style: TextStyle(
+                              style: AppTextStyles.body.copyWith(
                                 color: Colors.redAccent,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -118,16 +120,16 @@ class SessionCard extends StatelessWidget {
                                 : (session.sessionName != null && session.sessionName!.isNotEmpty
                                     ? session.sessionName!
                                     : l10n.focusSession),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: AppTextStyles.body.copyWith(
+                              color: AppColors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
                             l10n.durationLabel(durationFormat),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                            style: AppTextStyles.body.copyWith(
+                              color: AppColors.textPrimary.withValues(alpha: 0.8),
                               fontSize: 14,
                             ),
                           ),
@@ -138,7 +140,7 @@ class SessionCard extends StatelessWidget {
                       const Icon(Icons.camera_alt_rounded, color: Colors.pinkAccent, size: 16),
                       const SizedBox(width: 8),
                     ],
-                    const Icon(Icons.chevron_right, color: Colors.white54),
+                    const Icon(Icons.chevron_right, color: AppColors.textSecondary),
                   ],
                 ),
               ],

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 
 class ResetConfirmationDialog extends StatelessWidget {
@@ -33,8 +35,8 @@ class ResetConfirmationDialog extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -43,15 +45,15 @@ class ResetConfirmationDialog extends StatelessWidget {
       ),
       content: Text(
         content,
-        style: const TextStyle(color: Colors.white70, fontSize: 15),
+        style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 15),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             l10n.cancel,
-            style: const TextStyle(
-              color: Colors.white54,
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -72,7 +74,7 @@ class ResetConfirmationDialog extends StatelessWidget {
           ),
           child: Text(
             l10n.reset,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
       ],

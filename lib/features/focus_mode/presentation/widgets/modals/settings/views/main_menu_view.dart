@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:focus_flow/features/focus_mode/presentation/models/focus_state.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -47,8 +49,8 @@ class MainMenuView extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 20),
           child: Text(
             l10n.settingsAndHelp,
-            style: const TextStyle(
-              color: Colors.white,
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -62,11 +64,11 @@ class MainMenuView extends StatelessWidget {
           ),
           title: Text(
             l10n.alarmSound,
-            style: const TextStyle(color: Colors.white),
+            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
           ),
           subtitle: Text(
             l10n.alarmSoundSubtitle,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 12),
           ),
           value: state.isAlarmSoundEnabled,
           onChanged: (_) => onToggleAlarm(),
@@ -81,11 +83,11 @@ class MainMenuView extends StatelessWidget {
           ),
           title: Text(
             l10n.autoTransition,
-            style: const TextStyle(color: Colors.white),
+            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
           ),
           subtitle: Text(
             l10n.autoTransitionSubtitle,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 12),
           ),
           value: state.autoTransitionWhenForeground,
           onChanged: (_) => onToggleAutoTransition(),
@@ -98,17 +100,17 @@ class MainMenuView extends StatelessWidget {
             Icons.timelapse,
             color: Colors.orangeAccent,
           ),
-          title: const Text(
+          title: Text(
             'Pomodoros',
-            style: TextStyle(color: Colors.white),
+            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
           ),
           subtitle: Text(
             state.isPomodoroMode
                 ? 'Ciclo activo: ${state.pomodoroDuration.inMinutes} min / ${state.shortBreakDuration.inMinutes} min / ${state.longBreakDuration.inMinutes} min'
                 : 'Temporizador normal (sin descansos)',
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 12),
           ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+          trailing: Icon(Icons.chevron_right, color: AppColors.textPrimary.withValues(alpha: 0.3)),
           onTap: onGoToPomodoros,
         ),
 
@@ -119,9 +121,9 @@ class MainMenuView extends StatelessWidget {
           ),
           title: Text(
             l10n.wallpaper,
-            style: const TextStyle(color: Colors.white),
+            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
           ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+          trailing: Icon(Icons.chevron_right, color: AppColors.textPrimary.withValues(alpha: 0.3)),
           onTap: onGoToWallpaper,
         ),
 
@@ -132,23 +134,23 @@ class MainMenuView extends StatelessWidget {
           ),
           title: Text(
             l10n.language,
-            style: const TextStyle(color: Colors.white),
+            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
           ),
           subtitle: Text(
             state.languageCode == 'en' ? l10n.english : l10n.spanish,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 12),
           ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+          trailing: Icon(Icons.chevron_right, color: AppColors.textPrimary.withValues(alpha: 0.3)),
           onTap: onGoToLanguage,
         ),
 
-        const Divider(color: Colors.white10),
+        Divider(color: AppColors.textPrimary.withValues(alpha: 0.1)),
 
         ListTile(
-          leading: const Icon(Icons.menu_book, color: Colors.white70),
+          leading: const Icon(Icons.menu_book, color: AppColors.textSecondary),
           title: Text(
             l10n.viewTutorial,
-            style: const TextStyle(color: Colors.white),
+            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
           ),
           onTap: onShowTutorial,
         ),
@@ -157,11 +159,11 @@ class MainMenuView extends StatelessWidget {
           leading: const Icon(Icons.message, color: Colors.pinkAccent),
           title: Text(
             l10n.feedback,
-            style: const TextStyle(color: Colors.white),
+            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
           ),
           subtitle: Text(
             l10n.feedbackSubtitle,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 12),
           ),
           onTap: onGoToFeedback,
         ),
@@ -174,9 +176,9 @@ class MainMenuView extends StatelessWidget {
             return Center(
               child: Text(
                 l10n.versionInfo(versionText),
-                style: const TextStyle(
+                style: AppTextStyles.body.copyWith(
                   fontSize: 12,
-                  color: Colors.white38,
+                  color: AppColors.textSecondary,
                 ),
               ),
             );

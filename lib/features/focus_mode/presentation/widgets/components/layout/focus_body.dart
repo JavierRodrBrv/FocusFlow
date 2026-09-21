@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -55,8 +57,8 @@ class FocusBody extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  Colors.black,
-                  Colors.black,
+                  AppColors.background,
+                  AppColors.background,
                   Colors.transparent,
                 ],
                 stops: [0.0, 0.05, 0.95, 1.0], // Fades top 5% and bottom 5%
@@ -99,10 +101,10 @@ class FocusBody extends StatelessWidget {
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.1),
+                                  color: AppColors.textPrimary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.2),
+                                    color: AppColors.textPrimary.withValues(alpha: 0.2),
                                   ),
                                 ),
                                 child: Row(
@@ -116,8 +118,8 @@ class FocusBody extends StatelessWidget {
                                     const SizedBox(width: 8),
                                     Text(
                                       l10n.minBreak(state.defaultBreakDuration!.inMinutes),
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: AppTextStyles.body.copyWith(
+                                        color: AppColors.textPrimary,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -174,10 +176,10 @@ class FocusBody extends StatelessWidget {
                           //     },
                           //     width: 220,
                           //     height: 48,
-                          //     child: const Text(
+                          //     child: Text(
                           //       'Probar ¿Sonríes? 📸',
-                          //       style: TextStyle(
-                          //         color: Colors.white,
+                          //       style: AppTextStyles.body.copyWith(
+                          //         color: AppColors.textPrimary,
                           //         fontSize: 15,
                           //         fontWeight: FontWeight.bold,
                           //         letterSpacing: 0.5,

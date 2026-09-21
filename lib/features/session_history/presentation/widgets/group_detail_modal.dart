@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:io' show File;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
 import 'session_photo_viewer.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 
 class GroupDetailModal extends StatelessWidget {
   final List<FocusSession> group;
@@ -58,7 +59,7 @@ class GroupDetailModal extends StatelessWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1E293B),
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -74,7 +75,7 @@ class GroupDetailModal extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: AppColors.textPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -102,19 +103,12 @@ class GroupDetailModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      groupSessionName ?? (isPomodoro ? 'Detalles de Ciclo Pomodoro' : l10n.sessionsGroupTitle(group.length)),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      groupSessionName ?? (isPomodoro ? l10n.pomodoroCycleDetails : l10n.sessionsGroupTitle(group.length)),
+                      style: AppTextStyles.h2.copyWith(fontSize: 20),
                     ),
                     Text(
                       dateFormat.format(startTime),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 14,
-                      ),
+                      style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -142,11 +136,7 @@ class GroupDetailModal extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       l10n.cycleBreakdown,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTextStyles.h2.copyWith(fontSize: 16),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -232,8 +222,8 @@ class GroupDetailModal extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.textPrimary.withValues(alpha: 0.1),
+                foregroundColor: AppColors.textPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -260,9 +250,9 @@ class GroupDetailModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppColors.textPrimary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -279,7 +269,7 @@ class GroupDetailModal extends StatelessWidget {
             textColor: Colors.greenAccent,
           ),
           if (isHardcore) ...[
-            const Divider(color: Colors.white10),
+            Divider(color: AppColors.textPrimary.withValues(alpha: 0.1)),
             const SizedBox(height: 8),
             _buildDetailRow(
               Icons.warning_amber_rounded,
@@ -312,10 +302,7 @@ class GroupDetailModal extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4.0),
             child: Text(
               timeFormat.format(session.startTime),
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 12,
-              ),
+              style: AppTextStyles.caption,
             ),
           ),
           const SizedBox(width: 16),
@@ -354,17 +341,11 @@ class GroupDetailModal extends StatelessWidget {
                       : (isPomodoro
                           ? 'Descanso Pomodoro (${_formatPlanned(session.plannedDuration)})'
                           : '${l10n.breakLabel} (${_formatPlanned(session.plannedDuration)})'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   l10n.durationLabel(_formatDuration(session.actualDuration)),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 12,
-                  ),
+                  style: AppTextStyles.caption,
             )],
             ),
           ),
@@ -379,7 +360,7 @@ class GroupDetailModal extends StatelessWidget {
                 ),
                 child: Text(
                   l10n.canceledStatus,
-                  style: const TextStyle(color: Colors.orangeAccent, fontSize: 10),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.accent, fontSize: 10),
                 ),
               ),
             ),
@@ -401,21 +382,17 @@ class GroupDetailModal extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white38, size: 20),
+          Icon(icon, color: AppColors.textSecondary, size: 20),
           const SizedBox(width: 12),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 14,
-            ),
+            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
           ),
           const Spacer(),
           Text(
             value,
-            style: TextStyle(
-              color: textColor ?? Colors.white,
-              fontSize: 14,
+            style: AppTextStyles.body.copyWith(
+              color: textColor ?? AppColors.textPrimary,
               fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -466,7 +443,7 @@ class GroupDetailModal extends StatelessWidget {
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 letterSpacing: 0.5,
               ),
             ),

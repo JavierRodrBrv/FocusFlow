@@ -1,4 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
 class AnimatedBarChart extends StatelessWidget {
@@ -7,11 +9,11 @@ class AnimatedBarChart extends StatelessWidget {
   final void Function(int dayIndex)? onBarTapped;
 
   const AnimatedBarChart({
-    Key? key,
+    super.key,
     required this.weeklyData,
     required this.maxY,
     this.onBarTapped,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,7 @@ class AnimatedBarChart extends StatelessWidget {
                 }
               },
               touchTooltipData: BarTouchTooltipData(
-                getTooltipColor: (_) => Colors.black87,
+                getTooltipColor: (_) => AppColors.background.withValues(alpha: 0.87),
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final totalSecs = (rod.toY * 3600).toInt();
                   int h = totalSecs ~/ 3600;
@@ -53,7 +55,7 @@ class AnimatedBarChart extends StatelessWidget {
 
                   return BarTooltipItem(
                     text.trim().isEmpty ? '0s' : text.trim(),
-                    const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    AppTextStyles.body.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
                   );
                 },
               ),
@@ -72,8 +74,8 @@ class AnimatedBarChart extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
                           days[index - 1],
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: AppTextStyles.body.copyWith(
+                            color: AppColors.textSecondary,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -99,7 +101,7 @@ class AnimatedBarChart extends StatelessWidget {
               drawVerticalLine: false,
               horizontalInterval: effectiveMaxY / 4,
               getDrawingHorizontalLine: (value) => FlLine(
-                color: Colors.white12,
+                color: AppColors.textPrimary.withValues(alpha: 0.12),
                 strokeWidth: 1,
                 dashArray: [4, 4],
               ),

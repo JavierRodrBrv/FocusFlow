@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:focus_flow/app/injection.dart';
@@ -87,7 +88,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
                           padding: const EdgeInsets.only(right: 48.0),
                           child: Text(
                             l10n.feedback,
-                            style: const TextStyle(
+                            style: AppTextStyles.body.copyWith(
                               color: AppColors.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -102,7 +103,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
                 Container(
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.black26,
+                    color: AppColors.background.withValues(alpha: 0.26),
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: Row(
@@ -129,14 +130,14 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
                   controller: _feedbackController,
                   focusNode: _feedbackFocusNode,
                   maxLines: 4,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: AppColors.surface,
                     hintText: _selectedIndex == 0
                         ? l10n.bugHint
                         : l10n.ideaHint,
-                    hintStyle: const TextStyle(color: AppColors.textSecondary),
+                    hintStyle: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -202,7 +203,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTextStyles.body.copyWith(
             color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -231,7 +232,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
           const SizedBox(width: 8),
           Text(
             l10n.thanks,
-            style: const TextStyle(
+            style: AppTextStyles.body.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -242,7 +243,7 @@ class _FeedbackMenuViewState extends State<FeedbackMenuView> {
     }
     return Text(
       l10n.sendFeedback,
-      style: const TextStyle(
+      style: AppTextStyles.body.copyWith(
         color: AppColors.textPrimary,
         fontWeight: FontWeight.bold,
         fontSize: 16,

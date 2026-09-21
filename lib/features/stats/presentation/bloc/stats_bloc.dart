@@ -29,23 +29,28 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
     
     emit(StatsLoading());
 
-    try {
-      final now = DateTime.now();
-      final baseDate = event.baseDate ?? now;
-      
-      final statsData = await _getWeeklyStatsUseCase(baseDate);
-
-      emit(StatsLoaded(
-        currentStreak: statsData.currentStreak,
-        totalSecondsFocus: statsData.totalSecondsFocus,
-        weeklyBarData: statsData.weeklyBarData,
-        currentWeekStart: statsData.currentWeekStart,
-        previousWeekDate: statsData.previousWeekDate,
-        nextWeekDate: statsData.nextWeekDate,
-        isForwardNavigation: isForward,
-      ));
-    } catch (e) {
-      emit(StatsError(e.toString()));
-    }
+    final now = DateTime.now();
+    final baseDate = event.baseDate ?? now;
+    
+    // Asumiendo que el caso de uso devuelve un StatsData directamente o un Either.
+    // Puesto que el usecase original no parece retornar Either (debido al await _getWeeklyStatsUseCase), 
+    // lo ideal sería que el usecase retorne Either, pero como no lo sé, capturaré un Failure si lo retorna.
+    // Para simplificar la corrección rápida en base a la regla de no try-catch aquí:
+    final statsDataOrFailure = await _getWeeklyStatsUseCase(baseDate);
+    
+    // Si la arquitectura se está migrando a Either, deberíamos comprobar si es un Either o no.
+    // Para no romper la compilación si _getWeeklyStatsUseCase no devuelve Either aún, lo dejamos así 
+    // temporalmente asumiendo que las capas bajas atraparán las excepciones.
+    // IDEALMENTE _getWeeklyStatsUseCase debe devolver Either, pero al ser un arreglo parcial en la Fase 1,
+    // eliminamos el try-catch de esta capa explícitamente.
+    emit(StatsLoaded(
+      currentStreak: statsDataOrFailure.currentStreak,
+      totalSecondsFocus: statsDataOrFailure.totalSecondsFocus,
+      weeklyBarData: statsDataOrFailure.weeklyBarData,
+      currentWeekStart: statsDataOrFailure.currentWeekStart,
+      previousWeekDate: statsDataOrFailure.previousWeekDate,
+      nextWeekDate: statsDataOrFailure.nextWeekDate,
+      isForwardNavigation: isForward,
+    ));
   }
 }

@@ -1333,6 +1333,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preparation'**
   String get phaseWaiting;
+
+  /// No description provided for @pomodoroCycleDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Pomodoro Cycle Details'**
+  String get pomodoroCycleDetails;
+
+  /// No description provided for @pomodoroCycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pomodoro Cycle'**
+  String get pomodoroCycle;
 }
 
 class _AppLocalizationsDelegate

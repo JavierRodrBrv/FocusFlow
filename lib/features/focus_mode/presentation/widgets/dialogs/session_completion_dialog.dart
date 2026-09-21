@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'dart:io' show File;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -366,11 +368,11 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
               margin: const EdgeInsets.only(top: 24),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
+                    color: AppColors.background.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 8),
                   ),
@@ -401,13 +403,13 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                           child: Container(
                             padding: const EdgeInsets.all(6),
                             decoration: const BoxDecoration(
-                              color: Colors.black54,
+                              color: AppColors.background54,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.refresh_rounded,
                               size: 16,
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
@@ -420,7 +422,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                     style: GoogleFonts.caveat(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: AppColors.background.withValues(alpha: 0.87),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -448,14 +450,14 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
               const SizedBox(height: 16),
               Text(
                 _getPerformanceMessage(context),
-                style: const TextStyle(color: Colors.white70),
+                style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               _buildStats(context),
               const SizedBox(height: 16),
               TextField(
                 controller: _nameController,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: AppTextStyles.body.copyWith(color: AppColors.textPrimary, fontSize: 15),
                 onChanged: (val) {
                   if (_hasNameError && val.trim().isNotEmpty) {
                     setState(() {
@@ -465,19 +467,19 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                 },
                 decoration: InputDecoration(
                   hintText: '¿Qué nombre tiene esta sesión?',
-                  hintStyle: const TextStyle(
-                    color: Colors.white30,
+                  hintStyle: AppTextStyles.body.copyWith(
+                    color: AppColors.textPrimary.withValues(alpha: 0.3),
                     fontSize: 14,
                   ),
                   errorText: _hasNameError
                       ? 'El nombre de la sesión es obligatorio'
                       : null,
-                  errorStyle: const TextStyle(
+                  errorStyle: AppTextStyles.body.copyWith(
                     color: Colors.redAccent,
                     fontSize: 12,
                   ),
                   filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.04),
+                  fillColor: AppColors.textPrimary.withValues(alpha: 0.04),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 14,
@@ -487,7 +489,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                     borderSide: BorderSide(
                       color: _hasNameError
                           ? Colors.redAccent
-                          : Colors.white.withValues(alpha: 0.1),
+                          : AppColors.textPrimary.withValues(alpha: 0.1),
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
@@ -495,7 +497,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                     borderSide: BorderSide(
                       color: _hasNameError
                           ? Colors.redAccent
-                          : Colors.white.withValues(alpha: 0.1),
+                          : AppColors.textPrimary.withValues(alpha: 0.1),
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
@@ -515,7 +517,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
               ),
               _buildPhotoSection(),
               const SizedBox(height: 24),
-              const Divider(color: Colors.white10),
+              Divider(color: AppColors.textPrimary.withValues(alpha: 0.1)),
               const SizedBox(height: 16),
               _buildContent(),
             ],
@@ -548,8 +550,8 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
         const SizedBox(height: 20),
         Text(
           l10n.sessionCompletedTitle,
-          style: const TextStyle(
-            color: Colors.white,
+          style: AppTextStyles.body.copyWith(
+            color: AppColors.textPrimary,
             fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
@@ -571,9 +573,9 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
               margin: const EdgeInsets.only(top: 24),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: AppColors.textPrimary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.1)),
               ),
               child: Column(
                 children: [
@@ -585,9 +587,9 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                         ? Colors.greenAccent
                         : Colors.orangeAccent,
                   ),
-                  const Padding(
+                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Divider(color: Colors.white10),
+                    child: Divider(color: AppColors.textPrimary.withValues(alpha: 0.1)),
                   ),
                   StatRow(
                     icon: Icons.timer_outlined,
@@ -638,7 +640,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
         onPressed: _dismissDialog,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blueAccent,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.textPrimary,
           minimumSize: const Size(double.infinity, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -646,7 +648,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
         ),
         child: Text(
           l10n.finishSession,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
         ),
       );
     }
@@ -655,7 +657,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
       onPressed: _isWaitingForAd ? null : _showAd,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
         minimumSize: const Size(double.infinity, 48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -665,12 +667,12 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Colors.white,
+                color: AppColors.textPrimary,
               ),
             )
           : Text(
               l10n.finishSession,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
             ),
     );
   }

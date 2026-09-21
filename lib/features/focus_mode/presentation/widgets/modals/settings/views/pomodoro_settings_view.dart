@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:focus_flow/features/focus_mode/presentation/models/focus_state.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
@@ -76,8 +78,8 @@ class _PomodoroSettingsViewState extends State<PomodoroSettingsView> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white70,
+          style: AppTextStyles.body.copyWith(
+            color: AppColors.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
@@ -98,8 +100,8 @@ class _PomodoroSettingsViewState extends State<PomodoroSettingsView> {
               (index) => Center(
                 child: Text(
                   l10n.minOnly(index + 1),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w400,
                   ),
@@ -123,18 +125,18 @@ class _PomodoroSettingsViewState extends State<PomodoroSettingsView> {
             IconButton(
               icon: const Icon(
                 Icons.arrow_back_ios_new,
-                color: Colors.white70,
+                color: AppColors.textSecondary,
               ),
               onPressed: widget.onBack,
             ),
-            const Expanded(
+             Expanded(
               child: Center(
                 child: Padding(
                   padding: EdgeInsets.only(right: 48.0),
                   child: Text(
                     'Pomodoros',
-                    style: TextStyle(
-                      color: Colors.white,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -151,18 +153,18 @@ class _PomodoroSettingsViewState extends State<PomodoroSettingsView> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: AppColors.textPrimary.withOpacity(0.05),
               borderRadius: BorderRadius.circular(16),
             ),
             child: SwitchListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              title: const Text(
+              title: Text(
                 'Modo Pomodoro',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                style: AppTextStyles.body.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
               ),
-              subtitle: const Text(
+              subtitle: Text(
                 'Ejecuta un ciclo de estudio y descansos automáticos.',
-                style: TextStyle(color: Colors.white38, fontSize: 12),
+                style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 12),
               ),
               value: _isPomodoroMode,
               onChanged: (val) {
@@ -171,7 +173,7 @@ class _PomodoroSettingsViewState extends State<PomodoroSettingsView> {
                 });
                 _saveSettings();
               },
-              activeColor: Colors.orangeAccent,
+              activeThumbColor: Colors.orangeAccent,
               activeTrackColor: Colors.orangeAccent.withOpacity(0.3),
             ),
           ),
@@ -190,10 +192,10 @@ class _PomodoroSettingsViewState extends State<PomodoroSettingsView> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.02),
+                  color: AppColors.textPrimary.withOpacity(0.02),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.05),
+                    color: AppColors.textPrimary.withOpacity(0.05),
                     width: 1,
                   ),
                 ),
@@ -213,7 +215,7 @@ class _PomodoroSettingsViewState extends State<PomodoroSettingsView> {
                     Container(
                       width: 1,
                       height: 100,
-                      color: Colors.white12,
+                      color: AppColors.textPrimary.withValues(alpha: 0.12),
                     ),
                     Expanded(
                       child: _buildPickerColumn(
@@ -229,7 +231,7 @@ class _PomodoroSettingsViewState extends State<PomodoroSettingsView> {
                     Container(
                       width: 1,
                       height: 100,
-                      color: Colors.white12,
+                      color: AppColors.textPrimary.withValues(alpha: 0.12),
                     ),
                     Expanded(
                       child: _buildPickerColumn(

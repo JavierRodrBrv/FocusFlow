@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/background_effect.dart';
 import 'package:focus_flow/features/focus_mode/presentation/models/focus_state.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/background/gradient_flow_background.dart';
@@ -30,7 +32,7 @@ class WallpaperMenuView extends StatelessWidget {
             IconButton(
               icon: const Icon(
                 Icons.arrow_back_ios_new,
-                color: Colors.white70,
+                color: AppColors.textSecondary,
               ),
               onPressed: onBack,
             ),
@@ -40,8 +42,8 @@ class WallpaperMenuView extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 48.0),
                   child: Text(
                     l10n.wallpaper,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -67,7 +69,7 @@ class WallpaperMenuView extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F172A),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.1)),
                   ),
                 ),
                 onTap: () => onSelectEffect(BackgroundEffect.solid),

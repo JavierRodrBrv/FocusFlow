@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/background_effect.dart';
 import 'package:focus_flow/features/focus_mode/domain/services/focus_session_manager.dart';
 import 'package:injectable/injectable.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 part 'settings_event.dart';
 part 'settings_state.dart';

@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -161,7 +163,7 @@ class _TimerDisplayState extends State<TimerDisplay>
 
     final color = isResting
         ? Colors.redAccent
-        : (canAdjust ? Colors.white : Colors.white.withValues(alpha: 0.4));
+        : (canAdjust ? AppColors.textPrimary : AppColors.textPrimary.withValues(alpha: 0.4));
 
     return Center(
       child: BouncingButton(
@@ -196,7 +198,7 @@ class _TimerDisplayState extends State<TimerDisplay>
                         fit: BoxFit.scaleDown,
                         child: Text(
                           _formatDuration(state.remainingTime),
-                          style: TextStyle(
+                          style: AppTextStyles.body.copyWith(
                             fontSize: state.remainingTime.inHours > 0 ? 64 : 82,
                             fontWeight: FontWeight.w200,
                             color: color,
@@ -215,7 +217,7 @@ class _TimerDisplayState extends State<TimerDisplay>
                 padding: const EdgeInsets.only(top: 12.0),
                 child: Text(
                   AppLocalizations.of(context)!.tapToAdjust,
-                  style: TextStyle(
+                  style: AppTextStyles.body.copyWith(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.5,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io' show File;
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -201,11 +203,11 @@ class _PomodoroCycleCompleteDialogState
               margin: const EdgeInsets.only(top: 20),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
+                    color: AppColors.background.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 8),
                   ),
@@ -235,14 +237,14 @@ class _PomodoroCycleCompleteDialogState
                           onTap: _takePhoto,
                           child: Container(
                             padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
+                            decoration:  BoxDecoration(
+                              color: AppColors.background54,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.refresh_rounded,
                               size: 16,
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
@@ -255,7 +257,7 @@ class _PomodoroCycleCompleteDialogState
                     style: GoogleFonts.caveat(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: AppColors.background.withValues(alpha: 0.87),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -371,8 +373,8 @@ class _PomodoroCycleCompleteDialogState
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white70,
+          style: AppTextStyles.body.copyWith(
+            color: AppColors.textSecondary,
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
@@ -393,8 +395,8 @@ class _PomodoroCycleCompleteDialogState
               (index) => Center(
                 child: Text(
                   '${index + 1} min',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w400,
                   ),
@@ -433,10 +435,10 @@ class _PomodoroCycleCompleteDialogState
             const SizedBox(height: 20),
 
             // Título
-            const Text(
+            Text(
               '¡Ciclo Completado!',
-              style: TextStyle(
-                color: Colors.white,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textPrimary,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
@@ -445,10 +447,10 @@ class _PomodoroCycleCompleteDialogState
             const SizedBox(height: 12),
 
             // Cuerpo de texto explicativo
-            const Text(
+            Text(
               '¡Gran trabajo! Has completado tus 4 bloques de estudio y el descanso largo total. Has mantenido un excelente enfoque.',
-              style: TextStyle(
-                color: Colors.white70,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -466,17 +468,17 @@ class _PomodoroCycleCompleteDialogState
                   });
                 }
               },
-              style: const TextStyle(color: Colors.white, fontSize: 15),
+              style: AppTextStyles.body.copyWith(color: AppColors.textPrimary, fontSize: 15),
               decoration: InputDecoration(
                 hintText: '¿Qué nombre tiene esta sesión?',
-                hintStyle: TextStyle(
+                hintStyle: AppTextStyles.body.copyWith(
                   color: _hasNameError
                       ? Colors.redAccent.withValues(alpha: 0.5)
-                      : Colors.white30,
+                      : AppColors.textPrimary.withValues(alpha: 0.3),
                   fontSize: 14,
                 ),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.04),
+                fillColor: AppColors.textPrimary.withValues(alpha: 0.04),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 14,
@@ -486,7 +488,7 @@ class _PomodoroCycleCompleteDialogState
                   borderSide: BorderSide(
                     color: _hasNameError
                         ? Colors.redAccent
-                        : Colors.white.withValues(alpha: 0.1),
+                        : AppColors.textPrimary.withValues(alpha: 0.1),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
@@ -494,7 +496,7 @@ class _PomodoroCycleCompleteDialogState
                   borderSide: BorderSide(
                     color: _hasNameError
                         ? Colors.redAccent
-                        : Colors.white.withValues(alpha: 0.1),
+                        : AppColors.textPrimary.withValues(alpha: 0.1),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -520,10 +522,10 @@ class _PomodoroCycleCompleteDialogState
             const SizedBox(height: 24),
 
             // 3. Pregunta final
-            const Text(
+            Text(
               '¿Quieres comenzar un nuevo ciclo Pomodoro?',
-              style: TextStyle(
-                color: Colors.white,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -544,10 +546,10 @@ class _PomodoroCycleCompleteDialogState
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.02),
+                  color: AppColors.textPrimary.withValues(alpha: 0.02),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: AppColors.textPrimary.withValues(alpha: 0.05),
                     width: 1,
                   ),
                 ),
@@ -561,11 +563,11 @@ class _PomodoroCycleCompleteDialogState
                           size: 18,
                         ),
                         const SizedBox(width: 8),
-                        const Expanded(
+                         Expanded(
                           child: Text(
                             '¿Ajustar tiempos del próximo ciclo?',
-                            style: TextStyle(
-                              color: Colors.white,
+                            style: AppTextStyles.body.copyWith(
+                              color: AppColors.textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -577,7 +579,7 @@ class _PomodoroCycleCompleteDialogState
                           duration: const Duration(milliseconds: 200),
                           child: const Icon(
                             Icons.keyboard_arrow_down_rounded,
-                            color: Colors.white54,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -589,7 +591,7 @@ class _PomodoroCycleCompleteDialogState
                           ? Column(
                               children: [
                                 const SizedBox(height: 12),
-                                const Divider(color: Colors.white10),
+                                Divider(color: AppColors.textPrimary.withValues(alpha: 0.1)),
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
@@ -608,7 +610,7 @@ class _PomodoroCycleCompleteDialogState
                                     Container(
                                       width: 1,
                                       height: 80,
-                                      color: Colors.white12,
+                                      color: AppColors.textPrimary.withValues(alpha: 0.12),
                                     ),
                                     Expanded(
                                       child: _buildPickerColumn(
@@ -625,7 +627,7 @@ class _PomodoroCycleCompleteDialogState
                                     Container(
                                       width: 1,
                                       height: 80,
-                                      color: Colors.white12,
+                                      color: AppColors.textPrimary.withValues(alpha: 0.12),
                                     ),
                                     Expanded(
                                       child: _buildPickerColumn(
@@ -658,10 +660,10 @@ class _PomodoroCycleCompleteDialogState
         // Botón Listo por hoy
         TextButton(
           onPressed: _handleFinish,
-          child: const Text(
+          child: Text(
             'Listo por hoy',
-            style: TextStyle(
-              color: Colors.white54,
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -673,16 +675,16 @@ class _PomodoroCycleCompleteDialogState
           onPressed: _handleStartNewCycle,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.orangeAccent,
-            foregroundColor: Colors.black,
+            foregroundColor: AppColors.background,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
+          child: Text(
             'Nuevo Ciclo',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold, fontSize: 14),
           ),
         ),
       ],

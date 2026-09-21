@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/background_effect.dart';
 
 class WallpaperOptionCard extends StatelessWidget {
@@ -42,14 +44,14 @@ class WallpaperOptionCard extends StatelessWidget {
             children: [
               Icon(
                 isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: isSelected ? Colors.blueAccent : Colors.white30,
+                color: isSelected ? Colors.blueAccent : AppColors.textPrimary.withValues(alpha: 0.3),
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white54,
+                style: AppTextStyles.body.copyWith(
+                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),

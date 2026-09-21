@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:get_it/get_it.dart';
 import 'package:focus_flow/features/stats/domain/repositories/i_session_stats_repository.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/modals/settings_menu_bottom_sheet.dart';
-import 'package:focus_flow/features/stats/presentation/screens/dashboard_screen.dart';
-import 'package:focus_flow/features/session_history/presentation/pages/session_history_page.dart';
 import 'package:focus_flow/flavors.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import '../../models/focus_state.dart';
+
+import 'package:go_router/go_router.dart';
 
 class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
   final FocusState state;
@@ -33,9 +35,9 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return AppBar(
-      title: const Text(
+      title: Text(
         'FocusFlow',
-        style: TextStyle(
+        style: AppTextStyles.body.copyWith(
           fontWeight: FontWeight.w900,
           letterSpacing: 2,
           fontSize: 20,
@@ -49,7 +51,7 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
         title: l10n.settingsAndHelp,
         description: l10n.settingsHelpDesc,
         child: IconButton(
-          icon: const Icon(Icons.notes_rounded, color: Colors.white70),
+          icon: const Icon(Icons.notes_rounded, color: AppColors.textSecondary),
           onPressed: () async {
             final result = await showModalBottomSheet(
               context: context,
@@ -69,14 +71,9 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
           title: l10n.sessionsHistory,
           description: l10n.sessionsHistoryDesc,
           child: IconButton(
-            icon: const Icon(Icons.history_rounded, color: Colors.white70),
+            icon: const Icon(Icons.history_rounded, color: AppColors.textSecondary),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SessionHistoryPage(),
-                ),
-              );
+              context.push('/history');
             },
           ),
         ),
@@ -90,7 +87,7 @@ class FocusAppBar extends StatelessWidget implements PreferredSizeWidget {
               state.isPremium
                   ? Icons.workspace_premium
                   : Icons.workspace_premium_outlined,
-              color: state.isPremium ? Colors.amber : Colors.white70,
+              color: state.isPremium ? Colors.amber : AppColors.textSecondary,
             ),
             onPressed: () {
               if (F.appFlavor == Flavor.dev) {
@@ -227,18 +224,10 @@ class _StreakStatsButtonState extends State<StreakStatsButton>
         IconButton(
           icon: Icon(
             Icons.bar_chart_rounded,
-            color: _hasStreak ? Colors.orangeAccent : Colors.white70,
+            color: _hasStreak ? Colors.orangeAccent : AppColors.textSecondary,
           ),
           onPressed: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => const DashboardScreen(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-              ),
-            ).then((_) => _checkStreak());
+            context.push('/dashboard').then((_) => _checkStreak());
           },
         ),
         if (_hasStreak)
@@ -253,9 +242,9 @@ class _StreakStatsButtonState extends State<StreakStatsButton>
                   color: Color(0xFF0F172A),
                   shape: BoxShape.circle,
                 ),
-                child: const Text(
+                child: Text(
                   '🔥',
-                  style: TextStyle(fontSize: 10),
+                  style: AppTextStyles.body.copyWith(fontSize: 10),
                 ),
               ),
             ),

@@ -16,4 +16,6 @@ class AppColors {
   
   static const Color textPrimary = Colors.white;
   static const Color textSecondary = Colors.white70;
+  static const Color textFaded = Color(0xFF94A3B8);  // Slate 400 - mejor para texto de "placeholder"
+  static const Color background54 = Colors.black54; // Fondo oscuro semitransparente para superposición
 }

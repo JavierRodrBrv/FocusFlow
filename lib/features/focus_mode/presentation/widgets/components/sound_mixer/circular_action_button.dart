@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
 
 class CircularActionButton extends StatelessWidget {
   final IconData icon;
@@ -22,7 +23,7 @@ class CircularActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: AppColors.textPrimary.withValues(alpha: 0.05),
           shape: BoxShape.circle,
         ),
         child: Stack(
@@ -30,7 +31,7 @@ class CircularActionButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isPremium ? color : Colors.white24,
+              color: isPremium ? color : AppColors.textPrimary.withValues(alpha: 0.24),
               size: 24,
             ),
             if (!isPremium)

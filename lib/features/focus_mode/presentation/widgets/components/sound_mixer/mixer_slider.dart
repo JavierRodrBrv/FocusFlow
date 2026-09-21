@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 
 class MixerSlider extends StatefulWidget {
   final String label;
@@ -60,7 +62,7 @@ class _MixerSliderState extends State<MixerSlider> {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(widget.icon, color: Colors.white70, size: 20),
+        Icon(widget.icon, color: AppColors.textSecondary, size: 20),
         const SizedBox(width: 12),
         Expanded(
           child: SliderTheme(
@@ -72,7 +74,7 @@ class _MixerSliderState extends State<MixerSlider> {
             child: Slider(
               value: _currentValue,
               activeColor: Colors.blueAccent,
-              inactiveColor: Colors.white10,
+              inactiveColor: AppColors.textPrimary.withValues(alpha: 0.1),
               onChangeStart: (_) => setState(() => _isDragging = true),
               onChangeEnd: (val) {
                 setState(() {
@@ -89,7 +91,7 @@ class _MixerSliderState extends State<MixerSlider> {
           width: 35,
           child: Text(
             '${(_currentValue * 100).toInt()}%',
-            style: const TextStyle(fontSize: 10, color: Colors.white38),
+            style: AppTextStyles.body.copyWith(fontSize: 10, color: AppColors.textSecondary),
             textAlign: TextAlign.end,
           ),
         ),

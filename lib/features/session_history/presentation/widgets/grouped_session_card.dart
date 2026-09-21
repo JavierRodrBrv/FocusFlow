@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:intl/intl.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 
@@ -47,12 +49,12 @@ class GroupedSessionCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: AppColors.textPrimary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isPomodoroMode
                 ? Colors.orangeAccent.withValues(alpha: 0.3)
-                : Colors.white.withValues(alpha: 0.1),
+                : AppColors.textPrimary.withValues(alpha: 0.1),
             width: isPomodoroMode ? 1.2 : 1.0,
           ),
         ),
@@ -69,8 +71,8 @@ class GroupedSessionCard extends StatelessWidget {
                   children: [
                     Text(
                       dateFormat.format(startTime),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textPrimary.withValues(alpha: 0.6),
                         fontSize: 12,
                       ),
                     ),
@@ -91,7 +93,7 @@ class GroupedSessionCard extends StatelessWidget {
                             ),
                             child: Text(
                               pomodoroConfig != null ? 'POMODORO • $pomodoroConfig' : 'POMODORO',
-                              style: const TextStyle(
+                              style: AppTextStyles.body.copyWith(
                                 color: Colors.orangeAccent,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -113,9 +115,9 @@ class GroupedSessionCard extends StatelessWidget {
                                 color: Colors.red.withValues(alpha: 0.5),
                               ),
                             ),
-                            child: const Text(
+                            child:  Text(
                               'FOCUS',
-                              style: TextStyle(
+                              style: AppTextStyles.body.copyWith(
                                 color: Colors.redAccent,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -151,9 +153,9 @@ class GroupedSessionCard extends StatelessWidget {
                           Text(
                             sessionName != null && sessionName!.isNotEmpty
                                 ? sessionName!
-                                : (isPomodoroMode ? 'Ciclo Pomodoro' : l10n.sessionCycle),
-                            style: const TextStyle(
-                              color: Colors.white,
+                                : (isPomodoroMode ? l10n.pomodoroCycle : l10n.sessionCycle),
+                            style: AppTextStyles.body.copyWith(
+                              color: AppColors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -164,8 +166,8 @@ class GroupedSessionCard extends StatelessWidget {
                                     ? '1 Pomodoro completado' 
                                     : '$completedFocusCount Pomodoros completados')
                                 : '${l10n.focusCount(focusCount)} • ${l10n.breakCount(breakCount)}',
-                            style: TextStyle(
-                              color: isPomodoroMode ? Colors.orangeAccent.withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.8),
+                            style: AppTextStyles.body.copyWith(
+                              color: isPomodoroMode ? Colors.orangeAccent.withValues(alpha: 0.9) : AppColors.textPrimary.withValues(alpha: 0.8),
                               fontSize: 14,
                               fontWeight: isPomodoroMode ? FontWeight.w600 : FontWeight.normal,
                             ),
@@ -174,8 +176,8 @@ class GroupedSessionCard extends StatelessWidget {
                             isPomodoroMode
                                 ? 'Tiempo enfocado: $totalDurationFormat'
                                 : l10n.totalTimeLabel(totalDurationFormat),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                            style: AppTextStyles.body.copyWith(
+                              color: AppColors.textPrimary.withValues(alpha: 0.5),
                               fontSize: 12,
                             ),
                           ),
@@ -186,7 +188,7 @@ class GroupedSessionCard extends StatelessWidget {
                       const Icon(Icons.camera_alt_rounded, color: Colors.pinkAccent, size: 16),
                       const SizedBox(width: 8),
                     ],
-                    const Icon(Icons.chevron_right, color: Colors.white54),
+                    const Icon(Icons.chevron_right, color: AppColors.textSecondary),
                   ],
                 ),
               ],

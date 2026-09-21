@@ -104,10 +104,11 @@ _i174.GetIt $initGetIt(
   );
   final coreModule = _$CoreModule();
   gh.factory<_i150.TimerService>(() => _i150.TimerService());
-  gh.lazySingleton<_i519.Client>(() => coreModule.httpClient);
-  gh.lazySingleton<_i322.FocusCoordinatorService>(
-      () => _i322.FocusCoordinatorService());
-  gh.lazySingleton<_i765.PhotoService>(() => _i765.PhotoService());
+  gh.lazySingleton<_i395.SoundEffectEngine>(
+    () => _i395.SoundEffectEngine(),
+    dispose: (i) => i.dispose(),
+  );
+  gh.lazySingleton<_i501.SoundMixerEngine>(() => _i501.SoundMixerEngine());
   gh.lazySingleton<_i721.DndController>(() => _i721.DndController());
   gh.lazySingleton<_i775.HapticEngine>(
     () => _i775.HapticEngine(),
@@ -117,11 +118,10 @@ _i174.GetIt $initGetIt(
     () => _i688.DeviceSensors(),
     dispose: (i) => i.dispose(),
   );
-  gh.lazySingleton<_i395.SoundEffectEngine>(
-    () => _i395.SoundEffectEngine(),
-    dispose: (i) => i.dispose(),
-  );
-  gh.lazySingleton<_i501.SoundMixerEngine>(() => _i501.SoundMixerEngine());
+  gh.lazySingleton<_i519.Client>(() => coreModule.httpClient);
+  gh.lazySingleton<_i322.FocusCoordinatorService>(
+      () => _i322.FocusCoordinatorService());
+  gh.lazySingleton<_i765.PhotoService>(() => _i765.PhotoService());
   gh.lazySingleton<_i131.PurchasePremiumUseCase>(
       () => _i131.PurchasePremiumUseCase());
   gh.lazySingleton<_i843.PremiumRepository>(
@@ -165,8 +165,6 @@ _i174.GetIt $initGetIt(
             gh<_i507.IAudioManager>(),
             gh<_i775.HapticEngine>(),
           ));
-  gh.factory<_i655.GetGroupedHistoryUseCase>(() =>
-      _i655.GetGroupedHistoryUseCase(gh<_i37.GetSessionHistoryUseCase>()));
   gh.lazySingleton<_i63.FocusSessionManager>(() => _i63.FocusSessionManager(
         gh<_i507.IAudioManager>(),
         gh<_i775.HapticEngine>(),
@@ -191,6 +189,11 @@ _i174.GetIt $initGetIt(
         gh<_i1064.GetLastPlayedMixUseCase>(),
         gh<_i657.SaveLastPlayedMixUseCase>(),
       ));
+  gh.factory<_i655.GetGroupedHistoryUseCase>(
+      () => _i655.GetGroupedHistoryUseCase(
+            gh<_i37.GetSessionHistoryUseCase>(),
+            gh<_i63.FocusSessionManager>(),
+          ));
   gh.factory<_i120.SessionHistoryBloc>(() => _i120.SessionHistoryBloc(
         gh<_i655.GetGroupedHistoryUseCase>(),
         gh<_i684.DeleteSessionUseCase>(),

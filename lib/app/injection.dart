@@ -22,6 +22,6 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<AdConsentManager>(() => AdConsentManager());
 
   debugPrint('[Injection] Running generated initializer...');
-  await $initGetIt(getIt);
+  $initGetIt(getIt);
   debugPrint('[Injection] Dependencies initialized.');
 }

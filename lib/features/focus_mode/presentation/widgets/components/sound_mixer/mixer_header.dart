@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 
 class MixerHeader extends StatelessWidget {
   final bool isPlaying;
@@ -23,15 +25,15 @@ class MixerHeader extends StatelessWidget {
           children: [
             Icon(
               Icons.tune,
-              color: isPlaying ? Colors.blueAccent : Colors.white70,
+              color: isPlaying ? Colors.blueAccent : AppColors.textSecondary,
               size: 22,
             ),
             const SizedBox(width: 12),
-            const Expanded(
+             Expanded(
               child: Text(
                 'Mezclador de Sonido',
-                style: TextStyle(
-                  color: Colors.white,
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -39,7 +41,7 @@ class MixerHeader extends StatelessWidget {
             ),
             RotationTransition(
               turns: Tween(begin: 0.0, end: 0.5).animate(expandAnimation),
-              child: const Icon(Icons.expand_more, color: Colors.white38),
+              child: const Icon(Icons.expand_more, color: AppColors.textSecondary),
             ),
           ],
         ),

@@ -725,4 +725,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phaseWaiting => 'Preparation';
+
+  @override
+  String get pomodoroCycleDetails => 'Pomodoro Cycle Details';
+
+  @override
+  String get pomodoroCycle => 'Pomodoro Cycle';
 }

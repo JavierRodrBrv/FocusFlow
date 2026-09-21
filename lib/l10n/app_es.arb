@@ -129,14 +129,6 @@
   "comingSoon": "Invitar a un café ☕",
   "breaksDesc": "Configura un tiempo de descanso predeterminado. Si lo haces, las sesiones comenzarán automáticamente sin preguntar cada vez.",
   "sendFeedback": "Enviar Feedback",
-  "errorSending": "Error al enviar: {error}",
-  "@errorSending": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "resetSessionTitle": "¿Reiniciar sesión?",
   "resetSessionMessage": "Se perderá el progreso de la sesión actual.",
   "cancel": "Cancelar",
@@ -242,8 +234,6 @@
   "purchasesSoon": "Compras próximamente.",
   "priceOnly": "Solo ",
   "oneTimePayment": " / pago único",
-  "noSavedMixes": "No tienes mezclas guardadas aún.",
-  "savedMixesTitle": "Mezclas Guardadas",
   "lastActivatedLabel": " (Última)",
   "mixDetail": "Lluvia: {rain}% • Fuego: {fire}% • Olas: {waves}%{last}",
   "@mixDetail": {
@@ -348,5 +338,7 @@
   },
   "phaseFocus": "Enfoque",
   "phaseBreak": "Descanso",
-  "phaseWaiting": "Preparación"
+  "phaseWaiting": "Preparación",
+  "pomodoroCycleDetails": "Detalles de Ciclo Pomodoro",
+  "pomodoroCycle": "Ciclo Pomodoro"
 }

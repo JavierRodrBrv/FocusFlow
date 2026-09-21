@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/core/domain/entities/phone_orientation.dart';
@@ -23,7 +25,7 @@ class HardcoreModeCard extends StatelessWidget {
 
     final borderColor = state.isInPenaltyBox
         ? Colors.red.withValues(alpha: 0.5)
-        : Colors.white.withValues(alpha: 0.1);
+        : AppColors.textPrimary.withValues(alpha: 0.1);
 
     final backgroundColor = state.isInPenaltyBox
         ? Colors.red.withValues(alpha: 0.05)
@@ -47,7 +49,7 @@ class HardcoreModeCard extends StatelessWidget {
                   children: [
                     Text(
                       l10n.focusModeTitle,
-                      style: const TextStyle(
+                      style: AppTextStyles.body.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -57,7 +59,7 @@ class HardcoreModeCard extends StatelessWidget {
                       isSessionActive
                           ? l10n.lockDuringSession
                           : l10n.flipToStart,
-                      style: TextStyle(
+                      style: AppTextStyles.body.copyWith(
                         fontSize: 12,
                         color: isSessionActive
                             ? Colors.amber.withValues(alpha: 0.8)
@@ -90,7 +92,7 @@ class HardcoreModeCard extends StatelessWidget {
           // Solo mostramos el mensaje de estado si el modo Focus está activado
           if (state.isHardcoreMode) ...[
             const SizedBox(height: 16),
-            const Divider(height: 1, color: Colors.white10),
+            Divider(height: 1, color: AppColors.textPrimary.withValues(alpha: 0.1)),
             const SizedBox(height: 12),
             _StatusMessage(state: state),
           ],
@@ -104,7 +106,7 @@ class HardcoreModeCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n.disableHardcoreWarning,
-                    style: const TextStyle(color: Colors.amber, fontSize: 10),
+                    style: AppTextStyles.body.copyWith(color: Colors.amber, fontSize: 10),
                   ),
                 ),
               ],
@@ -162,7 +164,7 @@ class _StatusMessage extends StatelessWidget {
       // Estado Inicial / Pausado / Terminado
       return _buildRow(
         icon: Icons.info_outline,
-        color: Colors.white54,
+        color: AppColors.textSecondary,
         text: l10n.focusModeArmed,
       );
     }
@@ -181,7 +183,7 @@ class _StatusMessage extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
+            style: AppTextStyles.body.copyWith(
               color: color,
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             ),

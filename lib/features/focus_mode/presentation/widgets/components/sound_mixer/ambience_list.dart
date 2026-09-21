@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/presentation/models/focus_state.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
@@ -59,7 +61,7 @@ class AmbienceList extends StatelessWidget {
               leading: item['path'] == null
                   ? Icon(
                       Icons.music_off_outlined,
-                      color: isSelected ? Colors.blueAccent : Colors.white38,
+                      color: isSelected ? Colors.blueAccent : AppColors.textSecondary,
                       size: 20,
                     )
                   : (item['svgPath'] != null
@@ -68,7 +70,7 @@ class AmbienceList extends StatelessWidget {
                             width: 20,
                             height: 20,
                             colorFilter: ColorFilter.mode(
-                              isSelected ? Colors.blueAccent : Colors.white38,
+                              isSelected ? Colors.blueAccent : AppColors.textSecondary,
                               BlendMode.srcIn,
                             ),
                           )
@@ -77,13 +79,13 @@ class AmbienceList extends StatelessWidget {
                                 Icons.music_note_outlined,
                             color: isSelected
                                 ? Colors.blueAccent
-                                : Colors.white38,
+                                : AppColors.textSecondary,
                             size: 20,
                           )),
               title: Text(
                 item['name'] as String,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white70,
+                style: AppTextStyles.body.copyWith(
+                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),

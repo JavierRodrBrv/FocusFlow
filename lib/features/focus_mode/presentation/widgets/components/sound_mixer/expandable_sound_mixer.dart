@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import '../../../models/focus_state.dart';
@@ -95,7 +97,7 @@ class _ExpandableSoundMixerState extends State<ExpandableSoundMixer>
         side: BorderSide(
           color: isPlaying
               ? Colors.blueAccent.withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.05),
+              : AppColors.textPrimary.withValues(alpha: 0.05),
           width: 1.5,
         ),
       ),
@@ -117,7 +119,7 @@ class _ExpandableSoundMixerState extends State<ExpandableSoundMixer>
               padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
               child: Column(
                 children: [
-                  const Divider(color: Colors.white10),
+                  Divider(color: AppColors.textPrimary.withValues(alpha: 0.1)),
                   
                   // Tab Selector
                   Padding(
@@ -185,14 +187,14 @@ class _ExpandableSoundMixerState extends State<ExpandableSoundMixer>
             color: isSelected ? Colors.blueAccent.withValues(alpha: 0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isSelected ? Colors.blueAccent.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
+              color: isSelected ? Colors.blueAccent.withValues(alpha: 0.3) : AppColors.textPrimary.withValues(alpha: 0.05),
             ),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: TextStyle(
-              color: isSelected ? Colors.blueAccent : Colors.white38,
+            style: AppTextStyles.body.copyWith(
+              color: isSelected ? Colors.blueAccent : AppColors.textSecondary,
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),

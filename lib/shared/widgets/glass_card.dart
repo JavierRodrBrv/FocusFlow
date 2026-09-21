@@ -6,7 +6,7 @@ class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
 
-  const GlassCard({Key? key, required this.child, this.padding}) : super(key: key);
+  const GlassCard({super.key, required this.child, this.padding});
 
   @override
   Widget build(BuildContext context) {

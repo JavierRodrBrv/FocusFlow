@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -31,21 +33,21 @@ class MoneyFlowView extends StatelessWidget {
             errorBuilder: (context, error, stackTrace) => Container(
               height: 120,
               width: 280,
-              color: Colors.white.withValues(alpha: 0.05),
-              child: const Icon(Icons.broken_image, color: Colors.white24),
+              color: AppColors.textPrimary.withValues(alpha: 0.05),
+              child: Icon(Icons.broken_image, color: AppColors.textPrimary.withValues(alpha: 0.24)),
             ),
           ),
         ),
         const SizedBox(height: 16),
         Text(
           l10n.timeLostEquivalent,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 14),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
           '${moneyLost.toStringAsFixed(2)}€',
-          style: const TextStyle(
+          style: AppTextStyles.body.copyWith(
             color: Colors.greenAccent,
             fontSize: 32,
             fontWeight: FontWeight.bold,
@@ -54,7 +56,7 @@ class MoneyFlowView extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           l10n.donationQuestion,
-          style: const TextStyle(color: Colors.white70, fontSize: 13),
+          style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 13),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -65,14 +67,14 @@ class MoneyFlowView extends StatelessWidget {
               onPressed: onBack,
               child: Text(
                 l10n.noThanks,
-                style: const TextStyle(color: Colors.white54),
+                style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
               ),
             ),
             ElevatedButton(
               onPressed: onDonate,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber,
-                foregroundColor: Colors.black,
+                foregroundColor: AppColors.background,
               ),
               child: Text(l10n.sure),
             ),
@@ -113,7 +115,7 @@ class DonationPromptView extends StatelessWidget {
             errorBuilder: (context, error, stackTrace) => Container(
               height: 260,
               width: 280,
-              color: Colors.white.withValues(alpha: 0.05),
+              color: AppColors.textPrimary.withValues(alpha: 0.05),
               child: const Icon(
                 Icons.favorite_border,
                 color: Colors.pink,
@@ -125,7 +127,7 @@ class DonationPromptView extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           dogPhrase,
-          style: const TextStyle(
+          style: AppTextStyles.body.copyWith(
             color: Colors.amber,
             fontSize: 12,
             fontStyle: FontStyle.italic,
@@ -135,7 +137,7 @@ class DonationPromptView extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           l10n.donationFuture,
-          style: const TextStyle(color: Colors.white70, fontSize: 13),
+          style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 13),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -155,7 +157,7 @@ class DonationPromptView extends StatelessWidget {
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.pink,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.textPrimary,
           ),
           child: Text(l10n.comingSoon),
         ),

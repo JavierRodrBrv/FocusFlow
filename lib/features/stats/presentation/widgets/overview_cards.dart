@@ -9,7 +9,7 @@ import 'stat_item.dart';
 class OverviewCards extends StatelessWidget {
   final StatsLoaded state;
 
-  const OverviewCards({Key? key, required this.state}) : super(key: key);
+  const OverviewCards({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:focus_flow/app/injection.dart';
 import 'package:focus_flow/features/premium/presentation/bloc/premium_bloc.dart';
@@ -64,7 +65,7 @@ class PremiumFeatureDialog extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     l10n.unlockFeature(featureName),
-                    style: const TextStyle(
+                    style: AppTextStyles.body.copyWith(
                       color: AppColors.info,
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
@@ -74,7 +75,7 @@ class PremiumFeatureDialog extends StatelessWidget {
                   Text(
                     featureDescription,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 24),
                   _buildPriceCard(l10n),
@@ -88,7 +89,7 @@ class PremiumFeatureDialog extends StatelessWidget {
                               : () => Navigator.pop(context),
                           child: Text(
                             l10n.cancel,
-                            style: const TextStyle(color: AppColors.textSecondary),
+                            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                           ),
                         ),
                       ),
@@ -139,16 +140,16 @@ class PremiumFeatureDialog extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(l10n.priceOnly, style: const TextStyle(color: AppColors.textSecondary)),
+          Text(l10n.priceOnly, style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
           Text(
             l10n.premiumPrice,
-            style: const TextStyle(
+            style: AppTextStyles.body.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
           ),
-          Text(l10n.oneTimePayment, style: const TextStyle(color: AppColors.textSecondary)),
+          Text(l10n.oneTimePayment, style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
         ],
       ),
     );

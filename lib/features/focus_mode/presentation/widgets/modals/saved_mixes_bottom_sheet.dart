@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import '../../models/focus_state.dart';
@@ -38,7 +40,7 @@ class SavedMixesBottomSheet extends StatelessWidget {
         child: Center(
           child: Text(
             l10n.noSavedMixes,
-            style: const TextStyle(color: Colors.white70),
+            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
           ),
         ),
       );
@@ -53,7 +55,7 @@ class SavedMixesBottomSheet extends StatelessWidget {
           Text(
             l10n.savedMixesTitle,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -62,7 +64,7 @@ class SavedMixesBottomSheet extends StatelessWidget {
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: state.savedMixes.length,
-              separatorBuilder: (_, _) => const Divider(color: Colors.white10),
+              separatorBuilder: (_, _) =>  Divider(color: AppColors.textPrimary.withValues(alpha: 0.1)),
               itemBuilder: (context, index) {
                 final mix = state.savedMixes[index];
                 final isSelected = mix.id == state.lastActivatedMixId;
@@ -90,18 +92,18 @@ class SavedMixesBottomSheet extends StatelessWidget {
                       color: isSelected
                           ? Colors.greenAccent
                           : isHistory
-                          ? Colors.white70
+                          ? AppColors.textSecondary
                           : Colors.blueAccent,
                     ),
                   ),
                   title: Text(
                     mix.name,
-                    style: TextStyle(
+                    style: AppTextStyles.body.copyWith(
                       color: isSelected
                           ? Colors.greenAccent
                           : isHistory
-                          ? Colors.white70
-                          : Colors.white,
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.w500,
@@ -114,7 +116,7 @@ class SavedMixesBottomSheet extends StatelessWidget {
                       (mix.brownNoiseVolume * 100).toInt(),
                       isHistory ? l10n.lastActivatedLabel : "",
                     ),
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, fontSize: 12),
                   ),
                   onTap: () {
                     service.invoke('sendEvent', {

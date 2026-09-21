@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import '../../../../shared/theme/app_text_styles.dart';
@@ -10,7 +11,7 @@ import '../bloc/stats_state.dart';
 class WeekSelector extends StatelessWidget {
   final StatsLoaded state;
 
-  const WeekSelector({Key? key, required this.state}) : super(key: key);
+  const WeekSelector({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +23,7 @@ class WeekSelector extends StatelessWidget {
       children: [
         if (state.previousWeekDate != null)
           IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.white),
+            icon: const Icon(Icons.chevron_left, color: AppColors.textPrimary),
             onPressed: () {
               context.read<StatsBloc>().add(LoadDailyStats(
                 baseDate: state.previousWeekDate!,
@@ -43,7 +44,7 @@ class WeekSelector extends StatelessWidget {
 
         if (state.nextWeekDate != null)
           IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.white),
+            icon: const Icon(Icons.chevron_right, color: AppColors.textPrimary),
             onPressed: () {
               context.read<StatsBloc>().add(LoadDailyStats(
                 baseDate: state.nextWeekDate!,

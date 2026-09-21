@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/utils/date_extensions.dart';
-import '../../../session_history/presentation/pages/session_history_page.dart';
 import '../bloc/stats_state.dart';
+import 'package:go_router/go_router.dart';
 import 'animated_bar_chart.dart';
 
 class WeeklyChartArea extends StatelessWidget {
   final StatsLoaded state;
 
-  const WeeklyChartArea({Key? key, required this.state}) : super(key: key);
+  const WeeklyChartArea({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +39,7 @@ class WeeklyChartArea extends StatelessWidget {
             maxY: state.weeklyBarData.values.fold(0.0, (m, v) => v > m ? v : m),
             onBarTapped: (dayIndex) {
               final targetDate = state.currentWeekStart.dateFromDayIndex(dayIndex);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => SessionHistoryPage(filterDate: targetDate),
-                ),
-              );
+              context.push('/history', extra: targetDate);
             },
           ),
         ),

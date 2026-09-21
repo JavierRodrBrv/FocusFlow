@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:io' show File;
-import 'package:google_fonts/google_fonts.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
@@ -33,7 +33,7 @@ class SessionDetailModal extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: AppColors.textPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -65,16 +65,16 @@ class SessionDetailModal extends StatelessWidget {
                       session.isResting
                           ? l10n.breakFinished
                           : l10n.focusSession,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       dateFormat.format(session.startTime),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textPrimary.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
                     ),
@@ -131,8 +131,8 @@ class SessionDetailModal extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.textPrimary.withValues(alpha: 0.1),
+                foregroundColor: AppColors.textPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -157,20 +157,20 @@ class SessionDetailModal extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 20.0),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white38, size: 20),
+          Icon(icon, color: AppColors.textSecondary, size: 20),
           const SizedBox(width: 12),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.textPrimary.withValues(alpha: 0.6),
               fontSize: 14,
             ),
           ),
           const Spacer(),
           Text(
             value,
-            style: TextStyle(
-              color: textColor ?? Colors.white,
+            style: AppTextStyles.body.copyWith(
+              color: textColor ?? AppColors.textPrimary,
               fontSize: 16,
               fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
             ),

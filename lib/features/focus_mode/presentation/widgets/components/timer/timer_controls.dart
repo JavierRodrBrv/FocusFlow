@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
@@ -119,13 +120,13 @@ class _TimerControlsState extends State<TimerControls>
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  color: AppColors.textPrimary.withValues(alpha: 0.05),
+                  border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.1)),
                 ),
                 child: Icon(
                   Icons.replay,
                   size: 28,
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: AppColors.textPrimary.withValues(alpha: 0.7),
                 ),
               ),
               onPressed: () => _confirmReset(
@@ -197,7 +198,7 @@ class _TimerControlsState extends State<TimerControls>
                             icon: AnimatedIcons.play_pause,
                             progress: _iconController,
                             size: 48,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -221,13 +222,13 @@ class _TimerControlsState extends State<TimerControls>
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.05),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                            color: AppColors.textPrimary.withValues(alpha: 0.05),
+                            border: Border.all(color: AppColors.textPrimary.withValues(alpha: 0.1)),
                           ),
                           child: Icon(
                             Icons.skip_next_rounded,
                             size: 24,
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: AppColors.textPrimary.withValues(alpha: 0.7),
                           ),
                         ),
                         onPressed: () {
@@ -250,11 +251,11 @@ class _TimerControlsState extends State<TimerControls>
                 shape: BoxShape.circle,
                 color: state.isZoomMode
                     ? Colors.blueAccent.withValues(alpha: 0.2)
-                    : Colors.white.withValues(alpha: 0.05),
+                    : AppColors.textPrimary.withValues(alpha: 0.05),
                 border: Border.all(
                   color: state.isZoomMode
                       ? Colors.blueAccent.withValues(alpha: 0.4)
-                      : Colors.white.withValues(alpha: 0.1),
+                      : AppColors.textPrimary.withValues(alpha: 0.1),
                 ),
               ),
               child: Icon(
@@ -262,7 +263,7 @@ class _TimerControlsState extends State<TimerControls>
                     ? Icons.zoom_in_map_rounded
                     : Icons.zoom_out_map_rounded,
                 size: 28,
-                color: state.isZoomMode ? Colors.blueAccent : Colors.white70,
+                color: state.isZoomMode ? Colors.blueAccent : AppColors.textSecondary,
               ),
             ),
             onPressed: () {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:focus_flow/features/premium/presentation/widgets/premium_feature_dialog.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
@@ -134,7 +136,7 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                           CircularActionButton(
                             icon: Icons.queue_music,
                             isPremium: state.isPremium,
-                            color: Colors.white70,
+                            color: AppColors.textSecondary,
                             onPressed: () {
                               if (state.isPremium) {
                                 SavedMixesBottomSheet.show(
@@ -164,7 +166,7 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                               decoration: BoxDecoration(
                                 color: isPlaying
                                     ? Colors.blueAccent
-                                    : Colors.white.withValues(alpha: 0.1),
+                                    : AppColors.textPrimary.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                                 boxShadow: isPlaying
                                     ? [
@@ -180,7 +182,7 @@ class _SoundMixerContentState extends State<SoundMixerContent>
                               child: AnimatedIcon(
                                 icon: AnimatedIcons.play_pause,
                                 progress: _iconController,
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 size: 32,
                               ),
                             ),
@@ -246,14 +248,14 @@ class _SoundMixerContentState extends State<SoundMixerContent>
             border: Border.all(
               color: isSelected
                   ? Colors.blueAccent.withValues(alpha: 0.3)
-                  : Colors.white.withValues(alpha: 0.05),
+                  : AppColors.textPrimary.withValues(alpha: 0.05),
             ),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: TextStyle(
-              color: isSelected ? Colors.blueAccent : Colors.white38,
+            style: AppTextStyles.body.copyWith(
+              color: isSelected ? Colors.blueAccent : AppColors.textSecondary,
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:intl/intl.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/shared/theme/app_colors.dart';
@@ -29,7 +30,7 @@ class HistoryDateHeaderWidget extends StatelessWidget {
       padding: const EdgeInsets.only(top: 24, bottom: 12, left: 8),
       child: Text(
         titleText,
-        style: const TextStyle(
+        style: AppTextStyles.body.copyWith(
           color: AppColors.textSecondary,
           fontSize: 14,
           fontWeight: FontWeight.w600,

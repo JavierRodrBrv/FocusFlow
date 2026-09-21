@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 class BackgroundGlows extends StatelessWidget {
-  const BackgroundGlows({Key? key}) : super(key: key);
+  const BackgroundGlows({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:focus_flow/shared/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:focus_flow/features/focus_mode/domain/entities/pomodoro_status.dart';
 import 'package:focus_flow/features/focus_mode/presentation/widgets/components/shared/bottom_action_item.dart';
@@ -37,7 +38,7 @@ class FocusBottomBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: AppColors.background.withValues(alpha: 0.3),
               blurRadius: 20,
               spreadRadius: 5,
             ),
@@ -55,7 +56,7 @@ class FocusBottomBar extends StatelessWidget {
                           key: const ValueKey('bottom_bar_blur'),
                           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
-                            color: Colors.black.withValues(alpha: 0.1),
+                            color: AppColors.background.withValues(alpha: 0.1),
                           ),
                         )
                       : Container(
@@ -88,7 +89,7 @@ class FocusBottomBar extends StatelessWidget {
           ),
         ),
         VerticalDivider(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: AppColors.textPrimary.withValues(alpha: 0.05),
           indent: 20,
           endIndent: 20,
         ),

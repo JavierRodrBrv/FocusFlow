@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_colors.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 
 class LanguageTile extends StatelessWidget {
   final String title;
@@ -18,11 +20,11 @@ class LanguageTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      leading: Text(flag, style: const TextStyle(fontSize: 20)),
+      leading: Text(flag, style: AppTextStyles.body.copyWith(fontSize: 20)),
       title: Text(
         title,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.white60,
+        style: AppTextStyles.body.copyWith(
+          color: isSelected ? AppColors.textPrimary : AppColors.textPrimary.withValues(alpha: 0.6),
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),

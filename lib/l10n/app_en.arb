@@ -132,14 +132,6 @@
   "comingSoon": "Buy a coffee ☕",
   "breaksDesc": "Configure a default break time. If you do, sessions will start automatically without asking every time.",
   "sendFeedback": "Send Feedback",
-  "errorSending": "Error sending: {error}",
-  "@errorSending": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "resetSessionTitle": "Reset session?",
   "resetSessionMessage": "Current session progress will be lost.",
   "cancel": "Cancel",
@@ -174,7 +166,7 @@
   "park": "Park",
   "stream": "Stream",
   "midnight": "Midnight",
-  "noSavedMixes": "You don't have saved mixes yet.",
+  "noSavedMixes": "You don't have any saved mixes yet.",
   "savedMixesTitle": "Saved Mixes",
   "lastMixLabel": "(Last)",
   "getAccess": "Get Access",
@@ -243,8 +235,6 @@
   "purchasesSoon": "Purchases coming soon.",
   "priceOnly": "Only ",
   "oneTimePayment": " / one-time payment",
-  "noSavedMixes": "You don't have any saved mixes yet.",
-  "savedMixesTitle": "Saved Mixes",
   "lastActivatedLabel": " (Last)",
   "mixDetail": "Rain: {rain}% • Fire: {fire}% • Waves: {waves}%{last}",
   "@mixDetail": {
@@ -349,5 +339,7 @@
   },
   "phaseFocus": "Focus",
   "phaseBreak": "Break",
-  "phaseWaiting": "Preparation"
+  "phaseWaiting": "Preparation",
+  "pomodoroCycleDetails": "Pomodoro Cycle Details",
+  "pomodoroCycle": "Pomodoro Cycle"
 }

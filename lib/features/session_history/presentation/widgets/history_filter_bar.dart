@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:focus_flow/shared/theme/app_text_styles.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
@@ -29,7 +30,7 @@ class HistoryFilterBar extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 AppLocalizations.of(context)!.showingResultsFor(DateFormat('dd MMM').format(filterDate)),
-                style: const TextStyle(
+                style: AppTextStyles.body.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,

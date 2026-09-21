@@ -17,7 +17,7 @@ import '../widgets/week_selector.dart';
 import '../widgets/weekly_chart_area.dart';
 
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +29,7 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class DashboardView extends StatelessWidget {
-  const DashboardView({Key? key}) : super(key: key);
+  const DashboardView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -69,8 +69,8 @@ class DashboardView extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.white, // In BlendMode.dstIn, white means keep opaque
-                          Colors.white,
+                          AppColors.textPrimary, // In BlendMode.dstIn, white means keep opaque
+                          AppColors.textPrimary,
                           Colors.transparent,
                         ],
                         stops: const [0.0, 0.05, 0.95, 1.0],
