@@ -81,11 +81,15 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
         if (sessions.isNotEmpty) {
           final currentGroupId = sessions.first.groupId;
           final saveSession = GetIt.instance<SaveSessionUseCase>();
-          
-          final sessionsToUpdate = sessions.where((s) => 
-            s.groupId == currentGroupId && (s.sessionName == null || s.sessionName!.trim().isEmpty)
-          ).toList();
-          
+
+          final sessionsToUpdate = sessions
+              .where(
+                (s) =>
+                    s.groupId == currentGroupId &&
+                    (s.sessionName == null || s.sessionName!.trim().isEmpty),
+              )
+              .toList();
+
           for (var session in sessionsToUpdate) {
             await saveSession(session.copyWith(sessionName: name.trim()));
           }
@@ -277,7 +281,9 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
           if (sessions.isNotEmpty) {
             final currentGroupId = sessions.first.groupId;
             final lastSession = sessions.firstWhere(
-              (s) => s.groupId == currentGroupId && (s.sessionName == null || s.sessionName!.trim().isEmpty),
+              (s) =>
+                  s.groupId == currentGroupId &&
+                  (s.sessionName == null || s.sessionName!.trim().isEmpty),
               orElse: () => sessions.first,
             );
             final updatedSession = lastSession.copyWith(photoPath: photoPath);
@@ -459,25 +465,52 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
                 },
                 decoration: InputDecoration(
                   hintText: '¿Qué nombre tiene esta sesión?',
-                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 14),
-                  errorText: _hasNameError ? 'El nombre de la sesión es obligatorio' : null,
-                  errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                  hintStyle: const TextStyle(
+                    color: Colors.white30,
+                    fontSize: 14,
+                  ),
+                  errorText: _hasNameError
+                      ? 'El nombre de la sesión es obligatorio'
+                      : null,
+                  errorStyle: const TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 12,
+                  ),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.04),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: _hasNameError ? Colors.redAccent : Colors.white.withValues(alpha: 0.1)),
+                    borderSide: BorderSide(
+                      color: _hasNameError
+                          ? Colors.redAccent
+                          : Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: _hasNameError ? Colors.redAccent : Colors.white.withValues(alpha: 0.1)),
+                    borderSide: BorderSide(
+                      color: _hasNameError
+                          ? Colors.redAccent
+                          : Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: _hasNameError ? Colors.redAccent : Colors.blueAccent, width: 1.5),
+                    borderSide: BorderSide(
+                      color: _hasNameError
+                          ? Colors.redAccent
+                          : Colors.blueAccent,
+                      width: 1.5,
+                    ),
                   ),
-                  prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.blueAccent),
+                  prefixIcon: const Icon(
+                    Icons.edit_note_rounded,
+                    color: Colors.blueAccent,
+                  ),
                 ),
               ),
               _buildPhotoSection(),
@@ -624,9 +657,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog> {
         backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 48),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: _isWaitingForAd
           ? const SizedBox(

@@ -31,10 +31,12 @@ class PomodoroCycleCompleteDialog extends StatefulWidget {
   });
 
   @override
-  State<PomodoroCycleCompleteDialog> createState() => _PomodoroCycleCompleteDialogState();
+  State<PomodoroCycleCompleteDialog> createState() =>
+      _PomodoroCycleCompleteDialogState();
 }
 
-class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialog> {
+class _PomodoroCycleCompleteDialogState
+    extends State<PomodoroCycleCompleteDialog> {
   String? _capturedPhotoPath;
   bool _isSavingPhoto = false;
 
@@ -71,9 +73,15 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
     _shortMinutes = widget.shortMinutes;
     _longMinutes = widget.longMinutes;
 
-    _studyController = FixedExtentScrollController(initialItem: _studyMinutes - 1);
-    _shortController = FixedExtentScrollController(initialItem: _shortMinutes - 1);
-    _longController = FixedExtentScrollController(initialItem: _longMinutes - 1);
+    _studyController = FixedExtentScrollController(
+      initialItem: _studyMinutes - 1,
+    );
+    _shortController = FixedExtentScrollController(
+      initialItem: _shortMinutes - 1,
+    );
+    _longController = FixedExtentScrollController(
+      initialItem: _longMinutes - 1,
+    );
   }
 
   @override
@@ -94,21 +102,30 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
       if (photoPath != null) {
         final getHistory = GetIt.instance<GetSessionHistoryUseCase>();
         final result = await getHistory(NoParams());
-        
+
         if (result is Success<List<FocusSession>, dynamic>) {
-          final sessions = (result as Success<List<FocusSession>, dynamic>).value;
+          final sessions =
+              (result as Success<List<FocusSession>, dynamic>).value;
           if (sessions.isNotEmpty) {
             // Buscamos la sesión de estudio más reciente del grupo actual que no tenga nombre
             final currentGroupId = sessions.first.groupId;
             final lastStudySession = sessions.firstWhere(
-              (s) => !s.isResting && s.groupId == currentGroupId && (s.sessionName == null || s.sessionName!.trim().isEmpty),
-              orElse: () => sessions.firstWhere((s) => !s.isResting, orElse: () => sessions.first),
+              (s) =>
+                  !s.isResting &&
+                  s.groupId == currentGroupId &&
+                  (s.sessionName == null || s.sessionName!.trim().isEmpty),
+              orElse: () => sessions.firstWhere(
+                (s) => !s.isResting,
+                orElse: () => sessions.first,
+              ),
             );
-            final updatedSession = lastStudySession.copyWith(photoPath: photoPath);
-            
+            final updatedSession = lastStudySession.copyWith(
+              photoPath: photoPath,
+            );
+
             final saveSession = GetIt.instance<SaveSessionUseCase>();
             await saveSession(updatedSession);
-            
+
             if (mounted) {
               setState(() {
                 _capturedPhotoPath = photoPath;
@@ -141,10 +158,7 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
           transitionBuilder: (Widget child, Animation<double> animation) {
             return ScaleTransition(
               scale: animation,
-              child: FadeTransition(
-                opacity: animation,
-                child: child,
-              ),
+              child: FadeTransition(opacity: animation, child: child),
             );
           },
           child: _isSavingPhoto
@@ -264,12 +278,16 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
         if (sessions.isNotEmpty) {
           final currentGroupId = sessions.first.groupId;
           final saveSession = GetIt.instance<SaveSessionUseCase>();
-          
+
           // Encontrar todas las sesiones de este grupo que no tienen nombre
-          final sessionsToUpdate = sessions.where((s) => 
-            s.groupId == currentGroupId && (s.sessionName == null || s.sessionName!.trim().isEmpty)
-          ).toList();
-          
+          final sessionsToUpdate = sessions
+              .where(
+                (s) =>
+                    s.groupId == currentGroupId &&
+                    (s.sessionName == null || s.sessionName!.trim().isEmpty),
+              )
+              .toList();
+
           for (var session in sessionsToUpdate) {
             await saveSession(session.copyWith(sessionName: name.trim()));
           }
@@ -297,14 +315,15 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
     if (!_validateName()) return;
 
     final enteredName = _nameController.text.trim();
-    
+
     // 1. Guardar el nombre de la sesión si se ingresó
     if (enteredName.isNotEmpty) {
       await _saveSessionName(enteredName);
     }
 
     // 2. Determinar si los tiempos cambiaron
-    final timesChanged = _studyMinutes != widget.studyMinutes ||
+    final timesChanged =
+        _studyMinutes != widget.studyMinutes ||
         _shortMinutes != widget.shortMinutes ||
         _longMinutes != widget.longMinutes;
 
@@ -325,7 +344,8 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
         final getHistory = GetIt.instance<GetSessionHistoryUseCase>();
         final result = await getHistory(NoParams());
         if (result is Success<List<FocusSession>, dynamic>) {
-          final sessions = (result as Success<List<FocusSession>, dynamic>).value;
+          final sessions =
+              (result as Success<List<FocusSession>, dynamic>).value;
           if (sessions.isNotEmpty) {
             groupIdToPass = sessions.first.groupId;
           }
@@ -411,7 +431,7 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
               ),
             ),
             const SizedBox(height: 20),
-      
+
             // Título
             const Text(
               '¡Ciclo Completado!',
@@ -423,7 +443,7 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-      
+
             // Cuerpo de texto explicativo
             const Text(
               '¡Gran trabajo! Has completado tus 4 bloques de estudio y el descanso largo total. Has mantenido un excelente enfoque.',
@@ -450,44 +470,55 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
               decoration: InputDecoration(
                 hintText: '¿Qué nombre tiene esta sesión?',
                 hintStyle: TextStyle(
-                  color: _hasNameError ? Colors.redAccent.withValues(alpha: 0.5) : Colors.white30, 
+                  color: _hasNameError
+                      ? Colors.redAccent.withValues(alpha: 0.5)
+                      : Colors.white30,
                   fontSize: 14,
                 ),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.04),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: _hasNameError ? Colors.redAccent : Colors.white.withValues(alpha: 0.1),
+                    color: _hasNameError
+                        ? Colors.redAccent
+                        : Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: _hasNameError ? Colors.redAccent : Colors.white.withValues(alpha: 0.1),
+                    color: _hasNameError
+                        ? Colors.redAccent
+                        : Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: _hasNameError ? Colors.redAccent : Colors.orangeAccent, 
+                    color: _hasNameError
+                        ? Colors.redAccent
+                        : Colors.orangeAccent,
                     width: 1.5,
                   ),
                 ),
                 prefixIcon: Icon(
-                  Icons.edit_note_rounded, 
+                  Icons.edit_note_rounded,
                   color: _hasNameError ? Colors.redAccent : Colors.orangeAccent,
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            
+
             // 2. Sección Momento Foto
             _buildPhotoSection(),
-            
+
             const SizedBox(height: 24),
-      
+
             // 3. Pregunta final
             const Text(
               '¿Quieres comenzar un nuevo ciclo Pomodoro?',
@@ -508,7 +539,10 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.02),
                   borderRadius: BorderRadius.circular(16),
@@ -633,7 +667,7 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
             ),
           ),
         ),
-        
+
         // Botón Comenzar Nuevo Ciclo
         ElevatedButton(
           onPressed: _handleStartNewCycle,
@@ -648,10 +682,7 @@ class _PomodoroCycleCompleteDialogState extends State<PomodoroCycleCompleteDialo
           ),
           child: const Text(
             'Nuevo Ciclo',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
         ),
       ],

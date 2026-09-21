@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:focus_flow/l10n/app_localizations.dart';
 import 'package:focus_flow/features/session_history/domain/entities/focus_session.dart';
 import 'package:intl/intl.dart';
+import 'session_photo_viewer.dart';
 
 class GroupDetailModal extends StatelessWidget {
   final List<FocusSession> group;
@@ -198,7 +199,7 @@ class GroupDetailModal extends StatelessWidget {
                       final hasPhotoInSubGroup = subGroup.sessions.any((s) => s.photoPath != null);
                       if (hasPhotoInSubGroup) {
                         final sessionWithPhoto = subGroup.sessions.firstWhere((s) => s.photoPath != null);
-                        widgets.add(_buildSubGroupPhoto(context, sessionWithPhoto, locale));
+                        widgets.add(SessionPhotoViewer(session: sessionWithPhoto));
                       }
 
                       // Timeline Items
@@ -387,72 +388,7 @@ class GroupDetailModal extends StatelessWidget {
     );
   }
 
-  void _showPhotoDialog(BuildContext context, FocusSession session, String locale) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0.8, end: 1.0),
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.elasticOut,
-          builder: (context, scale, child) {
-            return Transform.scale(
-              scale: scale,
-              child: Transform.rotate(
-                angle: -0.02,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Image.file(
-                          File(session.photoPath!),
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        '¡Qué cara! 😜',
-                        style: GoogleFonts.caveat(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('d MMMM, HH:mm', locale).format(session.startTime),
-                        style: GoogleFonts.caveat(
-                          fontSize: 16,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildDetailRow(
     IconData icon,
@@ -540,56 +476,7 @@ class GroupDetailModal extends StatelessWidget {
     );
   }
 
-  Widget _buildSubGroupPhoto(BuildContext context, FocusSession session, String locale) {
-    return Center(
-      child: GestureDetector(
-        onTap: () => _showPhotoDialog(context, session, locale),
-        child: Transform.rotate(
-          angle: -0.01,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 20, top: 4),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 130,
-                  height: 130,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Image.file(
-                    File(session.photoPath!),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '¡Estudiado! 🤓',
-                  style: GoogleFonts.caveat(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 }
 
 class SessionSubGroup {
